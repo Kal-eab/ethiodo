@@ -1,0 +1,57 @@
+{
+  "name": "Product",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Product name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Product description"
+    },
+    "price": {
+      "type": "number",
+      "description": "Product price"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "electronics",
+        "foods",
+        "hygiene",
+        "clothing",
+        "accessories",
+        "home",
+        "sports",
+        "other"
+      ],
+      "description": "Product category"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of image URLs"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Average rating 0-5"
+    },
+    "stock": {
+      "type": "number",
+      "description": "Stock quantity"
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether product is featured"
+    }
+  },
+  "required": [
+    "name",
+    "price",
+    "category"
+  ]
+}

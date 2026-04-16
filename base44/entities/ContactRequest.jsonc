@@ -1,0 +1,35 @@
+{
+  "name": "ContactRequest",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Sender name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Sender email"
+    },
+    "message": {
+      "type": "string",
+      "description": "Message content"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Uploaded image URL"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "handled"
+      ],
+      "default": "new",
+      "description": "Request status"
+    }
+  },
+  "required": [
+    "name",
+    "message"
+  ]
+}

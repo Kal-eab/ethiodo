@@ -1,0 +1,13 @@
+{
+  "name": "Favorite",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string",
+      "description": "Product ID"
+    }
+  },
+  "required": [
+    "product_id"
+  ]
+}
