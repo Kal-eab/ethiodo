@@ -34,7 +34,7 @@ export default function ProductCard({ product, isFavorite, favoriteId }) {
 
   return (
     <Link to={`/product/${product.id}`} className="group block">
-      <div className="bg-card border border-border overflow-hidden transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_20px_rgba(0,0,0,0.4)] hover:-translate-y-1">
+      <div className="bg-card border border-border overflow-hidden transition-all duration-300 hover:border-primary/60 hover:shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_15px_rgba(180,255,0,0.08)] hover:-translate-y-2 hover:scale-[1.02]">
         {/* Image */}
         <div className="relative aspect-square overflow-hidden bg-secondary">
           <img
