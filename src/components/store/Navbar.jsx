@@ -36,10 +36,8 @@ export default function Navbar({ onSearchChange, searchValue }) {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-mono font-bold text-sm">ET</span>
-            </div>
-            <span className="font-bold text-lg tracking-tight hidden sm:block">ETHIODO</span>
+            <img src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/6811e703c_Gemini_Generated_Image_olhtx9olhtx9olht.png" alt="Ethiodo" className="h-8 w-auto" />
+            <span className="font-bold text-lg tracking-tight hidden sm:block">Ethiodo</span>
           </Link>
 
           {/* Desktop Nav */}

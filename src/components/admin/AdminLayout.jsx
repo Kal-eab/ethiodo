@@ -39,10 +39,8 @@ export default function AdminLayout() {
       }`}>
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-mono font-bold text-xs">ET</span>
-            </div>
-            <span className="font-bold text-sm">ADMIN</span>
+            <img src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/6811e703c_Gemini_Generated_Image_olhtx9olhtx9olht.png" alt="Ethiodo" className="h-7 w-auto" />
+            <span className="font-bold text-sm">Admin</span>
           </div>
           <button className="lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
             <X className="w-5 h-5" />
