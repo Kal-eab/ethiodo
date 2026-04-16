@@ -41,10 +41,10 @@ export default function Home() {
           <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
             <div className="max-w-2xl">
               <p className="font-mono text-xs text-primary uppercase tracking-[0.3em] mb-4">
-                The Exchange
+                The Marketplace
               </p>
               <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[0.9] mb-6">
-                OBSIDIAN
+                ETHIODO
                 <br />
                 <span className="text-muted-foreground">EXCHANGE</span>
               </h1>

@@ -40,7 +40,7 @@ export default function AdminLayout() {
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-mono font-bold text-xs">OX</span>
+              <span className="text-primary-foreground font-mono font-bold text-xs">ET</span>
             </div>
             <span className="font-bold text-sm">ADMIN</span>
           </div>

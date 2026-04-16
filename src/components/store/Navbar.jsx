@@ -37,9 +37,9 @@ export default function Navbar({ onSearchChange, searchValue }) {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-mono font-bold text-sm">OX</span>
+              <span className="text-primary-foreground font-mono font-bold text-sm">ET</span>
             </div>
-            <span className="font-bold text-lg tracking-tight hidden sm:block">OBSIDIAN</span>
+            <span className="font-bold text-lg tracking-tight hidden sm:block">ETHIODO</span>
           </Link>
 
           {/* Desktop Nav */}
