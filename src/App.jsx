@@ -12,7 +12,6 @@ import Cart from '@/pages/Cart';
 import Checkout from '@/pages/Checkout';
 import Orders from '@/pages/Orders';
 import Favorites from '@/pages/Favorites';
-import Contact from '@/pages/Contact';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminDashboard from '@/pages/admin/Dashboard';
 import AdminProducts from '@/pages/admin/Products';
@@ -49,7 +48,6 @@ const AuthenticatedApp = () => {
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/orders" element={<Orders />} />
       <Route path="/favorites" element={<Favorites />} />
-      <Route path="/contact" element={<Contact />} />
       <Route path="/messages" element={<Messages />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
