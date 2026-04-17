@@ -57,6 +57,7 @@ export default function Navbar({ onSearchChange, searchValue }) {
     { label: 'Shop', path: '/' },
     { label: 'Orders', path: '/orders' },
     { label: 'Favorites', path: '/favorites' },
+    { label: 'Messages', path: '/messages' },
     { label: 'Contact', path: '/contact' },
   ];
 

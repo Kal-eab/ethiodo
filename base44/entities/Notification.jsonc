@@ -1,0 +1,31 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "message",
+        "order"
+      ],
+      "description": "Notification type"
+    },
+    "content": {
+      "type": "string",
+      "description": "Notification preview text"
+    },
+    "link": {
+      "type": "string",
+      "description": "Link to navigate to (e.g. /admin/messages)"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the notification has been read"
+    }
+  },
+  "required": [
+    "type",
+    "content"
+  ]
+}

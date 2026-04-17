@@ -82,6 +82,14 @@ export default function Checkout() {
       phone: form.phone,
     });
 
+    // Notify admin of new order
+    await base44.entities.Notification.create({
+      type: 'order',
+      content: `New order from ${form.name || form.email} — $${total.toFixed(2)} (${orderItems.length} item${orderItems.length !== 1 ? 's' : ''})`,
+      link: '/admin/orders',
+      is_read: false,
+    });
+
     // Clear cart
     for (const item of cartItems) {
       await base44.entities.CartItem.delete(item.id);

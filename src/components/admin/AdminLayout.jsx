@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, MessageSquare, ArrowLeft, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, MessageSquare, ArrowLeft, Menu, X, Mail } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import NotificationBell from '@/components/admin/NotificationBell';
 
 const navItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { path: '/admin/products', label: 'Products', icon: Package },
   { path: '/admin/orders', label: 'Orders', icon: ShoppingCart },
+  { path: '/admin/messages', label: 'Messages', icon: Mail },
   { path: '/admin/requests', label: 'Requests', icon: MessageSquare },
 ];
 
@@ -94,6 +96,9 @@ export default function AdminLayout() {
           <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
             Control Deck
           </span>
+          <div className="ml-auto">
+            <NotificationBell />
+          </div>
         </header>
         <div className="p-4 sm:p-6 lg:p-8">
           <Outlet />

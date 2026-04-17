@@ -1,0 +1,44 @@
+{
+  "name": "Message",
+  "type": "object",
+  "properties": {
+    "conversation_id": {
+      "type": "string",
+      "description": "Groups messages by user (use user email or ID)"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Customer email"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Customer name"
+    },
+    "content": {
+      "type": "string",
+      "description": "Message text content"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Optional attached image URL"
+    },
+    "sender": {
+      "type": "string",
+      "enum": [
+        "user",
+        "admin"
+      ],
+      "description": "Who sent this message"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether admin has read this message"
+    }
+  },
+  "required": [
+    "conversation_id",
+    "content",
+    "sender"
+  ]
+}
