@@ -28,6 +28,10 @@
       ],
       "description": "Product category"
     },
+    "tags": {
+      "type": "string",
+      "description": "Comma-separated tags/keywords to improve search accuracy (e.g. 'keyboard, mechanical, gaming, A34')"
+    },
     "images": {
       "type": "array",
       "items": {

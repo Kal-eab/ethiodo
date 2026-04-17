@@ -20,6 +20,7 @@ function ProductForm({ product, onClose, onSave }) {
     rating: product?.rating || 0,
     stock: product?.stock || 0,
     featured: product?.featured || false,
+    tags: product?.tags || '',
     images: product?.images || [],
   });
   const [uploading, setUploading] = useState(false);
@@ -50,6 +51,7 @@ function ProductForm({ product, onClose, onSave }) {
       price: parseFloat(form.price) || 0,
       rating: parseFloat(form.rating) || 0,
       stock: parseInt(form.stock) || 0,
+      tags: form.tags,
     });
     setSaving(false);
     onClose();
@@ -98,6 +100,17 @@ function ProductForm({ product, onClose, onSave }) {
       <div>
         <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Description</label>
         <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="bg-secondary border-border min-h-[80px]" />
+      </div>
+
+      <div>
+        <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Tags / Keywords</label>
+        <Input
+          value={form.tags}
+          onChange={e => setForm({ ...form, tags: e.target.value })}
+          placeholder="e.g. mechanical, gaming, A34, wireless"
+          className="bg-secondary border-border h-10"
+        />
+        <p className="font-mono text-[10px] text-muted-foreground mt-1">Comma-separated keywords to improve search accuracy</p>
       </div>
 
       {/* Images */}

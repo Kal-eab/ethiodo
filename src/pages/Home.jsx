@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import ProductCard from '@/components/store/ProductCard';
 import CategoryFilter from '@/components/store/CategoryFilter';
 import Navbar from '@/components/store/Navbar';
+import { searchProducts } from '@/lib/searchProducts';
 
 export default function Home() {
   const [search, setSearch] = useState('');
@@ -24,10 +25,9 @@ export default function Home() {
   const favMap = {};
   favorites.forEach(f => { favMap[f.product_id] = f.id; });
 
-  const filtered = products.filter(p => {
-    const matchCategory = category === 'all' || p.category === category;
-    const matchSearch = !search || p.name?.toLowerCase().includes(search.toLowerCase());
-    return matchCategory && matchSearch;
+  const searchResults = searchProducts(products, search);
+  const filtered = searchResults.filter(p => {
+    return category === 'all' || p.category === category;
   });
 
   const featured = products.filter(p => p.featured);

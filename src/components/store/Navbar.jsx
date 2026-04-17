@@ -1,17 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Heart, Search, Menu, X, User, Package, LogOut } from 'lucide-react';
+import { ShoppingCart, Heart, Search, Menu, X, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { getAutocompleteSuggestions } from '@/lib/searchProducts';
 
 export default function Navbar({ onSearchChange, searchValue }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef(null);
   const location = useLocation();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
+  }, []);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   const { data: cartItems = [] } = useQuery({
@@ -19,7 +34,24 @@ export default function Navbar({ onSearchChange, searchValue }) {
     queryFn: () => base44.entities.CartItem.list(),
   });
 
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => base44.entities.Product.list('-created_date', 100),
+  });
+
   const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+
+  const handleSearchInput = (value) => {
+    onSearchChange(value);
+    const s = getAutocompleteSuggestions(products, value, 6);
+    setSuggestions(s);
+    setShowSuggestions(s.length > 0 && value.trim().length > 0);
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    onSearchChange(suggestion);
+    setShowSuggestions(false);
+  };
 
   const navLinks = [
     { label: 'Shop', path: '/' },
@@ -30,13 +62,55 @@ export default function Navbar({ onSearchChange, searchValue }) {
 
   const isAdmin = user?.role === 'admin';
 
+  const SearchInput = ({ className }) => (
+    <div ref={searchRef} className={`relative ${className}`}>
+      <div className="flex items-center bg-secondary border border-border px-3 py-2">
+        <Search className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0" />
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={searchValue || ''}
+          onChange={e => handleSearchInput(e.target.value)}
+          onFocus={() => {
+            if (suggestions.length > 0) setShowSuggestions(true);
+          }}
+          onKeyDown={e => { if (e.key === 'Escape') setShowSuggestions(false); }}
+          className="bg-transparent text-sm outline-none w-full placeholder:text-muted-foreground"
+        />
+        {searchValue && (
+          <button onClick={() => { onSearchChange(''); setShowSuggestions(false); }}>
+            <X className="w-3 h-3 text-muted-foreground hover:text-foreground ml-1" />
+          </button>
+        )}
+      </div>
+      {showSuggestions && (
+        <div className="absolute top-full left-0 right-0 z-50 bg-card border border-border border-t-0 shadow-xl">
+          {suggestions.map((s, i) => (
+            <button
+              key={i}
+              onMouseDown={() => handleSuggestionClick(s)}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-secondary transition-colors flex items-center gap-2"
+            >
+              <Search className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+              <span>{s}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <img src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/6811e703c_Gemini_Generated_Image_olhtx9olhtx9olht.png" alt="Ethiodo" className="h-8 w-auto" />
+          {/* Logo — always goes to home */}
+          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+            <img
+              src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/6811e703c_Gemini_Generated_Image_olhtx9olhtx9olht.png"
+              alt="Ethiodo"
+              className="h-8 w-auto"
+            />
             <span className="font-bold text-lg tracking-tight hidden sm:block">Ethiodo</span>
           </Link>
 
@@ -67,16 +141,7 @@ export default function Navbar({ onSearchChange, searchValue }) {
 
           {/* Search (desktop) */}
           {onSearchChange && (
-            <div className="hidden lg:flex items-center bg-secondary border border-border px-3 py-2 w-72">
-              <Search className="w-4 h-4 text-muted-foreground mr-2" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchValue || ''}
-                onChange={e => onSearchChange(e.target.value)}
-                className="bg-transparent text-sm outline-none w-full placeholder:text-muted-foreground"
-              />
-            </div>
+            <SearchInput className="hidden lg:block w-72" />
           )}
 
           {/* Actions */}
@@ -96,7 +161,7 @@ export default function Navbar({ onSearchChange, searchValue }) {
                 </span>
               )}
             </Link>
-            
+
             {user ? (
               <Button
                 variant="ghost"
@@ -108,7 +173,7 @@ export default function Navbar({ onSearchChange, searchValue }) {
               </Button>
             ) : null}
 
-            {/* Mobile menu */}
+            {/* Mobile menu toggle */}
             <Button
               variant="ghost"
               size="icon"
@@ -125,15 +190,8 @@ export default function Navbar({ onSearchChange, searchValue }) {
       {mobileOpen && (
         <div className="md:hidden bg-background border-b border-border px-4 pb-4">
           {onSearchChange && (
-            <div className="flex items-center bg-secondary border border-border px-3 py-2 mb-4">
-              <Search className="w-4 h-4 text-muted-foreground mr-2" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchValue || ''}
-                onChange={e => onSearchChange(e.target.value)}
-                className="bg-transparent text-sm outline-none w-full placeholder:text-muted-foreground"
-              />
+            <div className="mb-4">
+              <SearchInput className="w-full" />
             </div>
           )}
           <div className="flex flex-col gap-3">
