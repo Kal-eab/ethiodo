@@ -23,7 +23,7 @@ export default function ContactPage() {
       message: `Subject: ${form.subject}\n\n${form.message}`,
       status: 'new',
     });
-    toast.success('Message sent! We'll reply shortly.');
+    toast.success("Message sent! We'll reply shortly.");
     setSent(true);
     setSending(false);
   };
