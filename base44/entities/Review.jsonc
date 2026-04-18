@@ -1,0 +1,73 @@
+{
+  "name": "Review",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string",
+      "description": "Product being reviewed"
+    },
+    "order_id": {
+      "type": "string",
+      "description": "Order that included this product (verifies buyer)"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Star rating 1-5"
+    },
+    "title": {
+      "type": "string",
+      "description": "Review title"
+    },
+    "body": {
+      "type": "string",
+      "description": "Written review"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Customer uploaded photo URLs"
+    },
+    "videos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Customer uploaded video URLs"
+    },
+    "reviewer_name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "reviewer_email": {
+      "type": "string",
+      "description": "Reviewer email"
+    },
+    "verified_buyer": {
+      "type": "boolean",
+      "default": false,
+      "description": "Was this person a verified buyer?"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Admin moderation status"
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false,
+      "description": "Pinned / featured review"
+    }
+  },
+  "required": [
+    "product_id",
+    "rating",
+    "body"
+  ]
+}

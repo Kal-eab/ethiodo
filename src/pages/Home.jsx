@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Search, ArrowRight } from 'lucide-react';
+import Footer from '@/components/store/Footer';
 import { Link } from 'react-router-dom';
 import ProductCard from '@/components/store/ProductCard';
 import CategoryFilter from '@/components/store/CategoryFilter';
@@ -93,8 +94,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Sticky filter ribbon */}
-          <div className="sticky top-16 z-40 bg-background/80 backdrop-blur-xl py-4 mb-8 border-b border-border -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+          {/* Category filter — NOT sticky, stays at top of product section */}
+          <div className="py-4 mb-8 border-b border-border -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
             <CategoryFilter active={category} onChange={setCategory} />
           </div>
 
@@ -135,6 +136,7 @@ export default function Home() {
           )}
         </section>
       </main>
+      <Footer />
     </div>
   );
 }

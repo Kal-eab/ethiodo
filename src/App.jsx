@@ -18,7 +18,13 @@ import AdminProducts from '@/pages/admin/Products';
 import AdminOrders from '@/pages/admin/Orders';
 import AdminRequests from '@/pages/admin/Requests';
 import AdminMessages from '@/pages/admin/Messages';
+import AdminReviews from '@/pages/admin/Reviews';
 import Messages from '@/pages/Messages';
+import About from '@/pages/About';
+import ContactPage from '@/pages/ContactPage';
+import PrivacyPolicy from '@/pages/legal/PrivacyPolicy';
+import RefundPolicy from '@/pages/legal/RefundPolicy';
+import Terms from '@/pages/legal/Terms';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -49,12 +55,18 @@ const AuthenticatedApp = () => {
       <Route path="/orders" element={<Orders />} />
       <Route path="/favorites" element={<Favorites />} />
       <Route path="/messages" element={<Messages />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+      <Route path="/legal/refund" element={<RefundPolicy />} />
+      <Route path="/legal/terms" element={<Terms />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
         <Route path="products" element={<AdminProducts />} />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="requests" element={<AdminRequests />} />
         <Route path="messages" element={<AdminMessages />} />
+        <Route path="reviews" element={<AdminReviews />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

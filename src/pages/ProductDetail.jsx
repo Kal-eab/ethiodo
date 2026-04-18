@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Heart, ShoppingCart, Star, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, Heart, ShoppingCart, Star, Minus, Plus, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
+import ReviewSection from '@/components/product/ReviewSection';
+import RelatedProducts from '@/components/product/RelatedProducts';
+import Footer from '@/components/store/Footer';
 
 export default function ProductDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -30,7 +33,14 @@ export default function ProductDetail() {
     queryFn: () => base44.entities.Favorite.list(),
   });
 
+  const { data: userOrders = [] } = useQuery({
+    queryKey: ['orders'],
+    queryFn: () => base44.entities.Order.list('-created_date', 50),
+  });
+
   const fav = favorites.find(f => f.product_id === productId);
+  const favMap = {};
+  favorites.forEach(f => { favMap[f.product_id] = f.id; });
 
   const addToCart = async () => {
     await base44.entities.CartItem.create({
@@ -158,10 +168,28 @@ export default function ProductDetail() {
               </div>
 
               {product.description && (
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {product.description}
-                </p>
+                <div className="space-y-2">
+                  <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Description</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
+                </div>
               )}
+
+              {/* Trust signals */}
+              <div className="space-y-2 pt-2">
+                {[
+                  { icon: ShieldCheck, text: 'Secure checkout — 256-bit SSL' },
+                  { icon: Truck, text: 'Fast tracked delivery' },
+                  { icon: RotateCcw, text: '14-day returns policy' },
+                ].map(t => {
+                  const Icon = t.icon;
+                  return (
+                    <div key={t.text} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Icon className="w-4 h-4 text-primary flex-shrink-0" />
+                      {t.text}
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* Quantity */}
               <div className="flex items-center gap-4">
@@ -211,9 +239,16 @@ export default function ProductDetail() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-}
+            </div>
+
+            {/* Reviews & Related */}
+            <div className="mt-16 space-y-16">
+            <ReviewSection productId={productId} userOrders={userOrders} />
+            <RelatedProducts product={product} favorites={favMap} />
+            </div>
+            </div>
+            </main>
+            <Footer />
+            </div>
+            );
+            }

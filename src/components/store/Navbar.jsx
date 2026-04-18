@@ -58,6 +58,7 @@ export default function Navbar({ onSearchChange, searchValue }) {
     { label: 'Orders', path: '/orders' },
     { label: 'Favorites', path: '/favorites' },
     { label: 'Messages', path: '/messages' },
+    { label: 'About', path: '/about' },
   ];
 
   const isAdmin = user?.role === 'admin';
