@@ -187,7 +187,7 @@ function ChatUI({ user, conversationId }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <div className="flex-1 flex flex-col pt-16" style={{ height: '100vh' }}>
+      <div className="flex-1 flex flex-col pt-16 pb-16 md:pb-0" style={{ height: '100vh' }}>
         {/* Chat header */}
         <div className="border-b border-border px-4 py-3 flex items-center gap-3 bg-card/50 backdrop-blur-sm">
           <div className="w-9 h-9 bg-primary/10 border border-primary/30 rounded-full flex items-center justify-center text-xs font-bold text-primary">

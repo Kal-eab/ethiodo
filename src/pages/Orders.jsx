@@ -244,7 +244,7 @@ export default function Orders() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-16 pb-20 md:pb-0">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
           <h1 className="text-2xl font-bold mb-1">My Orders</h1>
           <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-6">Track your purchases</p>

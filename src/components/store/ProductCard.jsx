@@ -13,20 +13,29 @@ export default function ProductCard({ product, isFavorite, favoriteId }) {
   const addToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    await base44.entities.CartItem.create({
-      product_id: product.id,
-      quantity: 1,
-    });
-    queryClient.invalidateQueries({ queryKey: ['cart'] });
+    // Optimistic update
+    queryClient.setQueryData(['cart'], (old = []) => [
+      ...old,
+      { id: `temp-${Date.now()}`, product_id: product.id, quantity: 1 },
+    ]);
     toast.success('Added to cart');
+    await base44.entities.CartItem.create({ product_id: product.id, quantity: 1 });
+    queryClient.invalidateQueries({ queryKey: ['cart'] });
   };
 
   const toggleFavorite = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Optimistic update
     if (isFavorite && favoriteId) {
+      queryClient.setQueryData(['favorites'], (old = []) => old.filter(f => f.id !== favoriteId));
       await base44.entities.Favorite.delete(favoriteId);
     } else {
+      const tempId = `temp-${Date.now()}`;
+      queryClient.setQueryData(['favorites'], (old = []) => [
+        ...old,
+        { id: tempId, product_id: product.id },
+      ]);
       await base44.entities.Favorite.create({ product_id: product.id });
     }
     queryClient.invalidateQueries({ queryKey: ['favorites'] });

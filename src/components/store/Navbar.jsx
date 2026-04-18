@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Heart, Search, Menu, X, LogOut } from 'lucide-react';
+import { ShoppingCart, Heart, Search, Menu, X, LogOut, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -164,14 +164,21 @@ export default function Navbar({ onSearchChange, searchValue }) {
             </Link>
 
             {user ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-foreground"
-                onClick={() => base44.auth.logout()}
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
+              <>
+                <Link to="/profile">
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hidden md:inline-flex">
+                    <UserCircle className="w-5 h-5" />
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground hidden md:inline-flex"
+                  onClick={() => base44.auth.logout()}
+                >
+                  <LogOut className="w-5 h-5" />
+                </Button>
+              </>
             ) : null}
 
             {/* Mobile menu toggle */}
