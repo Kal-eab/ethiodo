@@ -36,54 +36,51 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar onSearchChange={setSearch} searchValue={search} />
-      <main className="pt-16 pb-20 md:pb-0">
-        {/* Hero */}
-        <section className="relative overflow-hidden border-b border-border">
-          <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-            <div className="max-w-2xl">
-              <p className="font-mono text-xs text-primary uppercase tracking-[0.3em] mb-4">
-                ethiodo
-              </p>
-              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[0.9] mb-6">
-                Ethiodo
-              </h1>
-              <p className="text-muted-foreground text-base sm:text-lg leading-relaxed max-w-lg mb-8">
-                A curated marketplace of premium products. Browse, order, and track with precision.
-              </p>
-              <div className="flex gap-3">
+
+      {/* Sticky category bar under navbar */}
+      <div className="fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2">
+        <CategoryFilter active={category} onChange={setCategory} />
+      </div>
+
+      <main className="pt-28 pb-20 md:pb-4">
+        {/* Compact Hero */}
+        <section className="border-b border-border">
+          <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <p className="font-mono text-[10px] text-primary uppercase tracking-[0.3em] mb-1">ethiodo</p>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight leading-tight">
+                  Premium Marketplace
+                </h1>
+                <p className="text-muted-foreground text-xs sm:text-sm mt-1 hidden sm:block">
+                  Browse, order, and track with precision.
+                </p>
+              </div>
+              <div className="flex gap-2">
                 <Link
                   to="/#products"
                   onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 font-mono text-sm font-medium hover:bg-primary/90 transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 font-mono text-xs font-medium hover:bg-primary/90 transition-colors"
                 >
-                  BROWSE
-                  <ArrowRight className="w-4 h-4" />
+                  BROWSE <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
                 <Link
                   to="/contact"
-                  className="inline-flex items-center gap-2 border border-border text-foreground px-6 py-3 font-mono text-sm hover:border-muted-foreground transition-colors"
+                  className="inline-flex items-center gap-1.5 border border-border text-foreground px-4 py-2 font-mono text-xs hover:border-muted-foreground transition-colors"
                 >
                   CONTACT
                 </Link>
               </div>
             </div>
           </div>
-          {/* Decorative grid */}
-          <div className="absolute top-0 right-0 w-1/2 h-full hidden lg:block opacity-10">
-            <div className="grid grid-cols-4 grid-rows-4 h-full gap-px">
-              {Array.from({ length: 16 }).map((_, i) => (
-                <div key={i} className="border border-border" />
-              ))}
-            </div>
-          </div>
         </section>
 
         {/* Products */}
-        <section id="products" className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <section id="products" className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
           {/* Mobile search */}
-          <div className="lg:hidden mb-6">
-            <div className="flex items-center bg-secondary border border-border px-3 py-2">
-              <Search className="w-4 h-4 text-muted-foreground mr-2" />
+          <div className="lg:hidden mb-4">
+            <div className="flex items-center bg-secondary border border-border px-3 py-2.5 w-full">
+              <Search className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0" />
               <input
                 type="text"
                 placeholder="Search products..."
@@ -91,39 +88,39 @@ export default function Home() {
                 onChange={e => setSearch(e.target.value)}
                 className="bg-transparent text-sm outline-none w-full placeholder:text-muted-foreground"
               />
+              {search && (
+                <button onClick={() => setSearch('')} className="ml-1 text-muted-foreground">
+                  <Search className="w-3 h-3" />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Category filter — NOT sticky, stays at top of product section */}
-          <div className="py-4 mb-8 border-b border-border -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-            <CategoryFilter active={category} onChange={setCategory} />
-          </div>
-
           {/* Results count */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
               {filtered.length} product{filtered.length !== 1 ? 's' : ''}
             </p>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {Array.from({ length: 10 }).map((_, i) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="bg-card border border-border animate-pulse">
                   <div className="aspect-square bg-secondary" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 bg-secondary w-3/4" />
-                    <div className="h-5 bg-secondary w-1/3" />
+                  <div className="p-3 space-y-2">
+                    <div className="h-3 bg-secondary w-3/4" />
+                    <div className="h-4 bg-secondary w-1/3" />
                   </div>
                 </div>
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-24">
+            <div className="text-center py-16">
               <p className="font-mono text-muted-foreground text-sm">NO PRODUCTS FOUND</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {filtered.map(product => (
                 <ProductCard
                   key={product.id}

@@ -67,7 +67,7 @@ function ContactInput({ user, onSent }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <div className="flex-1 flex flex-col items-center justify-center px-4 pt-16">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 pt-20 pb-24">
         <div className="w-full max-w-lg">
           <div className="text-center mb-10">
             <div className="w-16 h-16 bg-primary/10 border border-primary/30 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -185,71 +185,69 @@ function ChatUI({ user, conversationId }) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
-      <div className="flex-1 flex flex-col pt-16 pb-16 md:pb-0" style={{ height: '100vh' }}>
-        {/* Chat header */}
-        <div className="border-b border-border px-4 py-3 flex items-center gap-3 bg-card/50 backdrop-blur-sm">
-          <div className="w-9 h-9 bg-primary/10 border border-primary/30 rounded-full flex items-center justify-center text-xs font-bold text-primary">
-            S
-          </div>
-          <div>
-            <p className="font-medium text-sm">Support Team</p>
-            <p className="font-mono text-[11px] text-primary">● Online</p>
-          </div>
+    <div className="bg-background flex flex-col" style={{ height: '100dvh' }}>
+      {/* Chat header */}
+      <div className="flex-shrink-0 border-b border-border px-4 py-3 flex items-center gap-3 bg-card/50 backdrop-blur-sm pt-20">
+        <div className="w-9 h-9 bg-primary/10 border border-primary/30 rounded-full flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
+          S
         </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-          {messages.length === 0 && (
-            <div className="flex justify-center py-8">
-              <p className="font-mono text-xs text-muted-foreground">Start of conversation</p>
-            </div>
-          )}
-          {messages.map(msg => (
-            <ChatBubble key={msg.id} message={msg} />
-          ))}
-          <div ref={bottomRef} />
+        <div>
+          <p className="font-medium text-sm">Support Team</p>
+          <p className="font-mono text-[11px] text-primary">● Online</p>
         </div>
+      </div>
 
-        {/* Image preview */}
-        {imagePreview && (
-          <div className="px-4 py-2 border-t border-border bg-secondary/30 flex items-center gap-2">
-            <div className="relative inline-block">
-              <img src={imagePreview} alt="preview" className="h-14 w-auto rounded border border-border" />
-              <button onClick={removeImage} className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-            <span className="font-mono text-xs text-muted-foreground">Image attached</span>
+      {/* Messages — scrollable middle */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
+        {messages.length === 0 && (
+          <div className="flex justify-center py-8">
+            <p className="font-mono text-xs text-muted-foreground">Start of conversation</p>
           </div>
         )}
+        {messages.map(msg => (
+          <ChatBubble key={msg.id} message={msg} />
+        ))}
+        <div ref={bottomRef} />
+      </div>
 
-        {/* Input bar */}
-        <div className="border-t border-border p-3 flex gap-2 items-end bg-background">
-          <label className="cursor-pointer text-muted-foreground hover:text-primary transition-colors flex-shrink-0 pb-2">
-            <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
-            <ImageIcon className="w-5 h-5" />
-          </label>
-          <textarea
-            ref={inputRef}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-            placeholder="Message..."
-            rows={1}
-            className="flex-1 bg-secondary border border-border px-3 py-2 text-sm outline-none placeholder:text-muted-foreground resize-none rounded-xl focus:border-primary/50 transition-colors"
-            style={{ maxHeight: 120, overflowY: 'auto' }}
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={(!text.trim() && !imageFile) || sending}
-            size="icon"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full flex-shrink-0 h-9 w-9"
-          >
-            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </Button>
+      {/* Image preview */}
+      {imagePreview && (
+        <div className="flex-shrink-0 px-4 py-2 border-t border-border bg-secondary/30 flex items-center gap-2">
+          <div className="relative inline-block">
+            <img src={imagePreview} alt="preview" className="h-14 w-auto rounded border border-border" />
+            <button onClick={removeImage} className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+          <span className="font-mono text-xs text-muted-foreground">Image attached</span>
         </div>
+      )}
+
+      {/* Input bar — always pinned to bottom */}
+      <div className="flex-shrink-0 border-t border-border p-3 flex gap-2 items-end bg-background"
+        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
+        <label className="cursor-pointer text-muted-foreground hover:text-primary transition-colors flex-shrink-0 pb-2">
+          <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+          <ImageIcon className="w-5 h-5" />
+        </label>
+        <textarea
+          ref={inputRef}
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+          placeholder="Message..."
+          rows={1}
+          className="flex-1 bg-secondary border border-border px-3 py-2 text-sm outline-none placeholder:text-muted-foreground resize-none rounded-xl focus:border-primary/50 transition-colors"
+          style={{ maxHeight: 100, overflowY: 'auto' }}
+        />
+        <Button
+          onClick={sendMessage}
+          disabled={(!text.trim() && !imageFile) || sending}
+          size="icon"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full flex-shrink-0 h-9 w-9"
+        >
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        </Button>
       </div>
     </div>
   );
@@ -282,19 +280,14 @@ export default function Messages() {
 
   if (loadingUser || (conversationId && loadingMessages)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="fixed inset-0 bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent animate-spin" />
       </div>
     );
   }
 
   if (!hasMessages) {
-    return (
-      <ContactInput
-        user={user}
-        onSent={() => setHasMessages(true)}
-      />
-    );
+    return <ContactInput user={user} onSent={() => setHasMessages(true)} />;
   }
 
   return <ChatUI user={user} conversationId={conversationId} />;

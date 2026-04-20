@@ -26,9 +26,11 @@ export default function MobileTabBar() {
   if (location.pathname.startsWith('/admin')) return null;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="flex items-stretch">
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/98 backdrop-blur-xl border-t border-border"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <div className="grid grid-cols-5 h-14">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = tab.path === '/'
@@ -40,10 +42,13 @@ export default function MobileTabBar() {
             <Link
               key={tab.path}
               to={tab.path}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors relative ${
+              className={`flex flex-col items-center justify-center gap-0.5 relative transition-colors ${
                 isActive ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
+              {isActive && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-b" />
+              )}
               <div className="relative">
                 <Icon className="w-5 h-5" />
                 {isCart && cartCount > 0 && (
@@ -52,10 +57,7 @@ export default function MobileTabBar() {
                   </span>
                 )}
               </div>
-              <span className="font-mono text-[9px] uppercase tracking-wider">{tab.label}</span>
-              {isActive && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary" />
-              )}
+              <span className="font-mono text-[9px] uppercase leading-none">{tab.label}</span>
             </Link>
           );
         })}

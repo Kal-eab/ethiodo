@@ -14,12 +14,12 @@ const CATEGORIES = [
 
 export default function CategoryFilter({ active, onChange }) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+    <div className="flex gap-1.5 overflow-x-auto scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
       {CATEGORIES.map(cat => (
         <button
           key={cat.value}
           onClick={() => onChange(cat.value)}
-          className={`px-4 py-2 text-xs font-mono uppercase tracking-wider whitespace-nowrap border transition-all duration-200 ${
+          className={`px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider whitespace-nowrap flex-shrink-0 border transition-all duration-200 ${
             active === cat.value
               ? 'bg-primary text-primary-foreground border-primary'
               : 'bg-transparent text-muted-foreground border-border hover:border-muted-foreground'
