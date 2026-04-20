@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Heart, Package, MessageSquare, ShoppingCart } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -14,6 +14,7 @@ const tabs = [
 
 export default function MobileTabBar() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const { data: cartItems = [] } = useQuery({
     queryKey: ['cart'],
@@ -38,11 +39,21 @@ export default function MobileTabBar() {
             : location.pathname.startsWith(tab.path);
           const isCart = tab.path === '/cart';
 
+          const handleTabPress = (e) => {
+            e.preventDefault();
+            // If already on this tab's section, reset to root path
+            if (isActive && location.pathname !== tab.path) {
+              navigate(tab.path);
+            } else {
+              navigate(tab.path);
+            }
+          };
+
           return (
-            <Link
+            <button
               key={tab.path}
-              to={tab.path}
-              className={`flex flex-col items-center justify-center gap-0.5 relative transition-colors ${
+              onClick={handleTabPress}
+              className={`flex flex-col items-center justify-center gap-0.5 relative transition-colors w-full ${
                 isActive ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
@@ -58,7 +69,7 @@ export default function MobileTabBar() {
                 )}
               </div>
               <span className="font-mono text-[9px] uppercase leading-none">{tab.label}</span>
-            </Link>
+            </button>
           );
         })}
       </div>

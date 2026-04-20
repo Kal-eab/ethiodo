@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Search, X } from 'lucide-react';
 import Footer from '@/components/store/Footer';
@@ -7,10 +7,13 @@ import ProductCard from '@/components/store/ProductCard';
 import CategoryFilter from '@/components/store/CategoryFilter';
 import Navbar from '@/components/store/Navbar';
 import { searchProducts } from '@/lib/searchProducts';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
 
 export default function Home() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
+  const queryClient = useQueryClient();
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
@@ -21,6 +24,13 @@ export default function Home() {
     queryKey: ['favorites'],
     queryFn: () => base44.entities.Favorite.list(),
   });
+
+  const handleRefresh = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['products'] });
+    await queryClient.invalidateQueries({ queryKey: ['favorites'] });
+  }, [queryClient]);
+
+  const { pulling, progress } = usePullToRefresh(handleRefresh);
 
   const favMap = {};
   favorites.forEach(f => { favMap[f.product_id] = f.id; });
@@ -34,6 +44,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      <PullToRefreshIndicator progress={progress} pulling={pulling} />
       <Navbar onSearchChange={setSearch} searchValue={search} />
 
       {/* Sticky category bar under navbar */}

@@ -11,21 +11,35 @@ export default function Navbar({ onSearchChange, searchValue }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
-    return document.documentElement.classList.contains('dark') ||
-      !document.documentElement.classList.contains('light');
+    // Respect saved preference, else fall back to system
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   const searchRef = useRef(null);
   const location = useLocation();
 
+  // Apply theme to <html> and persist preference
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
     } else {
       document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
     }
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
+
+  // Listen for OS-level theme changes (only if user hasn't manually set a preference)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e) => {
+      if (!localStorage.getItem('theme')) {
+        setDarkMode(e.matches);
+      }
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Package, Star, Upload, X, Loader2, CheckCircle } from 'lucide-react';
@@ -6,6 +6,8 @@ import { format } from 'date-fns';
 import Navbar from '@/components/store/Navbar';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
 
 const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered'];
 
@@ -237,12 +239,17 @@ export default function Orders() {
     enabled: !!user?.email,
   });
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['my-orders', user?.email] });
+  const refresh = useCallback(() =>
+    queryClient.invalidateQueries({ queryKey: ['my-orders', user?.email] }),
+    [queryClient, user?.email]
+  );
 
+  const { pulling, progress } = usePullToRefresh(refresh);
   const tabOrders = orders.filter(o => o.status === activeTab);
 
   return (
     <div className="min-h-screen bg-background">
+      <PullToRefreshIndicator progress={progress} pulling={pulling} />
       <Navbar />
       <main className="pt-16 pb-20 md:pb-0">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
