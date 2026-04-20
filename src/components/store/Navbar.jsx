@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Heart, Search, Menu, X, LogOut, UserCircle, Home, Sun, Moon, LogIn } from 'lucide-react';
+import { ShoppingCart, Heart, Search, Menu, X, LogOut, UserCircle, Sun, Moon, LogIn } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { getAutocompleteSuggestions } from '@/lib/searchProducts';
@@ -80,7 +80,6 @@ export default function Navbar({ onSearchChange, searchValue }) {
   };
 
   const isAdmin = user?.role === 'admin';
-  const isHome = location.pathname === '/';
 
   const navLinks = [
     { label: 'Shop', path: '/' },
@@ -110,20 +109,6 @@ export default function Navbar({ onSearchChange, searchValue }) {
             <span className="font-bold text-base tracking-tight hidden sm:block text-white" style={{ textShadow: '0 0 12px rgba(180,255,0,0.3)' }}>
               ETHIODO
             </span>
-          </Link>
-
-          {/* Home button */}
-          <Link
-            to="/"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0"
-            style={{
-              background: isHome ? 'rgba(180,255,0,0.15)' : 'rgba(255,255,255,0.06)',
-              border: isHome ? '1px solid rgba(180,255,0,0.5)' : '1px solid rgba(255,255,255,0.1)',
-              color: isHome ? 'hsl(72,100%,50%)' : 'rgba(255,255,255,0.7)',
-            }}
-          >
-            <Home className="w-3.5 h-3.5" />
-            Home
           </Link>
 
           {/* Search bar — center, wide */}
