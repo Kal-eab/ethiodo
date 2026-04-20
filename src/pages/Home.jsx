@@ -64,9 +64,7 @@ export default function Home() {
                 Your premium online marketplace.
               </p>
             </div>
-            <div className="ml-auto hidden sm:flex items-center gap-2 font-mono text-[10px] text-muted-foreground">
-              <span className="text-primary">●</span> {filtered.length} products
-            </div>
+
           </div>
         </section>
 
