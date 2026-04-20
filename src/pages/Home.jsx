@@ -45,14 +45,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <PullToRefreshIndicator progress={progress} pulling={pulling} />
-      <Navbar onSearchChange={setSearch} searchValue={search} />
+      <Navbar onSearchChange={setSearch} searchValue={search} category={category} onCategoryChange={setCategory} />
 
-      {/* Sticky category bar under navbar */}
-      <div className="fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2">
+      {/* Sticky category bar under navbar — desktop only */}
+      <div className="hidden md:block fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2">
         <CategoryFilter active={category} onChange={setCategory} />
       </div>
 
-      <main className="pt-28 pb-20 md:pb-4">
+      <main className="pt-16 md:pt-28 pb-20 md:pb-4">
         {/* Ultra-compact hero */}
         <section className="border-b border-border/50 bg-card/20">
           <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
