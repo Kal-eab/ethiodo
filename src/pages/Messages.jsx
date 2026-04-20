@@ -5,6 +5,7 @@ import { Send, Image as ImageIcon, X, Loader2, MessageSquare, ArrowLeft } from '
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import Navbar from '@/components/store/Navbar';
+import MobileHeader from '@/components/store/MobileHeader';
 
 // ─── Chat bubble ────────────────────────────────────────────────────────────
 function ChatBubble({ message }) {
@@ -66,6 +67,7 @@ function ContactInput({ user, onSent }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <MobileHeader title="Messages" />
       <Navbar />
       <div className="flex-1 flex flex-col items-center justify-center px-4 pt-20 pb-24">
         <div className="w-full max-w-lg">

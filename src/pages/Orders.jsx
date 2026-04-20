@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Package, Star, Upload, X, Loader2, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import Navbar from '@/components/store/Navbar';
+import MobileHeader from '@/components/store/MobileHeader';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -249,6 +250,7 @@ export default function Orders() {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader title="My Orders" />
       <PullToRefreshIndicator progress={progress} pulling={pulling} />
       <Navbar />
       <main className="pt-16 pb-20 md:pb-0">

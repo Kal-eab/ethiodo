@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
+import MobileHeader from '@/components/store/MobileHeader';
 import ReviewSection from '@/components/product/ReviewSection';
 import RelatedProducts from '@/components/product/RelatedProducts';
 import Footer from '@/components/store/Footer';
@@ -96,11 +97,12 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader title={product?.name || 'Product'} />
       <Navbar />
       <main className="pt-16">
         <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Breadcrumb */}
-          <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground text-sm font-mono mb-8 hover:text-foreground transition-colors">
+          {/* Breadcrumb — desktop only */}
+          <Link to="/" className="hidden md:inline-flex items-center gap-2 text-muted-foreground text-sm font-mono mb-8 hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
             BACK
           </Link>

@@ -1,10 +1,12 @@
 import React from 'react';
 import Navbar from '@/components/store/Navbar';
+import MobileHeader from '@/components/store/MobileHeader';
 import Footer from '@/components/store/Footer';
 
 export default function RefundPolicy() {
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader title="Refund Policy" />
       <Navbar />
       <main className="pt-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16">

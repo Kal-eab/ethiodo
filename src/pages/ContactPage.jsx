@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/store/Navbar';
+import MobileHeader from '@/components/store/MobileHeader';
 import Footer from '@/components/store/Footer';
 import { Link } from 'react-router-dom';
 
@@ -36,6 +37,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader title="Contact Us" />
       <Navbar />
       <main className="pt-16">
         <section className="border-b border-border">

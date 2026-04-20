@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
+import MobileHeader from '@/components/store/MobileHeader';
 
 export default function Checkout() {
   const [step, setStep] = useState(1);
@@ -108,10 +109,11 @@ export default function Checkout() {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader title="Checkout" />
       <Navbar />
       <main className="pt-16">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-          <Link to="/cart" className="inline-flex items-center gap-2 text-muted-foreground text-sm font-mono mb-8 hover:text-foreground transition-colors">
+          <Link to="/cart" className="hidden md:inline-flex items-center gap-2 text-muted-foreground text-sm font-mono mb-8 hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" /> BACK TO CART
           </Link>
 

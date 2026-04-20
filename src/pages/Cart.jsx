@@ -5,6 +5,7 @@ import { Trash2, Minus, Plus, ShoppingCart, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/store/Navbar';
+import MobileHeader from '@/components/store/MobileHeader';
 
 export default function Cart() {
   const queryClient = useQueryClient();
@@ -47,6 +48,7 @@ export default function Cart() {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader title="Cart" />
       <Navbar />
       <main className="pt-16">
         <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">

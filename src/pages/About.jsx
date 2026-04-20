@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck, Truck, HeartHandshake, Star, Users, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/store/Navbar';
+import MobileHeader from '@/components/store/MobileHeader';
 import Footer from '@/components/store/Footer';
 
 const values = [
@@ -21,6 +22,7 @@ const stats = [
 export default function About() {
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader title="About Us" />
       <Navbar />
       <main className="pt-16">
         {/* Hero */}

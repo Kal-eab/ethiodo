@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Heart, Package, MessageSquare, ShoppingCart } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -12,6 +12,16 @@ const tabs = [
   { path: '/messages', icon: MessageSquare, label: 'Messages' },
 ];
 
+// Save current path for a tab's root
+function saveTabPath(tabPath, currentPath) {
+  sessionStorage.setItem(`tab_stack_${tabPath}`, currentPath);
+}
+
+// Get last saved path for a tab (falls back to tab root)
+function getTabPath(tabPath) {
+  return sessionStorage.getItem(`tab_stack_${tabPath}`) || tabPath;
+}
+
 export default function MobileTabBar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -22,6 +32,18 @@ export default function MobileTabBar() {
   });
 
   const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+
+  // Persist current path into the active tab's stack on every navigation
+  useEffect(() => {
+    const activeTab = tabs.find(t =>
+      t.path === '/'
+        ? location.pathname === '/' || location.pathname.startsWith('/product')
+        : location.pathname.startsWith(t.path)
+    );
+    if (activeTab) {
+      saveTabPath(activeTab.path, location.pathname + location.search);
+    }
+  }, [location.pathname]);
 
   // Hide on admin pages
   if (location.pathname.startsWith('/admin')) return null;
@@ -35,17 +57,19 @@ export default function MobileTabBar() {
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = tab.path === '/'
-            ? location.pathname === '/'
+            ? location.pathname === '/' || location.pathname.startsWith('/product')
             : location.pathname.startsWith(tab.path);
           const isCart = tab.path === '/cart';
 
-          const handleTabPress = (e) => {
-            e.preventDefault();
-            // If already on this tab's section, reset to root path
-            if (isActive && location.pathname !== tab.path) {
-              navigate(tab.path);
+          const handleTabPress = () => {
+            if (isActive) {
+              // Already on this tab — reset to root
+              navigate(tab.path, { replace: true });
+              saveTabPath(tab.path, tab.path);
             } else {
-              navigate(tab.path);
+              // Restore last position in this tab's stack
+              const savedPath = getTabPath(tab.path);
+              navigate(savedPath);
             }
           };
 

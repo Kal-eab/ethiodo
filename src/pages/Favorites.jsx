@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/store/Navbar';
+import MobileHeader from '@/components/store/MobileHeader';
 import ProductCard from '@/components/store/ProductCard';
 
 export default function Favorites() {
@@ -29,6 +30,7 @@ export default function Favorites() {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader title="Favorites" />
       <Navbar />
       <main className="pt-16 pb-20 md:pb-0">
         <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">

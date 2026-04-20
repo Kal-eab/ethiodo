@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/store/Navbar';
+import MobileHeader from '@/components/store/MobileHeader';
 import { toast } from 'sonner';
 
 export default function Profile() {
@@ -48,6 +49,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader title="Profile" />
       <Navbar />
       <main className="pt-16 pb-24">
         <div className="max-w-lg mx-auto px-4 sm:px-6 py-8">
