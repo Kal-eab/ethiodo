@@ -53,21 +53,6 @@ export default function Home() {
       </div>
 
       <main className="pt-16 md:pt-28 pb-20 md:pb-4">
-        {/* Ultra-compact hero */}
-        <section className="border-b border-border/50 bg-card/20">
-          <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
-            <div>
-              <h1 className="text-base sm:text-lg font-bold tracking-tight leading-none">
-                Welcome to <span className="text-primary">Ethiodo</span>
-              </h1>
-              <p className="text-muted-foreground text-[11px] mt-0.5 hidden sm:block">
-                Your premium online marketplace.
-              </p>
-            </div>
-
-          </div>
-        </section>
-
         {/* Products */}
         <section id="products" className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           {/* Mobile search */}
