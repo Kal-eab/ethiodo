@@ -96,6 +96,15 @@ export default function Navbar({ onSearchChange, searchValue }) {
       <div className="max-w-[140rem] mx-auto px-3 sm:px-5">
         <div className="flex items-center gap-2 sm:gap-3 h-14">
 
+          {/* Mobile hamburger — left of logo */}
+          <button
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded-full transition-all flex-shrink-0"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            {mobileOpen ? <X className="w-4 h-4 text-white/70" /> : <Menu className="w-4 h-4 text-white/70" />}
+          </button>
+
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 flex-shrink-0 group">
             <div className="relative">
@@ -250,14 +259,7 @@ export default function Navbar({ onSearchChange, searchValue }) {
               </Link>
             )}
 
-            {/* Mobile hamburger */}
-            <button
-              className="md:hidden flex items-center justify-center w-8 h-8 rounded-full transition-all"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
-              onClick={() => setMobileOpen(!mobileOpen)}
-            >
-              {mobileOpen ? <X className="w-4 h-4 text-white/70" /> : <Menu className="w-4 h-4 text-white/70" />}
-            </button>
+
           </div>
         </div>
       </div>
