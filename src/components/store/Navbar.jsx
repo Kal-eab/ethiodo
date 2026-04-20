@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Heart, Search, Menu, X, LogOut, UserCircle, Home, Sun, Moon, Languages, LogIn } from 'lucide-react';
+import { ShoppingCart, Heart, Search, Menu, X, LogOut, UserCircle, Home, Sun, Moon, LogIn } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { getAutocompleteSuggestions } from '@/lib/searchProducts';
@@ -10,9 +10,22 @@ export default function Navbar({ onSearchChange, searchValue }) {
   const [user, setUser] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => {
+    return document.documentElement.classList.contains('dark') ||
+      !document.documentElement.classList.contains('light');
+  });
   const searchRef = useRef(null);
   const location = useLocation();
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+    }
+  }, [darkMode]);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -180,16 +193,6 @@ export default function Navbar({ onSearchChange, searchValue }) {
             <Link to="/favorites" className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full transition-colors hover:bg-white/8">
               <Heart className="w-4 h-4 text-white/60 hover:text-white" />
             </Link>
-
-            {/* Language selector */}
-            <button
-              className="hidden md:flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}
-            >
-              <Languages className="w-3.5 h-3.5" />
-              <span>English</span>
-              <svg className="w-3 h-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-            </button>
 
             {/* Theme toggle */}
             <button
