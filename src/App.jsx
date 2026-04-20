@@ -21,6 +21,7 @@ import AdminOrders from '@/pages/admin/Orders';
 import AdminRequests from '@/pages/admin/Requests';
 import AdminMessages from '@/pages/admin/Messages';
 import AdminReviews from '@/pages/admin/Reviews';
+import ReviewInsights from '@/pages/admin/ReviewInsights';
 import Messages from '@/pages/Messages';
 import About from '@/pages/About';
 import ContactPage from '@/pages/ContactPage';
@@ -69,6 +70,7 @@ const AnimatedRoutes = () => {
             <Route path="requests" element={<AdminRequests />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="reviews" element={<AdminReviews />} />
+            <Route path="review-insights" element={<ReviewInsights />} />
           </Route>
           <Route path="*" element={<PageNotFound />} />
         </Routes>

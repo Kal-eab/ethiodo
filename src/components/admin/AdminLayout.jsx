@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, MessageSquare, ArrowLeft, Menu, X, Mail, Star } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, MessageSquare, ArrowLeft, Menu, X, Mail, Star, Sparkles } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import NotificationBell from '@/components/admin/NotificationBell';
 
@@ -11,6 +11,7 @@ const navItems = [
   { path: '/admin/messages', label: 'Messages', icon: Mail },
   { path: '/admin/requests', label: 'Requests', icon: MessageSquare },
   { path: '/admin/reviews', label: 'Reviews', icon: Star },
+  { path: '/admin/review-insights', label: 'Review Insights AI', icon: Sparkles },
 ];
 
 export default function AdminLayout() {
