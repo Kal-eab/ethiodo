@@ -43,51 +43,51 @@ export default function ProductCard({ product, isFavorite, favoriteId }) {
 
   return (
     <Link to={`/product/${product.id}`} className="group block">
-      <div className="bg-card border border-border overflow-hidden transition-all duration-300 hover:border-primary/60 hover:shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_15px_rgba(180,255,0,0.08)] hover:-translate-y-2 hover:scale-[1.02]">
-        {/* Image */}
-        <div className="relative aspect-square overflow-hidden bg-secondary">
+      <div className="bg-card border border-border/60 rounded-xl overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-[0_4px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(180,255,0,0.06)] hover:-translate-y-1">
+        {/* Image — rectangular 4:3 */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
           <img
             src={image}
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          {/* Overlay actions */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="absolute bottom-0 left-0 right-0 p-3 flex gap-2">
+          {/* Gradient overlay with cart button */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="absolute bottom-0 left-0 right-0 p-2">
               <Button
                 size="sm"
-                className="flex-1 bg-primary text-primary-foreground font-mono text-xs h-10 hover:bg-primary/90"
+                className="w-full bg-primary text-primary-foreground font-mono text-[10px] h-8 hover:bg-primary/90 rounded-lg"
                 onClick={addToCart}
               >
-                <ShoppingCart className="w-4 h-4 mr-1" />
-                ADD
+                <ShoppingCart className="w-3.5 h-3.5 mr-1" />
+                ADD TO CART
               </Button>
             </div>
           </div>
           {/* Favorite */}
           <button
             onClick={toggleFavorite}
-            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-background/50 backdrop-blur-sm border border-border/50 transition-colors hover:bg-background/80"
+            className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-background/60 backdrop-blur-sm rounded-full border border-border/40 transition-colors hover:bg-background/90"
           >
-            <Heart className={`w-4 h-4 ${isFavorite ? 'fill-primary text-primary' : 'text-white'}`} />
+            <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-primary text-primary' : 'text-white'}`} />
           </button>
           {/* Category badge */}
-          <span className="absolute top-3 left-3 px-2 py-1 bg-background/50 backdrop-blur-sm text-[10px] font-mono uppercase tracking-wider text-muted-foreground border border-border/50">
+          <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-background/60 backdrop-blur-sm text-[9px] font-mono uppercase tracking-wider text-muted-foreground rounded">
             {product.category}
           </span>
         </div>
 
         {/* Info */}
-        <div className="p-4 space-y-2">
-          <h3 className="font-medium text-sm truncate">{product.name}</h3>
+        <div className="p-2.5 space-y-1">
+          <h3 className="font-medium text-xs truncate leading-tight">{product.name}</h3>
           <div className="flex items-center justify-between">
-            <span className="font-mono font-bold text-primary text-lg">
+            <span className="font-mono font-bold text-primary text-sm">
               ${product.price?.toFixed(2)}
             </span>
             {product.rating > 0 && (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Star className="w-3 h-3 fill-primary text-primary" />
-                <span className="font-mono text-xs">{product.rating?.toFixed(1)}</span>
+              <div className="flex items-center gap-0.5 text-muted-foreground">
+                <Star className="w-2.5 h-2.5 fill-primary text-primary" />
+                <span className="font-mono text-[10px]">{product.rating?.toFixed(1)}</span>
               </div>
             )}
           </div>

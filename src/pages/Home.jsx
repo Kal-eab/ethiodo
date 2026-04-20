@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Search, ArrowRight } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import Footer from '@/components/store/Footer';
-import { Link } from 'react-router-dom';
 import ProductCard from '@/components/store/ProductCard';
 import CategoryFilter from '@/components/store/CategoryFilter';
 import Navbar from '@/components/store/Navbar';
@@ -43,43 +42,28 @@ export default function Home() {
       </div>
 
       <main className="pt-28 pb-20 md:pb-4">
-        {/* Compact Hero */}
-        <section className="border-b border-border">
-          <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <p className="font-mono text-[10px] text-primary uppercase tracking-[0.3em] mb-1">ethiodo</p>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight leading-tight">
-                  Premium Marketplace
-                </h1>
-                <p className="text-muted-foreground text-xs sm:text-sm mt-1 hidden sm:block">
-                  Browse, order, and track with precision.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Link
-                  to="/#products"
-                  onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 font-mono text-xs font-medium hover:bg-primary/90 transition-colors"
-                >
-                  BROWSE <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-                <Link
-                  to="/contact"
-                  className="inline-flex items-center gap-1.5 border border-border text-foreground px-4 py-2 font-mono text-xs hover:border-muted-foreground transition-colors"
-                >
-                  CONTACT
-                </Link>
-              </div>
+        {/* Ultra-compact hero */}
+        <section className="border-b border-border/50 bg-card/20">
+          <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
+            <div>
+              <h1 className="text-base sm:text-lg font-bold tracking-tight leading-none">
+                Welcome to <span className="text-primary">Ethiodo</span>
+              </h1>
+              <p className="text-muted-foreground text-[11px] mt-0.5 hidden sm:block">
+                Your premium online marketplace.
+              </p>
+            </div>
+            <div className="ml-auto hidden sm:flex items-center gap-2 font-mono text-[10px] text-muted-foreground">
+              <span className="text-primary">●</span> {filtered.length} products
             </div>
           </div>
         </section>
 
         {/* Products */}
-        <section id="products" className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <section id="products" className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           {/* Mobile search */}
-          <div className="lg:hidden mb-4">
-            <div className="flex items-center bg-secondary border border-border px-3 py-2.5 w-full">
+          <div className="lg:hidden mb-3">
+            <div className="flex items-center bg-secondary border border-border px-3 py-2 w-full rounded-lg">
               <Search className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0" />
               <input
                 type="text"
@@ -90,27 +74,20 @@ export default function Home() {
               />
               {search && (
                 <button onClick={() => setSearch('')} className="ml-1 text-muted-foreground">
-                  <Search className="w-3 h-3" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
           </div>
 
-          {/* Results count */}
-          <div className="flex items-center justify-between mb-4">
-            <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-              {filtered.length} product{filtered.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-
           {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="bg-card border border-border animate-pulse">
-                  <div className="aspect-square bg-secondary" />
-                  <div className="p-3 space-y-2">
-                    <div className="h-3 bg-secondary w-3/4" />
-                    <div className="h-4 bg-secondary w-1/3" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="bg-card border border-border rounded-xl animate-pulse overflow-hidden">
+                  <div className="aspect-[4/3] bg-secondary" />
+                  <div className="p-2.5 space-y-1.5">
+                    <div className="h-3 bg-secondary rounded w-3/4" />
+                    <div className="h-4 bg-secondary rounded w-1/3" />
                   </div>
                 </div>
               ))}
@@ -120,7 +97,7 @@ export default function Home() {
               <p className="font-mono text-muted-foreground text-sm">NO PRODUCTS FOUND</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
               {filtered.map(product => (
                 <ProductCard
                   key={product.id}
