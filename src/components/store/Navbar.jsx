@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Heart, Search, Menu, X, LogOut, UserCircle, Sun, Moon, LogIn } from 'lucide-react';
+import { Heart, Search, Menu, X, LogOut, UserCircle, Sun, Moon, LogIn } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { getAutocompleteSuggestions } from '@/lib/searchProducts';
@@ -9,6 +9,7 @@ import CategoryFilter from '@/components/store/CategoryFilter';
 export default function Navbar({ onSearchChange, searchValue, category, onCategoryChange }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [userLoaded, setUserLoaded] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
@@ -43,7 +44,7 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
   }, []);
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.auth.me().then(u => { setUser(u); setUserLoaded(true); }).catch(() => setUserLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -56,17 +57,10 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const { data: cartItems = [] } = useQuery({
-    queryKey: ['cart'],
-    queryFn: () => base44.entities.CartItem.list(),
-  });
-
   const { data: products = [] } = useQuery({
     queryKey: ['products'],
     queryFn: () => base44.entities.Product.list('-created_date', 100),
   });
-
-  const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
   const handleSearchInput = (value) => {
     onSearchChange(value);
@@ -183,17 +177,6 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
 
           {/* Right side actions */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* Cart — visible on mobile too */}
-            <Link to="/cart" className="relative flex items-center justify-center w-8 h-8 rounded-full transition-colors hover:bg-white/8">
-              <ShoppingCart className="w-4 h-4 text-white/60 hover:text-white" />
-              {cartCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full"
-                  style={{ background: 'hsl(72,100%,50%)', color: '#0a0a0a' }}>
-                  {cartCount > 9 ? '9+' : cartCount}
-                </span>
-              )}
-            </Link>
-
             {/* Favorites — desktop only */}
             <Link to="/favorites" className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full transition-colors hover:bg-white/8">
               <Heart className="w-4 h-4 text-white/60 hover:text-white" />
@@ -208,7 +191,7 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
             </button>
 
             {/* Login / Profile — desktop only */}
-            {user ? (
+            {userLoaded && (user ? (
               <div className="hidden md:flex items-center gap-1.5">
                 <Link to="/profile"
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
@@ -231,7 +214,7 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
               >
                 <LogIn className="w-3.5 h-3.5" /> Login
               </button>
-            )}
+            ))}
 
             {isAdmin && (
               <Link to="/admin"
@@ -243,14 +226,11 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
             )}
           </div>
         </div>
-
-        {/* ── Row 2: desktop search row categories (only on desktop, categories stay in navbar row above) ── */}
       </div>
 
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden px-4 pb-4 pt-2" style={{ background: '#111', borderTop: '1px solid rgba(180,255,0,0.1)' }}>
-          {/* Mobile search if not already shown */}
           {!onSearchChange && (
             <div className="mb-3 flex items-center rounded-full px-3 py-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
               <Search className="w-4 h-4 mr-2 text-white/30" />
@@ -278,22 +258,36 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
                 Admin Panel
               </Link>
             )}
-            <div className="flex items-center gap-2 pt-2 border-t mt-1" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-              <Link to="/cart" className="relative flex items-center gap-1.5 px-3 py-2 rounded-full text-xs text-white/60" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                <ShoppingCart className="w-4 h-4" /> Cart {cartCount > 0 && <span style={{ color: 'hsl(72,100%,50%)' }}>({cartCount})</span>}
-              </Link>
-              <Link to="/favorites" className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs text-white/60" style={{ background: 'rgba(255,255,255,0.06)' }}>
+
+            {/* Divider */}
+            <div className="border-t mt-2 pt-2" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              <Link to="/favorites" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: 'rgba(255,255,255,0.65)' }}>
                 <Heart className="w-4 h-4" /> Favorites
               </Link>
-              {user ? (
-                <button onClick={() => base44.auth.logout()} className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs text-white/60" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                  <LogOut className="w-4 h-4" /> Logout
-                </button>
+
+              {/* Login / Logout */}
+              {userLoaded && (user ? (
+                <>
+                  <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                    <UserCircle className="w-4 h-4" /> {user.full_name?.split(' ')[0] || 'Profile'}
+                  </Link>
+                  <button
+                    onClick={() => { setMobileOpen(false); base44.auth.logout(); }}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium w-full text-left"
+                    style={{ color: 'rgba(255,100,100,0.8)' }}
+                  >
+                    <LogOut className="w-4 h-4" /> Logout
+                  </button>
+                </>
               ) : (
-                <button onClick={() => base44.auth.redirectToLogin()} className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold" style={{ background: 'rgba(180,255,0,0.12)', border: '1px solid rgba(180,255,0,0.4)', color: 'hsl(72,100%,50%)' }}>
+                <button
+                  onClick={() => { setMobileOpen(false); base44.auth.redirectToLogin(); }}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold w-full text-left"
+                  style={{ color: 'hsl(72,100%,50%)' }}
+                >
                   <LogIn className="w-4 h-4" /> Login
                 </button>
-              )}
+              ))}
             </div>
           </div>
         </div>

@@ -10,8 +10,7 @@ import MobileTabBar from '@/components/store/MobileTabBar';
 
 import Home from '@/pages/Home';
 import ProductDetail from '@/pages/ProductDetail';
-import Cart from '@/pages/Cart';
-import Checkout from '@/pages/Checkout';
+import DirectPayment from '@/pages/DirectPayment';
 import Orders from '@/pages/Orders';
 import Favorites from '@/pages/Favorites';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -52,8 +51,7 @@ const AnimatedRoutes = () => {
         <Routes location={location}>
           <Route path="/" element={<Home />} />
           <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/payment" element={<DirectPayment />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/messages" element={<Messages />} />
@@ -80,7 +78,7 @@ const AnimatedRoutes = () => {
 };
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -93,10 +91,9 @@ const AuthenticatedApp = () => {
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
     }
+    // auth_required: allow browsing — only block on actual purchase actions
+    // so we intentionally fall through and render the app for all other errors
   }
 
   return (

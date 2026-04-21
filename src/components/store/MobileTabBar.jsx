@@ -1,13 +1,10 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Heart, Package, MessageSquare, ShoppingCart } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Home, Heart, Package, MessageSquare } from 'lucide-react';
 
 const tabs = [
   { path: '/', icon: Home, label: 'Shop' },
   { path: '/favorites', icon: Heart, label: 'Favorites' },
-  { path: '/cart', icon: ShoppingCart, label: 'Cart' },
   { path: '/orders', icon: Package, label: 'Orders' },
   { path: '/messages', icon: MessageSquare, label: 'Messages' },
 ];
@@ -25,13 +22,6 @@ function getTabPath(tabPath) {
 export default function MobileTabBar() {
   const location = useLocation();
   const navigate = useNavigate();
-
-  const { data: cartItems = [] } = useQuery({
-    queryKey: ['cart'],
-    queryFn: () => base44.entities.CartItem.list(),
-  });
-
-  const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
   // Persist current path into the active tab's stack on every navigation
   useEffect(() => {
@@ -59,7 +49,6 @@ export default function MobileTabBar() {
           const isActive = tab.path === '/'
             ? location.pathname === '/' || location.pathname.startsWith('/product')
             : location.pathname.startsWith(tab.path);
-          const isCart = tab.path === '/cart';
 
           const handleTabPress = () => {
             if (isActive) {
@@ -86,11 +75,6 @@ export default function MobileTabBar() {
               )}
               <div className="relative">
                 <Icon className="w-5 h-5" />
-                {isCart && cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[9px] font-mono font-bold w-4 h-4 flex items-center justify-center rounded-full">
-                    {cartCount > 9 ? '9+' : cartCount}
-                  </span>
-                )}
               </div>
               <span className="font-mono text-[9px] uppercase leading-none">{tab.label}</span>
             </button>

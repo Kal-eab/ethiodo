@@ -1,26 +1,24 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Heart, ShoppingCart, Star } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Heart, Star, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 
 export default function ProductCard({ product, isFavorite, favoriteId }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const image = product.images?.[0] || '/placeholder.png';
 
-  const addToCart = async (e) => {
+  const handleBuy = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Optimistic update
-    queryClient.setQueryData(['cart'], (old = []) => [
-      ...old,
-      { id: `temp-${Date.now()}`, product_id: product.id, quantity: 1 },
-    ]);
-    toast.success('Added to cart');
-    await base44.entities.CartItem.create({ product_id: product.id, quantity: 1 });
-    queryClient.invalidateQueries({ queryKey: ['cart'] });
+    const isAuth = await base44.auth.isAuthenticated();
+    if (!isAuth) {
+      base44.auth.redirectToLogin(`/payment?product=${product.id}&qty=1`);
+      return;
+    }
+    navigate(`/payment?product=${product.id}&qty=1`);
   };
 
   const toggleFavorite = async (e) => {
@@ -57,10 +55,10 @@ export default function ProductCard({ product, isFavorite, favoriteId }) {
               <Button
                 size="sm"
                 className="w-full bg-primary text-primary-foreground font-mono text-[10px] h-8 hover:bg-primary/90 rounded-lg"
-                onClick={addToCart}
+                onClick={handleBuy}
               >
-                <ShoppingCart className="w-3.5 h-3.5 mr-1" />
-                ADD TO CART
+                <ShoppingBag className="w-3.5 h-3.5 mr-1" />
+                BUY NOW
               </Button>
             </div>
           </div>

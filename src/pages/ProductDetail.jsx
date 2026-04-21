@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Heart, ShoppingCart, Star, Minus, Plus, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Heart, Star, Minus, Plus, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
 import MobileHeader from '@/components/store/MobileHeader';
 import ReviewSection from '@/components/product/ReviewSection';
@@ -12,7 +11,6 @@ import RelatedProducts from '@/components/product/RelatedProducts';
 import Footer from '@/components/store/Footer';
 
 export default function ProductDetail() {
-  const urlParams = new URLSearchParams(window.location.search);
   const pathParts = window.location.pathname.split('/');
   const productId = pathParts[pathParts.length - 1];
   const [quantity, setQuantity] = useState(1);
@@ -43,22 +41,14 @@ export default function ProductDetail() {
   const favMap = {};
   favorites.forEach(f => { favMap[f.product_id] = f.id; });
 
-  const addToCart = async () => {
-    await base44.entities.CartItem.create({
-      product_id: productId,
-      quantity,
-    });
-    queryClient.invalidateQueries({ queryKey: ['cart'] });
-    toast.success('Added to cart');
-  };
-
-  const buyNow = async () => {
-    await base44.entities.CartItem.create({
-      product_id: productId,
-      quantity,
-    });
-    queryClient.invalidateQueries({ queryKey: ['cart'] });
-    navigate('/cart');
+  const handleBuyNow = async () => {
+    // Require login before buying
+    const isAuth = await base44.auth.isAuthenticated();
+    if (!isAuth) {
+      base44.auth.redirectToLogin(window.location.href);
+      return;
+    }
+    navigate(`/payment?product=${productId}&qty=${quantity}`);
   };
 
   const toggleFav = async () => {
@@ -101,21 +91,16 @@ export default function ProductDetail() {
       <Navbar />
       <main className="pt-16">
         <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Breadcrumb — desktop only */}
           <Link to="/" className="hidden md:inline-flex items-center gap-2 text-muted-foreground text-sm font-mono mb-8 hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
             BACK
           </Link>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
-            {/* Images - 60% */}
+            {/* Images */}
             <div className="lg:col-span-3 space-y-3">
               <div className="aspect-square bg-secondary border border-border overflow-hidden">
-                <img
-                  src={images[selectedImage]}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
+                <img src={images[selectedImage]} alt={product.name} className="w-full h-full object-cover" />
               </div>
               {images.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto">
@@ -123,9 +108,7 @@ export default function ProductDetail() {
                     <button
                       key={i}
                       onClick={() => setSelectedImage(i)}
-                      className={`w-20 h-20 flex-shrink-0 border overflow-hidden ${
-                        selectedImage === i ? 'border-primary' : 'border-border'
-                      }`}
+                      className={`w-20 h-20 flex-shrink-0 border overflow-hidden ${selectedImage === i ? 'border-primary' : 'border-border'}`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover" />
                     </button>
@@ -134,38 +117,27 @@ export default function ProductDetail() {
               )}
             </div>
 
-            {/* Details - sticky */}
+            {/* Details */}
             <div className="lg:col-span-2 lg:sticky lg:top-24 lg:self-start space-y-6">
               <div>
-                <span className="font-mono text-xs text-muted-foreground uppercase tracking-[0.2em]">
-                  {product.category}
-                </span>
+                <span className="font-mono text-xs text-muted-foreground uppercase tracking-[0.2em]">{product.category}</span>
                 <h1 className="text-2xl sm:text-3xl font-bold mt-2">{product.name}</h1>
                 {product.rating > 0 && (
                   <div className="flex items-center gap-2 mt-3">
                     <div className="flex gap-0.5">
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${i < Math.round(product.rating) ? 'fill-primary text-primary' : 'text-border'}`}
-                        />
+                        <Star key={i} className={`w-4 h-4 ${i < Math.round(product.rating) ? 'fill-primary text-primary' : 'text-border'}`} />
                       ))}
                     </div>
-                    <span className="font-mono text-sm text-muted-foreground">
-                      {product.rating?.toFixed(1)}
-                    </span>
+                    <span className="font-mono text-sm text-muted-foreground">{product.rating?.toFixed(1)}</span>
                   </div>
                 )}
               </div>
 
               <div className="border-t border-b border-border py-6">
-                <span className="font-mono text-3xl font-bold text-primary">
-                  ${product.price?.toFixed(2)}
-                </span>
+                <span className="font-mono text-3xl font-bold text-primary">${product.price?.toFixed(2)}</span>
                 {product.stock > 0 && (
-                  <p className="font-mono text-xs text-accent mt-2">
-                    IN STOCK — {product.stock} available
-                  </p>
+                  <p className="font-mono text-xs text-accent mt-2">IN STOCK — {product.stock} available</p>
                 )}
               </div>
 
@@ -179,7 +151,7 @@ export default function ProductDetail() {
               {/* Trust signals */}
               <div className="space-y-2 pt-2">
                 {[
-                  { icon: ShieldCheck, text: 'Secure checkout — 256-bit SSL' },
+                  { icon: ShieldCheck, text: 'Secure payment — verified orders' },
                   { icon: Truck, text: 'Fast tracked delivery' },
                   { icon: RotateCcw, text: '14-day returns policy' },
                 ].map(t => {
@@ -197,17 +169,11 @@ export default function ProductDetail() {
               <div className="flex items-center gap-4">
                 <span className="font-mono text-xs text-muted-foreground uppercase">Qty</span>
                 <div className="flex items-center border border-border">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                     <Minus className="w-4 h-4" />
                   </button>
                   <span className="w-12 text-center font-mono">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
@@ -216,41 +182,31 @@ export default function ProductDetail() {
               {/* Actions */}
               <div className="space-y-3">
                 <Button
-                  onClick={buyNow}
+                  onClick={handleBuyNow}
                   className="w-full h-12 bg-primary text-primary-foreground font-mono font-bold tracking-wider hover:bg-primary/90"
                 >
                   BUY NOW — ${(product.price * quantity).toFixed(2)}
                 </Button>
-                <div className="flex gap-3">
-                  <Button
-                    onClick={addToCart}
-                    variant="outline"
-                    className="flex-1 h-12 font-mono text-sm border-border hover:border-foreground"
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    ADD TO CART
-                  </Button>
-                  <Button
-                    onClick={toggleFav}
-                    variant="outline"
-                    size="icon"
-                    className={`h-12 w-12 border-border hover:border-foreground ${fav ? 'text-primary border-primary' : ''}`}
-                  >
-                    <Heart className={`w-4 h-4 ${fav ? 'fill-primary' : ''}`} />
-                  </Button>
-                </div>
+                <Button
+                  onClick={toggleFav}
+                  variant="outline"
+                  className={`w-full h-12 border-border hover:border-foreground font-mono text-sm ${fav ? 'text-primary border-primary' : ''}`}
+                >
+                  <Heart className={`w-4 h-4 mr-2 ${fav ? 'fill-primary' : ''}`} />
+                  {fav ? 'SAVED TO FAVORITES' : 'SAVE TO FAVORITES'}
+                </Button>
               </div>
             </div>
-            </div>
+          </div>
 
-            {/* Reviews & Related */}
-            <div className="mt-16 space-y-16">
+          {/* Reviews & Related */}
+          <div className="mt-16 space-y-16">
             <ReviewSection productId={productId} userOrders={userOrders} />
             <RelatedProducts product={product} favorites={favMap} />
-            </div>
-            </div>
-            </main>
-            <Footer />
-            </div>
-            );
-            }
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
