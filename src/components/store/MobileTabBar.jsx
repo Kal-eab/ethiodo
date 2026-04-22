@@ -35,8 +35,10 @@ export default function MobileTabBar() {
     }
   }, [location.pathname]);
 
-  // Hide on admin pages
+  // Hide on admin pages and pages with their own sticky bottom bars
   if (location.pathname.startsWith('/admin')) return null;
+  if (location.pathname.startsWith('/product/')) return null;
+  if (location.pathname.startsWith('/payment')) return null;
 
   return (
     <nav
