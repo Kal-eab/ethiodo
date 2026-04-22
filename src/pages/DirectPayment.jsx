@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Upload, Loader2, CheckCircle, ArrowLeft, ShieldCheck, CreditCard, Smartphone, MapPin, Phone, Pencil, X, Minus, Plus } from 'lucide-react';
@@ -106,6 +106,8 @@ export default function DirectPayment() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [editingAddress, setEditingAddress] = useState(false);
+  const [activeImage, setActiveImage] = useState(0);
+  const sliderRef = useRef(null);
   // shipping snapshot (might differ from profile if user edits inline)
   const [shipping, setShipping] = useState(null);
 
@@ -239,15 +241,50 @@ export default function DirectPayment() {
 
 
 
-          {/* ── Product card — full-width image + info + qty (same on mobile & desktop) ── */}
+          {/* ── Product card — swipeable image carousel + info + qty ── */}
           <div className="bg-card border border-border mb-3 overflow-hidden">
-            {product.images?.[0] && (
-              <img
-                src={product.images[0]}
-                alt={product.name}
-                className="w-full object-cover"
-                style={{ aspectRatio: '4/5' }}
-              />
+            {product.images?.length > 0 && (
+              <div className="relative" style={{ aspectRatio: '4/5' }}>
+                {/* Slides */}
+                <div
+                  ref={sliderRef}
+                  className="flex h-full overflow-x-auto scrollbar-none snap-x snap-mandatory"
+                  style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}
+                  onScroll={e => {
+                    const idx = Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth);
+                    setActiveImage(idx);
+                  }}
+                >
+                  {product.images.map((img, i) => (
+                    <div key={i} className="flex-shrink-0 w-full h-full snap-center">
+                      <img src={img} alt={product.name} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Dot indicators */}
+                {product.images.length > 1 && (
+                  <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                    {product.images.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          sliderRef.current?.scrollTo({ left: i * sliderRef.current.clientWidth, behavior: 'smooth' });
+                          setActiveImage(i);
+                        }}
+                        className={`rounded-full transition-all ${i === activeImage ? 'w-4 h-1.5 bg-primary' : 'w-1.5 h-1.5 bg-white/50'}`}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Image counter badge */}
+                {product.images.length > 1 && (
+                  <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white font-mono text-[10px] px-2 py-0.5 rounded-full">
+                    {activeImage + 1}/{product.images.length}
+                  </div>
+                )}
+              </div>
             )}
             <div className="p-4">
               <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{product.category}</p>
