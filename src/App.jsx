@@ -1,4 +1,6 @@
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster"
+import { base44 } from '@/api/base44Client';
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
@@ -7,6 +9,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import MobileTabBar from '@/components/store/MobileTabBar';
+import RegistrationModal from '@/components/store/RegistrationModal';
 
 import Home from '@/pages/Home';
 import ProductDetail from '@/pages/ProductDetail';
@@ -79,6 +82,20 @@ const AnimatedRoutes = () => {
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
+  const [user, setUser] = React.useState(null);
+  const [showRegistration, setShowRegistration] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isLoadingAuth) {
+      base44.auth.me().then(u => {
+        setUser(u);
+        // Show registration modal if logged in but profile not complete
+        if (u && !u.profile_complete) {
+          setShowRegistration(true);
+        }
+      }).catch(() => {});
+    }
+  }, [isLoadingAuth]);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -92,14 +109,21 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     }
-    // auth_required: allow browsing — only block on actual purchase actions
-    // so we intentionally fall through and render the app for all other errors
   }
 
   return (
     <>
       <AnimatedRoutes />
       <MobileTabBar />
+      {showRegistration && user && (
+        <RegistrationModal
+          user={user}
+          onComplete={() => {
+            setShowRegistration(false);
+            base44.auth.me().then(setUser).catch(() => {});
+          }}
+        />
+      )}
     </>
   );
 };

@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Upload, Loader2, CheckCircle, ArrowLeft, ShieldCheck, CreditCard, Smartphone } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, ArrowLeft, ShieldCheck, CreditCard, Smartphone, MapPin, Phone, Pencil, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
 import MobileHeader from '@/components/store/MobileHeader';
+import { REGIONS, REGIONS_CITIES } from '@/lib/ethiopiaRegions';
 
-// ── Pull productId & quantity from URL ────────────────────────────────────────
 function getParams() {
   const p = new URLSearchParams(window.location.search);
-  return {
-    productId: p.get('product'),
-    quantity: parseInt(p.get('qty') || '1', 10),
-  };
+  return { productId: p.get('product'), quantity: parseInt(p.get('qty') || '1', 10) };
 }
 
-// Payment account details — edit these to match your real accounts
 const PAYMENT_ACCOUNTS = [
   {
     icon: CreditCard,
@@ -39,6 +35,67 @@ const PAYMENT_ACCOUNTS = [
   },
 ];
 
+// ─── Inline address editor ────────────────────────────────────────────────────
+function AddressEditor({ user, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    phone: user?.phone || '',
+    region: user?.region || '',
+    city: user?.city || '',
+    specific_address: user?.specific_address || '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  const cities = form.region ? (REGIONS_CITIES[form.region] || []) : [];
+  const set = (k, v) => setForm(f => { const n = { ...f, [k]: v }; if (k === 'region') n.city = ''; return n; });
+
+  const handleSave = async () => {
+    if (!form.phone) { toast.error('Phone is required'); return; }
+    if (!form.region) { toast.error('Region is required'); return; }
+    if (!form.city) { toast.error('City is required'); return; }
+    setSaving(true);
+    await base44.auth.updateMe({ ...form });
+    toast.success('Address updated');
+    setSaving(false);
+    onSave(form);
+  };
+
+  return (
+    <div className="bg-card border border-primary/40 p-5 space-y-3 mb-6">
+      <div className="flex items-center justify-between mb-1">
+        <p className="font-mono text-xs text-primary uppercase tracking-wider font-bold">Edit Shipping Info</p>
+        <button onClick={onCancel}><X className="w-4 h-4 text-muted-foreground" /></button>
+      </div>
+      <div>
+        <label className="font-mono text-xs text-muted-foreground block mb-1">Phone *</label>
+        <Input value={form.phone} onChange={e => set('phone', e.target.value)} className="bg-secondary border-border h-10" placeholder="+251 9XX XXX XXX" />
+      </div>
+      <div>
+        <label className="font-mono text-xs text-muted-foreground block mb-1">Region *</label>
+        <select value={form.region} onChange={e => set('region', e.target.value)}
+          className="w-full bg-secondary border border-border h-10 px-3 text-sm appearance-none outline-none">
+          <option value="">Select region…</option>
+          {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="font-mono text-xs text-muted-foreground block mb-1">City / Sub-city *</label>
+        <select value={form.city} onChange={e => set('city', e.target.value)} disabled={!form.region}
+          className="w-full bg-secondary border border-border h-10 px-3 text-sm appearance-none outline-none disabled:opacity-50">
+          <option value="">{form.region ? 'Select city…' : 'Select region first'}</option>
+          {cities.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="font-mono text-xs text-muted-foreground block mb-1">Specific Address</label>
+        <Input value={form.specific_address} onChange={e => set('specific_address', e.target.value)} className="bg-secondary border-border h-10" placeholder="Landmark / building" />
+      </div>
+      <Button onClick={handleSave} disabled={saving} className="w-full h-10 bg-primary text-primary-foreground font-mono text-sm hover:bg-primary/90">
+        {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Save Address
+      </Button>
+    </div>
+  );
+}
+
 export default function DirectPayment() {
   const { productId, quantity } = getParams();
   const navigate = useNavigate();
@@ -47,14 +104,20 @@ export default function DirectPayment() {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '' });
+  const [editingAddress, setEditingAddress] = useState(false);
+  // shipping snapshot (might differ from profile if user edits inline)
+  const [shipping, setShipping] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(u => {
       setUser(u);
-      setForm(f => ({ ...f, name: u.full_name || '', email: u.email || '' }));
+      setShipping({
+        phone: u.phone || '',
+        region: u.region || '',
+        city: u.city || '',
+        specific_address: u.specific_address || '',
+      });
     }).catch(() => {
-      // Not logged in — redirect to login then back
       base44.auth.redirectToLogin(window.location.href);
     });
   }, []);
@@ -68,7 +131,7 @@ export default function DirectPayment() {
     enabled: !!productId,
   });
 
-  const total = product ? (product.price * quantity) : 0;
+  const total = product ? product.price * quantity : 0;
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -82,9 +145,13 @@ export default function DirectPayment() {
 
   const handleSubmit = async () => {
     if (!proofUrl) { toast.error('Please upload your payment screenshot first'); return; }
-    if (!form.name) { toast.error('Please enter your name'); return; }
-    if (!form.address) { toast.error('Please enter your shipping address'); return; }
+    if (!shipping?.phone) { toast.error('Phone number is missing — please edit your address'); return; }
+    if (!shipping?.region || !shipping?.city) { toast.error('Shipping address is incomplete — please edit it'); return; }
+
     setSubmitting(true);
+    const shippingAddress = [
+      shipping.city, shipping.region, shipping.specific_address
+    ].filter(Boolean).join(', ');
 
     await base44.entities.Order.create({
       items: [{
@@ -97,15 +164,15 @@ export default function DirectPayment() {
       total,
       status: 'pending',
       payment_proof_url: proofUrl,
-      customer_email: form.email,
-      customer_name: form.name,
-      shipping_address: form.address,
-      phone: form.phone,
+      customer_email: user.email,
+      customer_name: user.full_name,
+      shipping_address: shippingAddress,
+      phone: shipping.phone,
     });
 
     await base44.entities.Notification.create({
       type: 'order',
-      content: `New order from ${form.name || form.email} — $${total.toFixed(2)} (${product.name})`,
+      content: `New order from ${user.full_name || user.email} — $${total.toFixed(2)} (${product.name})`,
       link: '/admin/orders',
       is_read: false,
     });
@@ -114,7 +181,7 @@ export default function DirectPayment() {
     setDone(true);
   };
 
-  if (isLoading || !user) {
+  if (isLoading || !user || !shipping) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent animate-spin" />
@@ -143,20 +210,18 @@ export default function DirectPayment() {
         <div>
           <h1 className="text-2xl font-bold mb-2">Order Received!</h1>
           <p className="text-muted-foreground text-sm max-w-sm">
-            We've received your payment screenshot and will confirm your order shortly. You can track it in your Orders page.
+            We've received your payment screenshot and will confirm your order shortly.
           </p>
         </div>
         <div className="flex gap-3">
-          <Link to="/orders">
-            <Button className="bg-primary text-primary-foreground font-mono">View My Orders</Button>
-          </Link>
-          <Link to="/">
-            <Button variant="outline" className="font-mono border-border">Continue Shopping</Button>
-          </Link>
+          <Link to="/orders"><Button className="bg-primary text-primary-foreground font-mono">View My Orders</Button></Link>
+          <Link to="/"><Button variant="outline" className="font-mono border-border">Continue Shopping</Button></Link>
         </div>
       </div>
     );
   }
+
+  const hasAddress = shipping.region && shipping.city && shipping.phone;
 
   return (
     <div className="min-h-screen bg-background">
@@ -180,6 +245,41 @@ export default function DirectPayment() {
               <p className="font-mono text-2xl font-bold text-primary mt-2">${total.toFixed(2)}</p>
             </div>
           </div>
+
+          {/* Shipping address — read only with edit option */}
+          {editingAddress ? (
+            <AddressEditor
+              user={{ ...user, ...shipping }}
+              onSave={(updated) => { setShipping(updated); setEditingAddress(false); }}
+              onCancel={() => setEditingAddress(false)}
+            />
+          ) : (
+            <div className="bg-card border border-border p-5 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Shipping To</p>
+                <button
+                  onClick={() => setEditingAddress(true)}
+                  className="flex items-center gap-1 text-xs text-primary font-mono hover:underline"
+                >
+                  <Pencil className="w-3 h-3" /> Edit
+                </button>
+              </div>
+              <p className="text-sm font-semibold">{user.full_name}</p>
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+                <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="font-mono">{shipping.phone || <span className="text-destructive">Not set</span>}</span>
+              </div>
+              {hasAddress && (
+                <div className="flex items-start gap-1.5 text-sm text-muted-foreground mt-1">
+                  <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <span>{[shipping.city, shipping.region, shipping.specific_address].filter(Boolean).join(', ')}</span>
+                </div>
+              )}
+              {!hasAddress && (
+                <p className="text-xs text-destructive mt-2 font-mono">⚠ Address incomplete — please edit before ordering</p>
+              )}
+            </div>
+          )}
 
           {/* Payment accounts */}
           <div className="mb-6 space-y-3">
@@ -209,25 +309,8 @@ export default function DirectPayment() {
           <div className="bg-primary/5 border border-primary/20 p-4 mb-6">
             <p className="font-mono text-xs font-bold text-primary uppercase mb-1">Instructions</p>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Pay <strong className="text-foreground">${total.toFixed(2)}</strong> to one of the accounts above, then take a screenshot of the confirmation and upload it below. Your order will be confirmed after we verify the payment.
+              Pay <strong className="text-foreground">${total.toFixed(2)}</strong> to one of the accounts above, then take a screenshot of the confirmation and upload it below.
             </p>
-          </div>
-
-          {/* Contact details */}
-          <div className="space-y-3 mb-6">
-            <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Your Details</p>
-            <div>
-              <label className="font-mono text-xs text-muted-foreground block mb-1">Full Name *</label>
-              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="bg-secondary border-border" />
-            </div>
-            <div>
-              <label className="font-mono text-xs text-muted-foreground block mb-1">Phone</label>
-              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+251 ..." className="bg-secondary border-border" />
-            </div>
-            <div>
-              <label className="font-mono text-xs text-muted-foreground block mb-1">Shipping Address *</label>
-              <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="bg-secondary border-border" />
-            </div>
           </div>
 
           {/* Screenshot upload */}
@@ -261,7 +344,7 @@ export default function DirectPayment() {
 
           <Button
             onClick={handleSubmit}
-            disabled={submitting || uploading || !proofUrl}
+            disabled={submitting || uploading || !proofUrl || !hasAddress}
             className="w-full h-12 bg-primary text-primary-foreground font-mono font-bold text-base hover:bg-primary/90"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}

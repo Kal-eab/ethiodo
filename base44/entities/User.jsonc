@@ -1,17 +1,39 @@
 {
+  "name": "User",
+  "type": "object",
   "properties": {
     "role": {
       "type": "string",
-      "description": "The role of the user in the app",
       "enum": [
         "admin",
         "user"
-      ]
+      ],
+      "default": "user"
+    },
+    "father_name": {
+      "type": "string",
+      "description": "Father's name"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Ethiopian phone number e.g. +251 9XX XXX XXX"
+    },
+    "region": {
+      "type": "string",
+      "description": "Ethiopian region"
+    },
+    "city": {
+      "type": "string",
+      "description": "City or sub-city"
+    },
+    "specific_address": {
+      "type": "string",
+      "description": "Specific address / landmark"
+    },
+    "profile_complete": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether user has completed registration form"
     }
-  },
-  "required": [
-    "role"
-  ],
-  "name": "User",
-  "type": "object"
+  }
 }
