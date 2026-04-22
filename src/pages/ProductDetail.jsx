@@ -214,32 +214,15 @@ export default function ProductDetail() {
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border flex items-center"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        {/* Left: icon actions */}
+        {/* Left: Favorites icon */}
         <div className="flex items-center border-r border-border flex-shrink-0">
-          {/* Favorites */}
           <button
             onClick={toggleFav}
-            className="flex flex-col items-center justify-center gap-0.5 w-14 h-14 text-muted-foreground hover:text-primary transition-colors"
+            className="flex flex-col items-center justify-center gap-0.5 w-16 h-14 text-muted-foreground hover:text-primary transition-colors"
           >
             <Heart className={`w-5 h-5 ${fav ? 'fill-primary text-primary' : ''}`} />
             <span className="font-mono text-[9px] uppercase leading-none">{fav ? 'Saved' : 'Save'}</span>
           </button>
-          {/* Qty controls */}
-          <div className="flex items-center gap-0 px-2">
-            <button
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="w-7 h-7 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground rounded"
-            >
-              <Minus className="w-3.5 h-3.5" />
-            </button>
-            <span className="w-8 text-center font-mono text-sm font-bold">{quantity}</span>
-            <button
-              onClick={() => setQuantity(quantity + 1)}
-              className="w-7 h-7 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground rounded"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
 
         {/* Right: Buy Now button */}
