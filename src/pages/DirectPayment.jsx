@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Upload, Loader2, CheckCircle, ArrowLeft, ShieldCheck, CreditCard, Smartphone, MapPin, Phone, Pencil, X, Minus, Plus } from 'lucide-react';
-import imageCompression from 'browser-image-compression';
+import { CheckCircle, ArrowLeft, CreditCard, Smartphone, MapPin, Pencil, X, Minus, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate, Link } from 'react-router-dom';
@@ -102,8 +101,7 @@ export default function DirectPayment() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [quantity, setQuantity] = useState(initialQty);
-  const [proofUrl, setProofUrl] = useState('');
-  const [uploading, setUploading] = useState(false);
+  const [transactionId, setTransactionId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [editingAddress, setEditingAddress] = useState(false);
@@ -136,47 +134,9 @@ export default function DirectPayment() {
   });
 
   const total = product ? product.price * quantity : 0;
-  const unitPrice = product ? product.price : 0;
-
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Validate: only accept images
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-    if (!file.type.startsWith('image/') && !validTypes.includes(file.type.toLowerCase())) {
-      toast.error('Please select an image file (.jpg, .png, .webp, .heic)');
-      return;
-    }
-
-    setUploading(true);
-
-    let fileToUpload = file;
-
-    // Compress if over 300 KB
-    if (file.size > 300 * 1024) {
-      try {
-        fileToUpload = await imageCompression(file, {
-          maxSizeMB: 0.3,
-          maxWidthOrHeight: 1080,
-          fileType: 'image/jpeg',
-          initialQuality: 0.8,
-          useWebWorker: true,
-        });
-      } catch {
-        // If compression fails, upload original
-        fileToUpload = file;
-      }
-    }
-
-    const { file_url } = await base44.integrations.Core.UploadFile({ file: fileToUpload });
-    setProofUrl(file_url);
-    setUploading(false);
-    toast.success('Screenshot uploaded!');
-  };
 
   const handleSubmit = async () => {
-    if (!proofUrl) { toast.error('Please upload your payment screenshot first'); return; }
+    if (!transactionId.trim()) { toast.error('Please enter your transaction ID'); return; }
     if (!shipping?.phone) { toast.error('Phone number is missing — please edit your address'); return; }
     if (!shipping?.region || !shipping?.city) { toast.error('Shipping address is incomplete — please edit it'); return; }
 
@@ -195,7 +155,7 @@ export default function DirectPayment() {
       }],
       total,
       status: 'pending',
-      payment_proof_url: proofUrl,
+      payment_proof_url: transactionId.trim(),
       customer_email: user.email,
       customer_name: user.full_name,
       shipping_address: shippingAddress,
@@ -242,7 +202,7 @@ export default function DirectPayment() {
         <div>
           <h1 className="text-2xl font-bold mb-2">Order Received!</h1>
           <p className="text-muted-foreground text-sm max-w-sm">
-            We've received your payment screenshot and will confirm your order shortly.
+            We've received your transaction ID and will confirm your order shortly.
           </p>
         </div>
         <div className="flex gap-3">
@@ -393,43 +353,26 @@ export default function DirectPayment() {
           <div className="bg-primary/5 border border-primary/20 p-4 mb-4">
             <p className="font-mono text-xs font-bold text-primary uppercase mb-1">Instructions</p>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Pay <strong className="text-foreground">${total.toFixed(2)}</strong> to one of the accounts above, then take a screenshot of the confirmation and upload it below.
+              Pay <strong className="text-foreground">${total.toFixed(2)}</strong> to one of the accounts above, then enter your transaction ID below.
             </p>
           </div>
 
-          {/* Screenshot upload */}
+          {/* Transaction ID input */}
           <div className="mb-6">
-            <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-3">Upload Payment Screenshot *</p>
-            <label className={`block border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
-              proofUrl ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground'
-            }`}>
-              <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
-              {uploading ? (
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="w-7 h-7 animate-spin text-primary" />
-                  <p className="font-mono text-xs text-muted-foreground">COMPRESSING & UPLOADING...</p>
-                </div>
-              ) : proofUrl ? (
-                <div className="flex flex-col items-center gap-3">
-                  <img src={proofUrl} alt="Payment screenshot" className="max-h-48 mx-auto border border-border" />
-                  <p className="font-mono text-xs text-primary uppercase flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Uploaded — tap to replace
-                  </p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="w-7 h-7 text-muted-foreground" />
-                  <p className="font-mono text-sm text-muted-foreground">Tap to upload screenshot</p>
-                  <p className="font-mono text-xs text-muted-foreground">JPG, PNG accepted</p>
-                </div>
-              )}
-            </label>
+            <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-2">Transaction ID *</p>
+            <Input
+              value={transactionId}
+              onChange={e => setTransactionId(e.target.value)}
+              placeholder="e.g. TXN123456789"
+              className="bg-secondary border-border h-12 font-mono text-sm"
+            />
+            <p className="font-mono text-[10px] text-muted-foreground mt-1.5">Enter the transaction / reference ID from your payment confirmation.</p>
           </div>
 
           {/* Desktop submit button */}
           <Button
             onClick={handleSubmit}
-            disabled={submitting || uploading || !proofUrl || !hasAddress}
+            disabled={submitting || !transactionId.trim() || !hasAddress}
             className="hidden md:flex w-full h-12 bg-primary text-primary-foreground font-mono font-bold text-base hover:bg-primary/90"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}
@@ -445,7 +388,7 @@ export default function DirectPayment() {
       >
         <button
           onClick={handleSubmit}
-          disabled={submitting || uploading || !proofUrl || !hasAddress}
+          disabled={submitting || !transactionId.trim() || !hasAddress}
           className="w-full h-14 bg-primary text-primary-foreground font-mono font-bold flex items-center justify-center gap-3 disabled:opacity-50 active:bg-primary/90 transition-colors"
         >
           {submitting ? (
