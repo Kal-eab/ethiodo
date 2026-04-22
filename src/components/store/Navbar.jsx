@@ -200,7 +200,7 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
                   <UserCircle className="w-3.5 h-3.5" />
                   {user.full_name?.split(' ')[0] || 'Profile'}
                 </Link>
-                <button onClick={() => base44.auth.logout()}
+                <button onClick={() => base44.auth.logout('/')}
                   className="flex items-center justify-center w-8 h-8 rounded-full transition-all"
                   style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
                 >
