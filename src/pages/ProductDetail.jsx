@@ -166,19 +166,7 @@ export default function ProductDetail() {
                 })}
               </div>
 
-              {/* Quantity — always visible on desktop; hidden on mobile (in sticky bar instead) */}
-              <div className="hidden md:flex items-center gap-4">
-                <span className="font-mono text-xs text-muted-foreground uppercase">Qty</span>
-                <div className="flex items-center border border-border">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="w-12 text-center font-mono">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+
 
               {/* Desktop Actions */}
               <div className="hidden md:block space-y-3">

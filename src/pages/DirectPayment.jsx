@@ -270,38 +270,33 @@ export default function DirectPayment() {
             )}
           </div>
 
-          {/* ── MOBILE: Product card — big image + info side by side ── */}
+          {/* ── MOBILE: Product card — full-width image + info + qty ── */}
           <div className="md:hidden bg-card border border-border mb-3 overflow-hidden">
-            <div className="flex">
-              {/* Big square image */}
-              {product.images?.[0] && (
-                <img
-                  src={product.images[0]}
-                  alt={product.name}
-                  className="w-40 h-40 object-cover flex-shrink-0"
-                />
-              )}
-              {/* Info column beside image */}
-              <div className="flex-1 min-w-0 p-3 flex flex-col justify-between">
-                <div>
-                  <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{product.category}</p>
-                  <h2 className="font-bold text-sm leading-tight mb-2">{product.name}</h2>
-                  <p className="font-mono text-xl font-black text-primary">${unitPrice.toFixed(2)}</p>
-                </div>
-                {/* Qty controls */}
-                <div className="flex items-center gap-0 border border-border rounded overflow-hidden w-fit mt-2">
-                  <button
-                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                    className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors"
-                  >
-                    <Minus className="w-3 h-3" />
+            {/* Full-width image */}
+            {product.images?.[0] && (
+              <img
+                src={product.images[0]}
+                alt={product.name}
+                className="w-full aspect-square object-cover"
+              />
+            )}
+            {/* Info + qty below image */}
+            <div className="p-4">
+              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{product.category}</p>
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="font-bold text-base leading-tight">{product.name}</h2>
+                <p className="font-mono text-xl font-black text-primary flex-shrink-0">${unitPrice.toFixed(2)}</p>
+              </div>
+              {/* Qty row */}
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+                <span className="font-mono text-xs text-muted-foreground uppercase">Quantity</span>
+                <div className="flex items-center gap-0 border border-border overflow-hidden">
+                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors">
+                    <Minus className="w-4 h-4" />
                   </button>
-                  <span className="w-9 text-center font-mono text-sm font-bold bg-secondary h-8 flex items-center justify-center">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(q => q + 1)}
-                    className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
+                  <span className="w-12 text-center font-mono font-bold bg-secondary h-10 flex items-center justify-center">{quantity}</span>
+                  <button onClick={() => setQuantity(q => q + 1)} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors">
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
               </div>
