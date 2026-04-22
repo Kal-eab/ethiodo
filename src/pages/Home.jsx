@@ -18,6 +18,8 @@ export default function Home() {
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
     queryFn: () => base44.entities.Product.list('-created_date', 100),
+    retry: false,
+    throwOnError: false,
   });
 
   const [isAuth, setIsAuth] = useState(false);

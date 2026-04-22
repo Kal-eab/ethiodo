@@ -1,6 +1,12 @@
 {
   "name": "Review",
   "type": "object",
+  "rls": {
+    "create": true,
+    "read": true,
+    "update": false,
+    "delete": false
+  },
   "properties": {
     "product_id": {
       "type": "string",

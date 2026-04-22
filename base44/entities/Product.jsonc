@@ -1,6 +1,12 @@
 {
   "name": "Product",
   "type": "object",
+  "rls": {
+    "create": false,
+    "read": true,
+    "update": false,
+    "delete": false
+  },
   "properties": {
     "name": {
       "type": "string",
