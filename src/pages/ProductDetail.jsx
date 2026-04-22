@@ -89,7 +89,8 @@ export default function ProductDetail() {
     <div className="min-h-screen bg-background">
       <MobileHeader title={product?.name || 'Product'} />
       <Navbar />
-      <main className="pt-16">
+      {/* Mobile: extra bottom padding so content isn't hidden behind sticky bar */}
+      <main className="pt-16 md:pb-0 pb-28">
         <div className="max-w-[140rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Link to="/" className="hidden md:inline-flex items-center gap-2 text-muted-foreground text-sm font-mono mb-8 hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
@@ -165,8 +166,8 @@ export default function ProductDetail() {
                 })}
               </div>
 
-              {/* Quantity */}
-              <div className="flex items-center gap-4">
+              {/* Quantity — always visible on desktop; hidden on mobile (in sticky bar instead) */}
+              <div className="hidden md:flex items-center gap-4">
                 <span className="font-mono text-xs text-muted-foreground uppercase">Qty</span>
                 <div className="flex items-center border border-border">
                   <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
@@ -179,8 +180,8 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="space-y-3">
+              {/* Desktop Actions */}
+              <div className="hidden md:block space-y-3">
                 <Button
                   onClick={handleBuyNow}
                   className="w-full h-12 bg-primary text-primary-foreground font-mono font-bold tracking-wider hover:bg-primary/90"
@@ -207,6 +208,49 @@ export default function ProductDetail() {
         </div>
       </main>
       <Footer />
+
+      {/* ── MOBILE ONLY: Sticky bottom purchase bar ── */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border flex items-center"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        {/* Left: icon actions */}
+        <div className="flex items-center border-r border-border flex-shrink-0">
+          {/* Favorites */}
+          <button
+            onClick={toggleFav}
+            className="flex flex-col items-center justify-center gap-0.5 w-14 h-14 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Heart className={`w-5 h-5 ${fav ? 'fill-primary text-primary' : ''}`} />
+            <span className="font-mono text-[9px] uppercase leading-none">{fav ? 'Saved' : 'Save'}</span>
+          </button>
+          {/* Qty controls */}
+          <div className="flex items-center gap-0 px-2">
+            <button
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="w-7 h-7 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground rounded"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <span className="w-8 text-center font-mono text-sm font-bold">{quantity}</span>
+            <button
+              onClick={() => setQuantity(quantity + 1)}
+              className="w-7 h-7 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground rounded"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Right: Buy Now button */}
+        <button
+          onClick={handleBuyNow}
+          className="flex-1 h-14 bg-primary text-primary-foreground font-mono font-bold text-sm tracking-wider flex flex-col items-center justify-center leading-tight active:bg-primary/90"
+        >
+          <span className="text-[10px] font-normal opacity-75 uppercase tracking-widest">Buy Now</span>
+          <span className="text-base font-black">${(product.price * quantity).toFixed(2)}</span>
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Upload, Loader2, CheckCircle, ArrowLeft, ShieldCheck, CreditCard, Smartphone, MapPin, Phone, Pencil, X } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, ArrowLeft, ShieldCheck, CreditCard, Smartphone, MapPin, Phone, Pencil, X, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate, Link } from 'react-router-dom';
@@ -97,9 +97,10 @@ function AddressEditor({ user, onSave, onCancel }) {
 }
 
 export default function DirectPayment() {
-  const { productId, quantity } = getParams();
+  const { productId, quantity: initialQty } = getParams();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [quantity, setQuantity] = useState(initialQty);
   const [proofUrl, setProofUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -132,6 +133,7 @@ export default function DirectPayment() {
   });
 
   const total = product ? product.price * quantity : 0;
+  const unitPrice = product ? product.price : 0;
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -225,64 +227,128 @@ export default function DirectPayment() {
 
   return (
     <div className="min-h-screen bg-background">
-      <MobileHeader title="Payment" />
+      <MobileHeader title="Place Order" />
       <Navbar />
-      <main className="pt-16 pb-20 md:pb-8">
-        <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
+
+      {/* Extra bottom padding on mobile so content isn't hidden behind sticky bar */}
+      <main className="pt-16 pb-8 md:pb-8" style={{ paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
+        <div className="max-w-xl mx-auto px-4 sm:px-6 py-4 md:py-8">
           <Link to={`/product/${productId}`} className="hidden md:inline-flex items-center gap-2 text-muted-foreground text-sm font-mono mb-8 hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" /> BACK TO PRODUCT
           </Link>
 
-          {/* Product summary */}
-          <div className="bg-card border border-border p-5 flex gap-4 mb-6">
-            {product.images?.[0] && (
-              <img src={product.images[0]} alt={product.name} className="w-20 h-20 object-cover border border-border flex-shrink-0" />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-1">{product.category}</p>
-              <h2 className="font-bold text-base truncate">{product.name}</h2>
-              <p className="font-mono text-sm text-muted-foreground mt-1">Qty: {quantity}</p>
-              <p className="font-mono text-2xl font-bold text-primary mt-2">${total.toFixed(2)}</p>
-            </div>
-          </div>
-
-          {/* Shipping address — read only with edit option */}
-          {editingAddress ? (
-            <AddressEditor
-              user={{ ...user, ...shipping }}
-              onSave={(updated) => { setShipping(updated); setEditingAddress(false); }}
-              onCancel={() => setEditingAddress(false)}
-            />
-          ) : (
-            <div className="bg-card border border-border p-5 mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Shipping To</p>
+          {/* ── MOBILE: Shipping address at top (Pinduoduo style) ── */}
+          <div className="md:hidden mb-3">
+            {editingAddress ? (
+              <AddressEditor
+                user={{ ...user, ...shipping }}
+                onSave={(updated) => { setShipping(updated); setEditingAddress(false); }}
+                onCancel={() => setEditingAddress(false)}
+              />
+            ) : (
+              <div className="bg-card border border-border p-4 flex items-start gap-3">
+                <MapPin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-semibold text-sm">{user.full_name}</span>
+                    <span className="font-mono text-sm text-muted-foreground">{shipping.phone || <span className="text-destructive text-xs">No phone</span>}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    {hasAddress
+                      ? [shipping.city, shipping.region, shipping.specific_address].filter(Boolean).join(', ')
+                      : <span className="text-destructive">⚠ Address incomplete — tap Edit</span>
+                    }
+                  </p>
+                </div>
                 <button
                   onClick={() => setEditingAddress(true)}
-                  className="flex items-center gap-1 text-xs text-primary font-mono hover:underline"
+                  className="flex items-center gap-1 text-xs text-primary font-mono flex-shrink-0 hover:underline"
                 >
                   <Pencil className="w-3 h-3" /> Edit
                 </button>
               </div>
-              <p className="text-sm font-semibold">{user.full_name}</p>
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
-                <Phone className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="font-mono">{shipping.phone || <span className="text-destructive">Not set</span>}</span>
-              </div>
-              {hasAddress && (
-                <div className="flex items-start gap-1.5 text-sm text-muted-foreground mt-1">
-                  <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                  <span>{[shipping.city, shipping.region, shipping.specific_address].filter(Boolean).join(', ')}</span>
-                </div>
-              )}
-              {!hasAddress && (
-                <p className="text-xs text-destructive mt-2 font-mono">⚠ Address incomplete — please edit before ordering</p>
-              )}
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Payment accounts */}
-          <div className="mb-6 space-y-3">
+          {/* ── MOBILE: Product row with live qty selector (Pinduoduo style) ── */}
+          <div className="md:hidden bg-card border border-border p-4 mb-3">
+            <div className="flex gap-3">
+              {product.images?.[0] && (
+                <img src={product.images[0]} alt={product.name} className="w-20 h-20 object-cover border border-border flex-shrink-0 rounded" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-mono text-[10px] text-muted-foreground uppercase mb-0.5">{product.category}</p>
+                <h2 className="font-bold text-sm leading-tight mb-1">{product.name}</h2>
+                <p className="font-mono text-xl font-black text-primary">${unitPrice.toFixed(2)}</p>
+              </div>
+            </div>
+            {/* Qty row */}
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+              <span className="font-mono text-xs text-muted-foreground uppercase">Quantity</span>
+              <div className="flex items-center gap-0 border border-border rounded overflow-hidden">
+                <button
+                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                  className="w-9 h-9 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <span className="w-10 text-center font-mono text-sm font-bold bg-secondary">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(q => q + 1)}
+                  className="w-9 h-9 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── DESKTOP: Original product summary + shipping layout ── */}
+          <div className="hidden md:block">
+            <div className="bg-card border border-border p-5 flex gap-4 mb-6">
+              {product.images?.[0] && (
+                <img src={product.images[0]} alt={product.name} className="w-20 h-20 object-cover border border-border flex-shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-1">{product.category}</p>
+                <h2 className="font-bold text-base truncate">{product.name}</h2>
+                <p className="font-mono text-sm text-muted-foreground mt-1">Qty: {quantity}</p>
+                <p className="font-mono text-2xl font-bold text-primary mt-2">${total.toFixed(2)}</p>
+              </div>
+            </div>
+
+            {editingAddress ? (
+              <AddressEditor
+                user={{ ...user, ...shipping }}
+                onSave={(updated) => { setShipping(updated); setEditingAddress(false); }}
+                onCancel={() => setEditingAddress(false)}
+              />
+            ) : (
+              <div className="bg-card border border-border p-5 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Shipping To</p>
+                  <button onClick={() => setEditingAddress(true)} className="flex items-center gap-1 text-xs text-primary font-mono hover:underline">
+                    <Pencil className="w-3 h-3" /> Edit
+                  </button>
+                </div>
+                <p className="text-sm font-semibold">{user.full_name}</p>
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+                  <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="font-mono">{shipping.phone || <span className="text-destructive">Not set</span>}</span>
+                </div>
+                {hasAddress && (
+                  <div className="flex items-start gap-1.5 text-sm text-muted-foreground mt-1">
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                    <span>{[shipping.city, shipping.region, shipping.specific_address].filter(Boolean).join(', ')}</span>
+                  </div>
+                )}
+                {!hasAddress && <p className="text-xs text-destructive mt-2 font-mono">⚠ Address incomplete — please edit before ordering</p>}
+              </div>
+            )}
+          </div>
+
+          {/* Payment accounts — both mobile & desktop */}
+          <div className="mb-4 space-y-3">
             <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Pay to one of these accounts</p>
             {PAYMENT_ACCOUNTS.map(acc => {
               const Icon = acc.icon;
@@ -306,7 +372,7 @@ export default function DirectPayment() {
           </div>
 
           {/* Instructions */}
-          <div className="bg-primary/5 border border-primary/20 p-4 mb-6">
+          <div className="bg-primary/5 border border-primary/20 p-4 mb-4">
             <p className="font-mono text-xs font-bold text-primary uppercase mb-1">Instructions</p>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Pay <strong className="text-foreground">${total.toFixed(2)}</strong> to one of the accounts above, then take a screenshot of the confirmation and upload it below.
@@ -342,16 +408,37 @@ export default function DirectPayment() {
             </label>
           </div>
 
+          {/* Desktop submit button */}
           <Button
             onClick={handleSubmit}
             disabled={submitting || uploading || !proofUrl || !hasAddress}
-            className="w-full h-12 bg-primary text-primary-foreground font-mono font-bold text-base hover:bg-primary/90"
+            className="hidden md:flex w-full h-12 bg-primary text-primary-foreground font-mono font-bold text-base hover:bg-primary/90"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}
             I HAVE PAID — SEND SCREENSHOT
           </Button>
         </div>
       </main>
+
+      {/* ── MOBILE ONLY: Sticky bottom submit bar ── */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <button
+          onClick={handleSubmit}
+          disabled={submitting || uploading || !proofUrl || !hasAddress}
+          className="w-full h-14 bg-primary text-primary-foreground font-mono font-bold flex items-center justify-center gap-3 disabled:opacity-50 active:bg-primary/90 transition-colors"
+        >
+          {submitting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <CheckCircle className="w-4 h-4" />
+          )}
+          <span className="text-sm">SUBMIT ORDER</span>
+          <span className="font-black text-base ml-1">${total.toFixed(2)}</span>
+        </button>
+      </div>
     </div>
   );
 }
