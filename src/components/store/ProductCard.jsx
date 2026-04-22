@@ -50,7 +50,7 @@ export default function ProductCard({ product, isFavorite, favoriteId }) {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           {/* Gradient overlay with cart button */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
             <div className="absolute bottom-0 left-0 right-0 p-2">
               <Button
                 size="sm"
