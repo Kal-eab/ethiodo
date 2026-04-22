@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Upload, Loader2, CheckCircle, ArrowLeft, ShieldCheck, CreditCard, Smartphone, MapPin, Phone, Pencil, X, Minus, Plus } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate, Link } from 'react-router-dom';
@@ -140,8 +141,35 @@ export default function DirectPayment() {
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Validate: only accept images
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+    if (!file.type.startsWith('image/') && !validTypes.includes(file.type.toLowerCase())) {
+      toast.error('Please select an image file (.jpg, .png, .webp, .heic)');
+      return;
+    }
+
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+    let fileToUpload = file;
+
+    // Compress if over 300 KB
+    if (file.size > 300 * 1024) {
+      try {
+        fileToUpload = await imageCompression(file, {
+          maxSizeMB: 0.3,
+          maxWidthOrHeight: 1080,
+          fileType: 'image/jpeg',
+          initialQuality: 0.8,
+          useWebWorker: true,
+        });
+      } catch {
+        // If compression fails, upload original
+        fileToUpload = file;
+      }
+    }
+
+    const { file_url } = await base44.integrations.Core.UploadFile({ file: fileToUpload });
     setProofUrl(file_url);
     setUploading(false);
     toast.success('Screenshot uploaded!');
@@ -379,7 +407,7 @@ export default function DirectPayment() {
               {uploading ? (
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="w-7 h-7 animate-spin text-primary" />
-                  <p className="font-mono text-xs text-muted-foreground">UPLOADING...</p>
+                  <p className="font-mono text-xs text-muted-foreground">COMPRESSING & UPLOADING...</p>
                 </div>
               ) : proofUrl ? (
                 <div className="flex flex-col items-center gap-3">
