@@ -115,6 +115,23 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
             </span>
           </Link>
 
+          {/* Desktop nav links */}
+          <div className="hidden md:flex items-center gap-1 mx-2 flex-shrink-0">
+            {navLinks.map(link => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                style={{
+                  color: location.pathname === link.path ? 'hsl(72,100%,50%)' : 'rgba(255,255,255,0.6)',
+                  background: location.pathname === link.path ? 'rgba(180,255,0,0.08)' : 'transparent',
+                }}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+
           {/* Search bar — desktop only */}
           {onSearchChange && (
             <div ref={searchRef} className="flex-1 relative mx-2 hidden md:block">

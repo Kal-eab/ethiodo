@@ -237,8 +237,41 @@ export default function DirectPayment() {
             <ArrowLeft className="w-4 h-4" /> BACK TO PRODUCT
           </Link>
 
-          {/* ── MOBILE: Shipping address at top (Pinduoduo style) ── */}
-          <div className="md:hidden mb-3">
+
+
+          {/* ── Product card — full-width image + info + qty (same on mobile & desktop) ── */}
+          <div className="bg-card border border-border mb-3 overflow-hidden">
+            {product.images?.[0] && (
+              <img
+                src={product.images[0]}
+                alt={product.name}
+                className="w-full object-cover"
+                style={{ aspectRatio: '4/5' }}
+              />
+            )}
+            <div className="p-4">
+              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{product.category}</p>
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="font-bold text-base leading-tight">{product.name}</h2>
+                <p className="font-mono text-xl font-black text-primary flex-shrink-0">${total.toFixed(2)}</p>
+              </div>
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+                <span className="font-mono text-xs text-muted-foreground uppercase">Quantity</span>
+                <div className="flex items-center gap-0 border border-border overflow-hidden">
+                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors">
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="w-12 text-center font-mono font-bold bg-secondary h-10 flex items-center justify-center">{quantity}</span>
+                  <button onClick={() => setQuantity(q => q + 1)} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors">
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Shipping address — same on mobile & desktop ── */}
+          <div className="mb-3">
             {editingAddress ? (
               <AddressEditor
                 user={{ ...user, ...shipping }}
@@ -260,89 +293,9 @@ export default function DirectPayment() {
                     }
                   </p>
                 </div>
-                <button
-                  onClick={() => setEditingAddress(true)}
-                  className="flex items-center gap-1 text-xs text-primary font-mono flex-shrink-0 hover:underline"
-                >
+                <button onClick={() => setEditingAddress(true)} className="flex items-center gap-1 text-xs text-primary font-mono flex-shrink-0 hover:underline">
                   <Pencil className="w-3 h-3" /> Edit
                 </button>
-              </div>
-            )}
-          </div>
-
-          {/* ── MOBILE: Product card — full-width image + info + qty ── */}
-          <div className="md:hidden bg-card border border-border mb-3 overflow-hidden">
-            {/* Full-width image */}
-            {product.images?.[0] && (
-              <img
-                src={product.images[0]}
-                alt={product.name}
-                className="w-full aspect-square object-cover"
-              />
-            )}
-            {/* Info + qty below image */}
-            <div className="p-4">
-              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{product.category}</p>
-              <div className="flex items-start justify-between gap-2">
-                <h2 className="font-bold text-base leading-tight">{product.name}</h2>
-                <p className="font-mono text-xl font-black text-primary flex-shrink-0">${unitPrice.toFixed(2)}</p>
-              </div>
-              {/* Qty row */}
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                <span className="font-mono text-xs text-muted-foreground uppercase">Quantity</span>
-                <div className="flex items-center gap-0 border border-border overflow-hidden">
-                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors">
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="w-12 text-center font-mono font-bold bg-secondary h-10 flex items-center justify-center">{quantity}</span>
-                  <button onClick={() => setQuantity(q => q + 1)} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors">
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── DESKTOP: Original product summary + shipping layout ── */}
-          <div className="hidden md:block">
-            <div className="bg-card border border-border p-5 flex gap-4 mb-6">
-              {product.images?.[0] && (
-                <img src={product.images[0]} alt={product.name} className="w-20 h-20 object-cover border border-border flex-shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-1">{product.category}</p>
-                <h2 className="font-bold text-base truncate">{product.name}</h2>
-                <p className="font-mono text-sm text-muted-foreground mt-1">Qty: {quantity}</p>
-                <p className="font-mono text-2xl font-bold text-primary mt-2">${total.toFixed(2)}</p>
-              </div>
-            </div>
-
-            {editingAddress ? (
-              <AddressEditor
-                user={{ ...user, ...shipping }}
-                onSave={(updated) => { setShipping(updated); setEditingAddress(false); }}
-                onCancel={() => setEditingAddress(false)}
-              />
-            ) : (
-              <div className="bg-card border border-border p-5 mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Shipping To</p>
-                  <button onClick={() => setEditingAddress(true)} className="flex items-center gap-1 text-xs text-primary font-mono hover:underline">
-                    <Pencil className="w-3 h-3" /> Edit
-                  </button>
-                </div>
-                <p className="text-sm font-semibold">{user.full_name}</p>
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
-                  <Phone className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span className="font-mono">{shipping.phone || <span className="text-destructive">Not set</span>}</span>
-                </div>
-                {hasAddress && (
-                  <div className="flex items-start gap-1.5 text-sm text-muted-foreground mt-1">
-                    <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                    <span>{[shipping.city, shipping.region, shipping.specific_address].filter(Boolean).join(', ')}</span>
-                  </div>
-                )}
-                {!hasAddress && <p className="text-xs text-destructive mt-2 font-mono">⚠ Address incomplete — please edit before ordering</p>}
               </div>
             )}
           </div>
@@ -415,7 +368,7 @@ export default function DirectPayment() {
             className="hidden md:flex w-full h-12 bg-primary text-primary-foreground font-mono font-bold text-base hover:bg-primary/90"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}
-            I HAVE PAID — SEND SCREENSHOT
+            SUBMIT ORDER — ${total.toFixed(2)}
           </Button>
         </div>
       </main>
