@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Search, X } from 'lucide-react';
@@ -20,9 +20,15 @@ export default function Home() {
     queryFn: () => base44.entities.Product.list('-created_date', 100),
   });
 
+  const [isAuth, setIsAuth] = useState(false);
+  useEffect(() => {
+    base44.auth.isAuthenticated().then(setIsAuth).catch(() => setIsAuth(false));
+  }, []);
+
   const { data: favorites = [] } = useQuery({
     queryKey: ['favorites'],
     queryFn: () => base44.entities.Favorite.list(),
+    enabled: isAuth,
   });
 
   const handleRefresh = useCallback(async () => {
