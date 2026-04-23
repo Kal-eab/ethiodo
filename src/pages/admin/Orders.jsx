@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Eye, Image } from 'lucide-react';
+import { Eye, Hash } from 'lucide-react';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -172,19 +172,17 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {/* Payment Proof */}
+              {/* Payment Proof / Transaction ID */}
               {selected.payment_proof_url && (
                 <div>
                   <p className="font-mono text-xs text-muted-foreground uppercase mb-3 flex items-center gap-2">
-                    <Image className="w-3 h-3" /> Payment Proof
+                    <Hash className="w-3 h-3" /> Transaction ID
                   </p>
-                  <a href={selected.payment_proof_url} target="_blank" rel="noopener noreferrer">
-                    <img
-                      src={selected.payment_proof_url}
-                      alt="Payment proof"
-                      className="w-full border border-border hover:opacity-80 transition-opacity"
-                    />
-                  </a>
+                  <div className="bg-secondary/50 border border-border px-4 py-3">
+                    <span className="font-mono text-sm font-bold text-primary break-all select-all">
+                      {selected.payment_proof_url}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
