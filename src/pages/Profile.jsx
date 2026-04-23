@@ -50,17 +50,22 @@ export default function Profile() {
       return;
     }
     setSaving(true);
-    await base44.auth.updateMe({
-      full_name: form.full_name.trim(),
-      father_name: form.father_name.trim(),
-      phone: form.phone.trim(),
-      region: form.region,
-      city: form.city,
-      specific_address: form.specific_address.trim(),
-      profile_complete: !!(form.phone && form.region && form.city),
-    });
-    toast.success('Profile saved');
-    setSaving(false);
+    try {
+      await base44.auth.updateMe({
+        full_name: form.full_name.trim(),
+        father_name: form.father_name.trim(),
+        phone: form.phone.trim(),
+        region: form.region,
+        city: form.city,
+        specific_address: form.specific_address.trim(),
+        profile_complete: !!(form.phone && form.region && form.city),
+      });
+      toast.success('Profile saved');
+    } catch {
+      toast.error('Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -89,7 +94,7 @@ export default function Profile() {
           {/* Avatar */}
           <div className="flex items-center gap-4 mb-6 p-5 bg-card border border-border">
             <div className="w-14 h-14 bg-primary/10 border border-primary/30 flex items-center justify-center text-xl font-bold text-primary flex-shrink-0">
-              {(user.full_name || user.email || '?')[0].toUpperCase()}
+              {(user?.full_name || user?.email || '?')[0].toUpperCase()}
             </div>
             <div>
               <p className="font-semibold">{user.full_name || 'No name set'}</p>
