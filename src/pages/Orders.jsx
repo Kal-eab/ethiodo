@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Package, Star, Upload, X, Loader2, CheckCircle } from 'lucide-react';
+import { Package, Star, Upload, X, Loader2, CheckCircle, AlertCircle, Pencil } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import Navbar from '@/components/store/Navbar';
 import MobileHeader from '@/components/store/MobileHeader';
@@ -156,6 +157,66 @@ function ReviewRemoveModal({ item, order, onClose, onDone }) {
   );
 }
 
+// ─── Pending transaction banner ──────────────────────────────────────────────
+function PendingTransactionBanner({ order, onUpdated }) {
+  const [editing, setEditing] = useState(false);
+  const [newId, setNewId] = useState(order.payment_proof_url || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!newId.trim()) { toast.error('Transaction ID cannot be empty'); return; }
+    setSaving(true);
+    await base44.entities.Order.update(order.id, { payment_proof_url: newId.trim() });
+    toast.success('Transaction ID updated');
+    setSaving(false);
+    setEditing(false);
+    onUpdated();
+  };
+
+  return (
+    <div className="mx-5 mt-4 mb-1 border border-yellow-400/30 bg-yellow-400/5 p-4 space-y-3">
+      {/* Transaction ID display */}
+      <div>
+        <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Transaction ID</p>
+        {editing ? (
+          <div className="flex gap-2">
+            <Input
+              value={newId}
+              onChange={e => setNewId(e.target.value)}
+              className="bg-secondary border-border h-10 font-mono text-sm flex-1"
+              placeholder="Enter transaction ID"
+            />
+            <Button onClick={handleSave} disabled={saving} size="sm" className="h-10 bg-primary text-primary-foreground font-mono text-xs px-4">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Save'}
+            </Button>
+            <Button onClick={() => { setEditing(false); setNewId(order.payment_proof_url || ''); }} size="sm" variant="outline" className="h-10 font-mono text-xs px-3 border-border">
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-sm font-bold text-foreground flex-1 break-all">{order.payment_proof_url || '—'}</span>
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-1 text-xs font-mono text-primary border border-primary/40 px-2.5 py-1 hover:bg-primary/10 transition-colors flex-shrink-0"
+            >
+              <Pencil className="w-3 h-3" /> Adjust ID
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Notice */}
+      <div className="flex items-start gap-2 pt-1 border-t border-yellow-400/20">
+        <AlertCircle className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 mt-0.5" />
+        <p className="font-mono text-[11px] text-yellow-300/80 leading-relaxed">
+          Your order will be confirmed within an hour or so. Until then, make sure your transaction ID is correct.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Single order item row ────────────────────────────────────────────────────
 function OrderItemRow({ item, order, isDelivered, onReviewed }) {
   const [showModal, setShowModal] = useState(false);
@@ -220,6 +281,9 @@ function OrderCard({ order, onRefresh }) {
           />
         ))}
       </div>
+      {order.status === 'pending' && (
+        <PendingTransactionBanner order={order} onUpdated={onRefresh} />
+      )}
     </div>
   );
 }
