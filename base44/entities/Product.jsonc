@@ -45,6 +45,13 @@
       },
       "description": "Array of image URLs"
     },
+    "sizes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Available sizes for this product (e.g. ['S','M','L'] or ['36','37','38'] or custom)"
+    },
     "rating": {
       "type": "number",
       "description": "Average rating 0-5"

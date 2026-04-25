@@ -12,7 +12,11 @@ import { REGIONS, REGIONS_CITIES } from '@/lib/ethiopiaRegions';
 
 function getParams() {
   const p = new URLSearchParams(window.location.search);
-  return { productId: p.get('product'), quantity: parseInt(p.get('qty') || '1', 10) };
+  return {
+    productId: p.get('product'),
+    quantity: parseInt(p.get('qty') || '1', 10),
+    size: p.get('size') || null,
+  };
 }
 
 const PAYMENT_ACCOUNTS = [
@@ -97,7 +101,8 @@ function AddressEditor({ user, onSave, onCancel }) {
 }
 
 export default function DirectPayment() {
-  const { productId, quantity: initialQty } = getParams();
+  const { productId, quantity: initialQty, size: initialSize } = getParams();
+  const [selectedSize] = useState(initialSize);
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [quantity, setQuantity] = useState(initialQty);
@@ -152,6 +157,7 @@ export default function DirectPayment() {
         product_image: product.images?.[0] || '',
         price: product.price,
         quantity,
+        size: selectedSize || undefined,
       }],
       total,
       status: 'pending',
@@ -280,7 +286,13 @@ export default function DirectPayment() {
                 <h2 className="font-bold text-base leading-tight">{product.name}</h2>
                 <p className="font-mono text-xl font-black text-primary flex-shrink-0">${total.toFixed(2)}</p>
               </div>
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+              {selectedSize && (
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+                  <span className="font-mono text-xs text-muted-foreground uppercase">Size</span>
+                  <span className="font-mono font-bold text-sm px-3 py-1 border border-primary text-primary">{selectedSize}</span>
+                </div>
+              )}
+              <div className={`flex items-center justify-between pt-3 border-t border-border ${selectedSize ? '' : 'mt-3'}`}>
                 <span className="font-mono text-xs text-muted-foreground uppercase">Quantity</span>
                 <div className="flex items-center gap-0 border border-border overflow-hidden">
                   <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors">

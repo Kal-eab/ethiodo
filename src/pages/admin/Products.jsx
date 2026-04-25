@@ -11,6 +11,77 @@ import { toast } from 'sonner';
 
 const CATEGORIES = ['electronics', 'foods', 'hygiene', 'clothing', 'accessories', 'home', 'sports', 'other'];
 
+const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44'];
+const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+
+function SizeSelector({ category, sizes, onChange }) {
+  if (category === 'sports') {
+    // shoes category → fixed numeric sizes
+    const toggleSize = (s) => {
+      const next = sizes.includes(s) ? sizes.filter(x => x !== s) : [...sizes, s];
+      onChange(next);
+    };
+    return (
+      <div>
+        <div className="flex flex-wrap gap-2">
+          {SHOE_SIZES.map(s => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => toggleSize(s)}
+              className={`px-3 py-1.5 font-mono text-xs border transition-colors ${
+                sizes.includes(s)
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-secondary text-muted-foreground border-border hover:border-muted-foreground'
+              }`}
+            >{s}</button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (category === 'clothing') {
+    const toggleSize = (s) => {
+      const next = sizes.includes(s) ? sizes.filter(x => x !== s) : [...sizes, s];
+      onChange(next);
+    };
+    return (
+      <div className="flex flex-wrap gap-2">
+        {CLOTHING_SIZES.map(s => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => toggleSize(s)}
+            className={`px-3 py-1.5 font-mono text-xs border transition-colors ${
+              sizes.includes(s)
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-secondary text-muted-foreground border-border hover:border-muted-foreground'
+            }`}
+          >{s}</button>
+        ))}
+      </div>
+    );
+  }
+
+  // Free text for all other categories
+  const textValue = sizes.join(', ');
+  return (
+    <div>
+      <Input
+        value={textValue}
+        onChange={e => {
+          const arr = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+          onChange(arr);
+        }}
+        placeholder="e.g. 10inch, A4, 500ml"
+        className="bg-secondary border-border h-10"
+      />
+      <p className="font-mono text-[10px] text-muted-foreground mt-1">Enter comma-separated custom size options</p>
+    </div>
+  );
+}
+
 function ProductForm({ product, onClose, onSave }) {
   const [form, setForm] = useState({
     name: product?.name || '',
@@ -22,6 +93,7 @@ function ProductForm({ product, onClose, onSave }) {
     featured: product?.featured || false,
     tags: product?.tags || '',
     images: product?.images || [],
+    sizes: product?.sizes || [],
   });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -52,6 +124,7 @@ function ProductForm({ product, onClose, onSave }) {
       rating: parseFloat(form.rating) || 0,
       stock: parseInt(form.stock) || 0,
       tags: form.tags,
+      sizes: form.sizes,
     });
     setSaving(false);
     onClose();
@@ -70,7 +143,7 @@ function ProductForm({ product, onClose, onSave }) {
         </div>
         <div>
           <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Category</label>
-          <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+          <Select value={form.category} onValueChange={v => setForm({ ...form, category: v, sizes: [] })}>
             <SelectTrigger className="bg-secondary border-border h-10">
               <SelectValue />
             </SelectTrigger>
@@ -85,6 +158,19 @@ function ProductForm({ product, onClose, onSave }) {
           <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Stock</label>
           <Input type="number" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="bg-secondary border-border h-10" />
         </div>
+      </div>
+
+      {/* Sizes — full width, dynamic by category */}
+      <div>
+        <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Sizes</label>
+        <SizeSelector
+          category={form.category}
+          sizes={form.sizes}
+          onChange={sizes => setForm(f => ({ ...f, sizes }))}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Rating (0-5)</label>
           <Input type="number" step="0.1" min="0" max="5" value={form.rating} onChange={e => setForm({ ...form, rating: e.target.value })} className="bg-secondary border-border h-10" />

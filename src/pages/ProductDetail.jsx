@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Heart, Star, Minus, Plus, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
 import MobileHeader from '@/components/store/MobileHeader';
 import ReviewSection from '@/components/product/ReviewSection';
@@ -15,6 +16,7 @@ export default function ProductDetail() {
   const productId = pathParts[pathParts.length - 1];
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedSize, setSelectedSize] = useState(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -42,13 +44,18 @@ export default function ProductDetail() {
   favorites.forEach(f => { favMap[f.product_id] = f.id; });
 
   const handleBuyNow = async () => {
+    if (product?.sizes?.length > 0 && !selectedSize) {
+      toast.error('Please select a size');
+      return;
+    }
     // Require login before buying
     const isAuth = await base44.auth.isAuthenticated();
     if (!isAuth) {
       base44.auth.redirectToLogin(window.location.href);
       return;
     }
-    navigate(`/payment?product=${productId}&qty=${quantity}`);
+    const sizeParam = selectedSize ? `&size=${encodeURIComponent(selectedSize)}` : '';
+    navigate(`/payment?product=${productId}&qty=${quantity}${sizeParam}`);
   };
 
   const toggleFav = async () => {
@@ -146,6 +153,28 @@ export default function ProductDetail() {
                 <div className="space-y-2">
                   <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Description</p>
                   <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
+                </div>
+              )}
+
+              {/* Size selector */}
+              {product.sizes?.length > 0 && (
+                <div className="space-y-2">
+                  <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Select Size</p>
+                  <div className="flex flex-wrap gap-2">
+                    {product.sizes.map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setSelectedSize(s)}
+                        className={`px-4 py-2 font-mono text-sm border transition-all ${
+                          selectedSize === s
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-transparent text-muted-foreground border-border hover:border-foreground'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
