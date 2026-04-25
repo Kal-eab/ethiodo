@@ -119,11 +119,20 @@ export default function ProductDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12 lg:items-start">
             {/* Images */}
             <div className="lg:col-span-3 space-y-3 lg:sticky lg:top-24">
-              <div className="border border-border overflow-hidden">
+              <div className="border border-border overflow-hidden relative" style={{ width: '100%', height: '70vh', backgroundColor: '#0a0a0a' }}>
+                {/* Blurred background fill */}
+                <img
+                  src={images[selectedImage]}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110"
+                />
+                {/* Main image — contained, no crop */}
                 <img
                   src={images[selectedImage]}
                   alt={product.name}
-                  className="w-full h-auto block"
+                  className="relative z-10 w-auto h-auto max-w-full max-h-full m-auto block"
+                  style={{ position: 'absolute', inset: 0, margin: 'auto', objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
                 />
               </div>
               {images.length > 1 && (
