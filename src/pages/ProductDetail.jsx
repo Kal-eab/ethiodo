@@ -116,11 +116,16 @@ export default function ProductDetail() {
             BACK
           </Link>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12 lg:items-start">
             {/* Images */}
-            <div className="lg:col-span-3 space-y-3">
-              <div className="aspect-square bg-secondary border border-border overflow-hidden">
-                <img src={images[selectedImage]} alt={product.name} className="w-full h-full object-cover" />
+            <div className="lg:col-span-3 space-y-3 lg:sticky lg:top-24">
+              <div className="bg-secondary border border-border overflow-hidden">
+                <img
+                  src={images[selectedImage]}
+                  alt={product.name}
+                  className="w-full object-contain"
+                  style={{ maxHeight: '72vh' }}
+                />
               </div>
               {images.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto">
