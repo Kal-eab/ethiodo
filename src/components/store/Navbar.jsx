@@ -187,7 +187,7 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
 
           {/* Mobile: categories fill the middle */}
           {onCategoryChange && (
-            <div className="flex-1 overflow-x-auto scrollbar-none md:hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex-1 min-w-0 overflow-x-auto scrollbar-none md:hidden" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
               <CategoryFilter active={category} onChange={onCategoryChange} />
             </div>
           )}

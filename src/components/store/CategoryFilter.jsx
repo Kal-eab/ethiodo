@@ -14,7 +14,7 @@ const CATEGORIES = [
 
 export default function CategoryFilter({ active, onChange }) {
   return (
-    <div className="flex gap-1.5 overflow-x-auto scrollbar-none justify-start" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div className="flex gap-1.5 overflow-x-auto scrollbar-none justify-start" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', overflowX: 'scroll' }}>
       {CATEGORIES.map(cat => (
         <button
           key={cat.value}
