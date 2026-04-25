@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 
-export default function ProductCard({ product, isFavorite, favoriteId }) {
+export default function ProductCard({ product, isFavorite, favoriteId, badge }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const image = product.images?.[0] || '/placeholder.png';
@@ -69,7 +69,7 @@ export default function ProductCard({ product, isFavorite, favoriteId }) {
           >
             <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-primary text-primary' : 'text-white'}`} />
           </button>
-          {/* Category badge */}
+          {/* Category badge or custom badge */}
           <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-background/60 backdrop-blur-sm text-[9px] font-mono uppercase tracking-wider text-muted-foreground rounded">
             {product.category}
           </span>
@@ -77,17 +77,27 @@ export default function ProductCard({ product, isFavorite, favoriteId }) {
 
         {/* Info */}
         <div className="p-2.5 space-y-1">
+          {badge && (
+            <span className={`inline-block font-mono text-[9px] px-1.5 py-0.5 border rounded-sm ${badge.color}`}>
+              {badge.label}
+            </span>
+          )}
           <h3 className="font-medium text-xs truncate leading-tight">{product.name}</h3>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-1 flex-wrap">
             <span className="font-mono font-bold text-primary text-sm">
               ${product.price?.toFixed(2)}
             </span>
-            {product.rating > 0 && (
-              <div className="flex items-center gap-0.5 text-muted-foreground">
-                <Star className="w-2.5 h-2.5 fill-primary text-primary" />
-                <span className="font-mono text-[10px]">{product.rating?.toFixed(1)}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1.5">
+              {product.stock > 0 && product.stock <= 5 && (
+                <span className="font-mono text-[9px] text-orange-400">Only {product.stock} left</span>
+              )}
+              {product.rating > 0 && (
+                <div className="flex items-center gap-0.5 text-muted-foreground">
+                  <Star className="w-2.5 h-2.5 fill-primary text-primary" />
+                  <span className="font-mono text-[10px]">{product.rating?.toFixed(1)}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -1,0 +1,30 @@
+{
+  "name": "ProductEvent",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "view",
+        "purchase",
+        "wishlist"
+      ],
+      "description": "Type of event"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email if logged in, null for guest"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session ID for dedup"
+    }
+  },
+  "required": [
+    "product_id",
+    "event_type"
+  ]
+}

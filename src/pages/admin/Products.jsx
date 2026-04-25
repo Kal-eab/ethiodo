@@ -11,8 +11,8 @@ import { toast } from 'sonner';
 
 const CATEGORIES = ['electronics', 'foods', 'hygiene', 'clothing', 'accessories', 'home', 'shoes', 'sports', 'other'];
 
-// Categories that use predefined size toggles
-const PREDEFINED_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44'];
+const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const PREDEFINED_CATEGORIES = ['clothing', 'shoes'];
 
 function SizeSelector({ category, sizes, onChange }) {
@@ -37,22 +37,23 @@ function SizeSelector({ category, sizes, onChange }) {
   const removeOption = (s) => onChange(sizes.filter(x => x !== s));
 
   if (isPredefined) {
+    const sizeList = category === 'shoes' ? SHOE_SIZES : CLOTHING_SIZES;
     return (
       <div className="space-y-2">
-        <p className="font-mono text-[10px] text-muted-foreground">Select available sizes (tick all that apply)</p>
+        <p className="font-mono text-[10px] text-muted-foreground">Click chips to toggle available sizes</p>
         <div className="flex flex-wrap gap-2">
-          {PREDEFINED_SIZES.map(s => (
+          {sizeList.map(s => (
             <button
               key={s}
               type="button"
               onClick={() => toggleSize(s)}
-              className={`px-4 py-2 font-mono text-xs border transition-all select-none ${
+              className={`px-4 py-2 font-mono text-sm font-bold border transition-all select-none ${
                 sizes.includes(s)
-                  ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                  ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-secondary text-muted-foreground border-border hover:border-foreground'
               }`}
             >
-              {sizes.includes(s) && <span className="mr-1">✓</span>}{s}
+              {s}
             </button>
           ))}
         </div>
@@ -118,6 +119,7 @@ function ProductForm({ product, onClose, onSave }) {
   });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sizeError, setSizeError] = useState('');
 
   const handleUploadImages = async (e) => {
     const files = Array.from(e.target.files);
@@ -138,6 +140,11 @@ function ProductForm({ product, onClose, onSave }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (PREDEFINED_CATEGORIES.includes(form.category) && form.sizes.length === 0) {
+      setSizeError('Please select at least one available size.');
+      return;
+    }
+    setSizeError('');
     setSaving(true);
     await onSave({
       ...form,
@@ -189,8 +196,9 @@ function ProductForm({ product, onClose, onSave }) {
         <SizeSelector
           category={form.category}
           sizes={form.sizes}
-          onChange={sizes => setForm(f => ({ ...f, sizes }))}
+          onChange={sizes => { setSizeError(''); setForm(f => ({ ...f, sizes })); }}
         />
+        {sizeError && <p className="font-mono text-xs text-destructive mt-1">{sizeError}</p>}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -29,6 +29,7 @@
         "clothing",
         "accessories",
         "home",
+        "shoes",
         "sports",
         "other"
       ],
@@ -36,7 +37,7 @@
     },
     "tags": {
       "type": "string",
-      "description": "Comma-separated tags/keywords to improve search accuracy (e.g. 'keyboard, mechanical, gaming, A34')"
+      "description": "Comma-separated tags/keywords"
     },
     "images": {
       "type": "array",
@@ -50,7 +51,7 @@
       "items": {
         "type": "string"
       },
-      "description": "Available sizes for this product (e.g. ['S','M','L'] or ['36','37','38'] or custom)"
+      "description": "Available sizes/options"
     },
     "rating": {
       "type": "number",
@@ -62,8 +63,28 @@
     },
     "featured": {
       "type": "boolean",
-      "default": false,
-      "description": "Whether product is featured"
+      "default": false
+    },
+    "trendingScore": {
+      "type": "number",
+      "default": 0,
+      "description": "Computed trending score with time decay"
+    },
+    "totalPurchases": {
+      "type": "number",
+      "default": 0
+    },
+    "totalViews": {
+      "type": "number",
+      "default": 0
+    },
+    "totalWishlists": {
+      "type": "number",
+      "default": 0
+    },
+    "lastScoreUpdatedAt": {
+      "type": "string",
+      "description": "ISO timestamp of last score calculation"
     }
   },
   "required": [

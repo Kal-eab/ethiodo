@@ -185,6 +185,29 @@ export default function Profile() {
             <LogOut className="w-4 h-4 mr-2" /> Sign Out
           </Button>
 
+          {/* Clear Activity / Recommendations */}
+          <div className="bg-card border border-border p-5 mb-4 space-y-3">
+            <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Recommendations & Privacy</p>
+            <p className="text-sm text-muted-foreground">Clear your browsing history and reset your personalized recommendations to default trending results.</p>
+            <Button
+              variant="outline"
+              className="w-full h-11 font-mono border-border"
+              onClick={async () => {
+                const profiles = await base44.entities.UserBehavior.filter({ user_email: user.email }, null, 1);
+                if (profiles[0]) {
+                  await base44.entities.UserBehavior.update(profiles[0].id, {
+                    viewed_products: [], purchased_categories: {}, viewed_categories: {},
+                    search_history: [], wishlist_product_ids: [], price_min: 0, price_max: 0, price_avg: 0,
+                  });
+                }
+                sessionStorage.removeItem('_rv');
+                toast.success('Activity cleared');
+              }}
+            >
+              Clear My Activity
+            </Button>
+          </div>
+
           {/* Delete Account */}
           <div className="bg-card border border-destructive/30 p-5 space-y-3">
             <div className="flex items-center gap-2 text-destructive">

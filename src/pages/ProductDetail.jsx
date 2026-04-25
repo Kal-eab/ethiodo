@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Heart, Star, Minus, Plus, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
@@ -10,6 +10,7 @@ import MobileHeader from '@/components/store/MobileHeader';
 import ReviewSection from '@/components/product/ReviewSection';
 import RelatedProducts from '@/components/product/RelatedProducts';
 import Footer from '@/components/store/Footer';
+import { trackView, trackWishlist } from '@/lib/behaviorTracker';
 
 export default function ProductDetail() {
   const pathParts = window.location.pathname.split('/');
@@ -19,6 +20,7 @@ export default function ProductDetail() {
   const [selectedSize, setSelectedSize] = useState(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [sizeError, setSizeError] = useState('');
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', productId],
@@ -39,15 +41,23 @@ export default function ProductDetail() {
     queryFn: () => base44.entities.Order.list('-created_date', 50),
   });
 
+  // Track view when product loads
+  useEffect(() => {
+    if (!product) return;
+    base44.auth.me().then(u => trackView(product, u)).catch(() => trackView(product, null));
+  }, [product?.id]);
+
   const fav = favorites.find(f => f.product_id === productId);
   const favMap = {};
   favorites.forEach(f => { favMap[f.product_id] = f.id; });
 
   const handleBuyNow = async () => {
     if (product?.sizes?.length > 0 && !selectedSize) {
-      toast.error('Please select a size');
+      setSizeError('Please select a size to continue.');
+      toast.error('Please select a size to continue');
       return;
     }
+    setSizeError('');
     // Require login before buying
     const isAuth = await base44.auth.isAuthenticated();
     if (!isAuth) {
@@ -63,6 +73,8 @@ export default function ProductDetail() {
       await base44.entities.Favorite.delete(fav.id);
     } else {
       await base44.entities.Favorite.create({ product_id: productId });
+      // track wishlist event
+      base44.auth.me().then(u => trackWishlist(productId, u)).catch(() => {});
     }
     queryClient.invalidateQueries({ queryKey: ['favorites'] });
   };
@@ -160,13 +172,13 @@ export default function ProductDetail() {
               {product.sizes?.length > 0 && (
                 <div className="space-y-2">
                   <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-                    {['clothing', 'shoes'].includes(product.category) ? 'Select Size' : 'Select Option'}
+                    {['clothing', 'shoes'].includes(product.category) ? 'Size' : 'Option'}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {product.sizes.map(s => (
                       <button
                         key={s}
-                        onClick={() => setSelectedSize(s)}
+                        onClick={() => { setSelectedSize(s); setSizeError(''); }}
                         className={`px-4 py-2 font-mono text-sm border transition-all ${
                           selectedSize === s
                             ? 'bg-primary text-primary-foreground border-primary'
@@ -177,6 +189,9 @@ export default function ProductDetail() {
                       </button>
                     ))}
                   </div>
+                  {sizeError && (
+                    <p className="font-mono text-xs text-destructive">{sizeError}</p>
+                  )}
                 </div>
               )}
 

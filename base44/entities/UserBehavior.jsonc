@@ -1,0 +1,53 @@
+{
+  "name": "UserBehavior",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "User email (unique per user)"
+    },
+    "viewed_products": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Last 50 viewed product IDs"
+    },
+    "purchased_categories": {
+      "type": "object",
+      "description": "Map of category -> purchase count"
+    },
+    "viewed_categories": {
+      "type": "object",
+      "description": "Map of category -> view count"
+    },
+    "search_history": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Last 20 search queries"
+    },
+    "price_min": {
+      "type": "number"
+    },
+    "price_max": {
+      "type": "number"
+    },
+    "price_avg": {
+      "type": "number"
+    },
+    "last_active_at": {
+      "type": "string"
+    },
+    "wishlist_product_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}
