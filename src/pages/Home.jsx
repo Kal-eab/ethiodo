@@ -67,6 +67,7 @@ export default function Home() {
 
   const { pulling, progress } = usePullToRefresh(handleRefresh);
 
+
   const favMap = {};
   favorites.forEach(f => { favMap[f.product_id] = f.id; });
 

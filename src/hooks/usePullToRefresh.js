@@ -1,21 +1,20 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 const THRESHOLD = 70;
 
 export function usePullToRefresh(onRefresh) {
   const [pulling, setPulling] = useState(false);
-  const [progress, setProgress] = useState(0); // 0–1
+  const [progress, setProgress] = useState(0);
   const startYRef = useRef(null);
-  const containerRef = useRef(null);
+  const progressRef = useRef(0);
+  const onRefreshRef = useRef(onRefresh);
+
+  // Keep ref in sync so the effect doesn't need onRefresh as a dependency
+  useEffect(() => { onRefreshRef.current = onRefresh; }, [onRefresh]);
 
   useEffect(() => {
-    const el = containerRef.current || window;
-
     const onTouchStart = (e) => {
-      const scrollTop = containerRef.current
-        ? containerRef.current.scrollTop
-        : window.scrollY;
-      if (scrollTop <= 0) {
+      if (window.scrollY <= 0) {
         startYRef.current = e.touches[0].clientY;
       }
     };
@@ -24,30 +23,34 @@ export function usePullToRefresh(onRefresh) {
       if (startYRef.current === null) return;
       const dy = e.touches[0].clientY - startYRef.current;
       if (dy > 0) {
-        setProgress(Math.min(dy / THRESHOLD, 1));
+        const p = Math.min(dy / THRESHOLD, 1);
+        progressRef.current = p;
+        setProgress(p);
         setPulling(true);
       }
     };
 
     const onTouchEnd = async () => {
-      if (progress >= 1) {
-        await onRefresh();
+      if (startYRef.current === null) return;
+      if (progressRef.current >= 1) {
+        await onRefreshRef.current();
       }
       setPulling(false);
       setProgress(0);
+      progressRef.current = 0;
       startYRef.current = null;
     };
 
     window.addEventListener('touchstart', onTouchStart, { passive: true });
     window.addEventListener('touchmove', onTouchMove, { passive: true });
-    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
 
     return () => {
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
     };
-  }, [onRefresh, progress]);
+  }, []); // Empty deps — no re-registration on every render
 
-  return { pulling, progress, containerRef };
+  return { pulling, progress };
 }
