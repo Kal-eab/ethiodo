@@ -124,7 +124,7 @@ export default function ProductDetail() {
                   src={images[selectedImage]}
                   alt={product.name}
                   className="w-full object-contain"
-                  style={{ maxHeight: '72vh' }}
+                  style={{ maxHeight: '55vh' }}
                 />
               </div>
               {images.length > 1 && (
