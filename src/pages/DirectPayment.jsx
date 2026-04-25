@@ -211,9 +211,16 @@ export default function DirectPayment() {
             We've received your transaction ID and will confirm your order shortly.
           </p>
         </div>
-        <div className="flex gap-3">
-          <Link to="/orders"><Button className="bg-primary text-primary-foreground font-mono">View My Orders</Button></Link>
-          <Link to="/"><Button variant="outline" className="font-mono border-border">Continue Shopping</Button></Link>
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          <Link to="/orders"><Button className="w-full bg-primary text-primary-foreground font-mono">View My Orders</Button></Link>
+          <Link to="/"><Button variant="outline" className="w-full font-mono border-border">Continue Shopping</Button></Link>
+          <Button
+            variant="ghost"
+            className="w-full font-mono text-muted-foreground text-xs"
+            onClick={() => { setDone(false); setTransactionId(''); }}
+          >
+            ↩ Try Again (wrong transaction ID?)
+          </Button>
         </div>
       </div>
     );
