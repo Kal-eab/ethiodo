@@ -22,6 +22,9 @@
           },
           "quantity": {
             "type": "number"
+          },
+          "size": {
+            "type": "string"
           }
         }
       }
@@ -35,7 +38,6 @@
       "enum": [
         "pending",
         "confirmed",
-        "shipped",
         "delivered"
       ],
       "default": "pending",
@@ -43,23 +45,27 @@
     },
     "payment_proof_url": {
       "type": "string",
-      "description": "Payment screenshot URL"
+      "description": "Payment transaction ID"
     },
     "customer_email": {
-      "type": "string",
-      "description": "Customer email"
+      "type": "string"
     },
     "customer_name": {
-      "type": "string",
-      "description": "Customer name"
+      "type": "string"
     },
     "shipping_address": {
-      "type": "string",
-      "description": "Shipping address"
+      "type": "string"
     },
     "phone": {
+      "type": "string"
+    },
+    "confirmed_date": {
       "type": "string",
-      "description": "Customer phone"
+      "description": "ISO timestamp when order was confirmed"
+    },
+    "delivered_date": {
+      "type": "string",
+      "description": "ISO timestamp when order was delivered"
     }
   },
   "required": [

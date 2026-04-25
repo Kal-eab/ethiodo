@@ -18,7 +18,7 @@ import Favorites from '@/pages/Favorites';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminDashboard from '@/pages/admin/Dashboard';
 import AdminProducts from '@/pages/admin/Products';
-import AdminOrders from '@/pages/admin/Orders';
+import AdminOrders from '@/pages/admin/Orders.jsx';
 import AdminRequests from '@/pages/admin/Requests';
 import AdminMessages from '@/pages/admin/Messages';
 import AdminReviews from '@/pages/admin/Reviews';
