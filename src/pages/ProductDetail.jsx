@@ -123,7 +123,7 @@ export default function ProductDetail() {
                 <img
                   src={images[selectedImage]}
                   alt={product.name}
-                  className="w-full object-contain"
+                  className="w-full object-cover"
                   style={{ maxHeight: '40vh' }}
                 />
               </div>
