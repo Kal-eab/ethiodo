@@ -45,7 +45,7 @@ export default function MobileTabBar() {
       className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/98 backdrop-blur-xl border-t border-border"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="grid grid-cols-5 h-14">
+      <div className="grid grid-cols-4 h-14">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = tab.path === '/'
