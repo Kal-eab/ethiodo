@@ -156,10 +156,12 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Size selector */}
+              {/* Size / Options selector */}
               {product.sizes?.length > 0 && (
                 <div className="space-y-2">
-                  <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Select Size</p>
+                  <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+                    {['clothing', 'shoes'].includes(product.category) ? 'Select Size' : 'Select Option'}
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {product.sizes.map(s => (
                       <button

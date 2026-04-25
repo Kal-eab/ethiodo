@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Plus, Pencil, Trash2, Upload, X, Loader2 } from 'lucide-react';
@@ -9,75 +9,96 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
-const CATEGORIES = ['electronics', 'foods', 'hygiene', 'clothing', 'accessories', 'home', 'sports', 'other'];
+const CATEGORIES = ['electronics', 'foods', 'hygiene', 'clothing', 'accessories', 'home', 'shoes', 'sports', 'other'];
 
-const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44'];
-const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+// Categories that use predefined size toggles
+const PREDEFINED_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+const PREDEFINED_CATEGORIES = ['clothing', 'shoes'];
 
 function SizeSelector({ category, sizes, onChange }) {
-  if (category === 'sports') {
-    // shoes category → fixed numeric sizes
-    const toggleSize = (s) => {
-      const next = sizes.includes(s) ? sizes.filter(x => x !== s) : [...sizes, s];
-      onChange(next);
-    };
+  const [inputValue, setInputValue] = useState('');
+  const inputRef = useRef(null);
+
+  const isPredefined = PREDEFINED_CATEGORIES.includes(category);
+
+  const toggleSize = (s) => {
+    const next = sizes.includes(s) ? sizes.filter(x => x !== s) : [...sizes, s];
+    onChange(next);
+  };
+
+  const addCustomOption = () => {
+    const val = inputValue.trim();
+    if (!val || sizes.includes(val)) { setInputValue(''); return; }
+    onChange([...sizes, val]);
+    setInputValue('');
+    inputRef.current?.focus();
+  };
+
+  const removeOption = (s) => onChange(sizes.filter(x => x !== s));
+
+  if (isPredefined) {
     return (
-      <div>
+      <div className="space-y-2">
+        <p className="font-mono text-[10px] text-muted-foreground">Select available sizes (tick all that apply)</p>
         <div className="flex flex-wrap gap-2">
-          {SHOE_SIZES.map(s => (
+          {PREDEFINED_SIZES.map(s => (
             <button
               key={s}
               type="button"
               onClick={() => toggleSize(s)}
-              className={`px-3 py-1.5 font-mono text-xs border transition-colors ${
+              className={`px-4 py-2 font-mono text-xs border transition-all select-none ${
                 sizes.includes(s)
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-secondary text-muted-foreground border-border hover:border-muted-foreground'
+                  ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                  : 'bg-secondary text-muted-foreground border-border hover:border-foreground'
               }`}
-            >{s}</button>
+            >
+              {sizes.includes(s) && <span className="mr-1">✓</span>}{s}
+            </button>
           ))}
         </div>
+        {sizes.length > 0 && (
+          <p className="font-mono text-[10px] text-primary">Selected: {sizes.join(', ')}</p>
+        )}
       </div>
     );
   }
 
-  if (category === 'clothing') {
-    const toggleSize = (s) => {
-      const next = sizes.includes(s) ? sizes.filter(x => x !== s) : [...sizes, s];
-      onChange(next);
-    };
-    return (
-      <div className="flex flex-wrap gap-2">
-        {CLOTHING_SIZES.map(s => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => toggleSize(s)}
-            className={`px-3 py-1.5 font-mono text-xs border transition-colors ${
-              sizes.includes(s)
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-secondary text-muted-foreground border-border hover:border-muted-foreground'
-            }`}
-          >{s}</button>
-        ))}
-      </div>
-    );
-  }
-
-  // Free text for all other categories
-  const textValue = sizes.join(', ');
+  // Dynamic custom options for all other categories
   return (
-    <div>
-      <Input
-        value={textValue}
-        onChange={e => {
-          const arr = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-          onChange(arr);
-        }}
-        placeholder="e.g. 10inch, A4, 500ml"
-        className="bg-secondary border-border h-10"
-      />
-      <p className="font-mono text-[10px] text-muted-foreground mt-1">Enter comma-separated custom size options</p>
+    <div className="space-y-2">
+      <p className="font-mono text-[10px] text-muted-foreground">Add selectable options customers can choose from</p>
+      {/* Existing options as removable tags */}
+      {sizes.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {sizes.map(s => (
+            <span key={s} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary border border-border font-mono text-xs">
+              {s}
+              <button type="button" onClick={() => removeOption(s)} className="text-muted-foreground hover:text-destructive transition-colors">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {/* Add new option */}
+      <div className="flex gap-2">
+        <Input
+          ref={inputRef}
+          value={inputValue}
+          onChange={e => setInputValue(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomOption(); } }}
+          placeholder='e.g. "500ml", "Red", "Pack of 3"'
+          className="bg-secondary border-border h-10 flex-1"
+        />
+        <button
+          type="button"
+          onClick={addCustomOption}
+          disabled={!inputValue.trim()}
+          className="flex items-center gap-1 px-4 h-10 border border-primary text-primary font-mono text-xs hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
+        >
+          <Plus className="w-3.5 h-3.5" /> Add
+        </button>
+      </div>
     </div>
   );
 }
@@ -160,9 +181,11 @@ function ProductForm({ product, onClose, onSave }) {
         </div>
       </div>
 
-      {/* Sizes — full width, dynamic by category */}
+      {/* Options — dynamic by category */}
       <div>
-        <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Sizes</label>
+        <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+          {PREDEFINED_CATEGORIES.includes(form.category) ? 'Available Sizes' : 'Product Options'}
+        </label>
         <SizeSelector
           category={form.category}
           sizes={form.sizes}
