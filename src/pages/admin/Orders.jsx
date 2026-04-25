@@ -58,16 +58,20 @@ export default function AdminOrders() {
     }
   };
 
-  const filtered = orders.filter(o => {
-    if (o.status !== activeTab) return false;
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      o.customer_name?.toLowerCase().includes(q) ||
-      o.customer_email?.toLowerCase().includes(q) ||
-      o.id?.toLowerCase().includes(q)
-    );
-  });
+  const STATUS_ORDER = { pending: 0, confirmed: 1, delivered: 2 };
+
+  const filtered = orders
+    .filter(o => {
+      if (o.status !== activeTab) return false;
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        o.customer_name?.toLowerCase().includes(q) ||
+        o.customer_email?.toLowerCase().includes(q) ||
+        o.id?.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99));
 
   const countByStatus = (status) => orders.filter(o => o.status === status).length;
 
