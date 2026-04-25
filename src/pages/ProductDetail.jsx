@@ -119,12 +119,12 @@ export default function ProductDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12 lg:items-start">
             {/* Images */}
             <div className="lg:col-span-3 space-y-3 lg:sticky lg:top-24">
-              <div className="bg-secondary border border-border overflow-hidden">
+              <div className="border border-border overflow-hidden bg-transparent">
                 <img
                   src={images[selectedImage]}
                   alt={product.name}
-                  className="w-full object-cover"
-                  style={{ maxHeight: '40vh' }}
+                  className="w-full object-contain"
+                  style={{ maxHeight: '40vh', background: 'transparent' }}
                 />
               </div>
               {images.length > 1 && (
