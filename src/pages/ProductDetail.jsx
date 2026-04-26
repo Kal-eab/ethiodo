@@ -12,6 +12,8 @@ import RelatedProducts from '@/components/product/RelatedProducts';
 import Footer from '@/components/store/Footer';
 import { trackView, trackWishlist } from '@/lib/behaviorTracker';
 
+const fmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+
 export default function ProductDetail() {
   const pathParts = window.location.pathname.split('/');
   const productId = pathParts[pathParts.length - 1];
@@ -168,7 +170,7 @@ export default function ProductDetail() {
               </div>
 
               <div className="border-t border-b border-border py-6">
-                <span className="font-mono text-3xl font-bold text-primary">${product.price?.toFixed(2)}</span>
+                <span className="font-mono text-3xl font-bold text-primary">{fmt(product.price)}</span>
                 {product.stock > 0 && (
                   <p className="font-mono text-xs text-accent mt-2">IN STOCK — {product.stock} available</p>
                 )}
@@ -239,7 +241,7 @@ export default function ProductDetail() {
                   onClick={handleBuyNow}
                   className="w-full h-12 bg-primary text-primary-foreground font-mono font-bold tracking-wider hover:bg-primary/90"
                 >
-                  BUY NOW — ${(product.price * quantity).toFixed(2)}
+                  BUY NOW — {fmt(product.price * quantity)}
                 </Button>
                 <Button
                   onClick={toggleFav}
@@ -284,7 +286,7 @@ export default function ProductDetail() {
           className="flex-1 h-14 bg-primary text-primary-foreground font-mono font-bold text-sm tracking-wider flex flex-col items-center justify-center leading-tight active:bg-primary/90"
         >
           <span className="text-[10px] font-normal opacity-75 uppercase tracking-widest">Buy Now</span>
-          <span className="text-base font-black">${(product.price * quantity).toFixed(2)}</span>
+          <span className="text-base font-black">{fmt(product.price * quantity)}</span>
         </button>
       </div>
     </div>
