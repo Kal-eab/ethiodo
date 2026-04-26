@@ -10,15 +10,10 @@ export default function ProductCard({ product, isFavorite, favoriteId, badge }) 
   const navigate = useNavigate();
   const image = product.images?.[0] || '/placeholder.png';
 
-  const handleBuy = async (e) => {
+  const handleBuy = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const isAuth = await base44.auth.isAuthenticated();
-    if (!isAuth) {
-      base44.auth.redirectToLogin(`/payment?product=${product.id}&qty=1`);
-      return;
-    }
-    navigate(`/payment?product=${product.id}&qty=1`);
+    navigate(`/product/${product.id}`);
   };
 
   const toggleFavorite = async (e) => {
