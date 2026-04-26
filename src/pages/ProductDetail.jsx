@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Heart, Star, Minus, Plus, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Heart, Star, Minus, Plus, ShieldCheck, Truck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -177,7 +177,14 @@ export default function ProductDetail() {
               {product.description && (
                 <div className="space-y-2">
                   <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Description</p>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
+                  <ul className="space-y-1.5">
+                    {product.description.split(',').map((item, i) => item.trim() && (
+                      <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <span className="text-primary mt-0.5 flex-shrink-0">•</span>
+                        <span>{item.trim()}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
@@ -213,7 +220,6 @@ export default function ProductDetail() {
                 {[
                   { icon: ShieldCheck, text: 'Secure payment — verified orders' },
                   { icon: Truck, text: 'Fast tracked delivery' },
-                  { icon: RotateCcw, text: '14-day returns policy' },
                 ].map(t => {
                   const Icon = t.icon;
                   return (
