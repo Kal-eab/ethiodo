@@ -24,14 +24,10 @@
       "type": "string",
       "enum": [
         "electronics",
-        "foods",
-        "hygiene",
         "clothing",
         "accessories",
-        "home",
-        "shoes",
         "sports",
-        "other"
+        "phones"
       ],
       "description": "Product category"
     },

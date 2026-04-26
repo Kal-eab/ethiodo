@@ -9,11 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
-const CATEGORIES = ['electronics', 'foods', 'hygiene', 'clothing', 'accessories', 'home', 'shoes', 'sports', 'other'];
+const CATEGORIES = ['electronics', 'clothing', 'accessories', 'sports', 'phones'];
 
 const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44'];
 const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
-const PREDEFINED_CATEGORIES = ['clothing', 'shoes'];
+const PREDEFINED_CATEGORIES = ['clothing'];
 
 function SizeSelector({ category, sizes, onChange }) {
   const [inputValue, setInputValue] = useState('');
