@@ -27,7 +27,8 @@
         "clothing",
         "accessories",
         "sports",
-        "phones"
+        "phones",
+        "shoes"
       ],
       "description": "Product category"
     },

@@ -7,6 +7,7 @@ const CATEGORIES = [
   { value: 'accessories', label: 'Accessories' },
   { value: 'sports', label: 'Sports' },
   { value: 'phones', label: 'Phones' },
+  { value: 'shoes', label: 'Shoes' },
 ];
 
 export default function CategoryFilter({ active, onChange }) {
