@@ -85,7 +85,7 @@ export default function ProductCard({ product, isFavorite, favoriteId, badge }) 
           <h3 className="font-medium text-xs truncate leading-tight">{product.name}</h3>
           <div className="flex items-center justify-between gap-1 flex-wrap">
             <span className="font-mono font-bold text-primary text-sm">
-              ${product.price?.toFixed(2)}
+              {Number(product.price).toLocaleString('en-US', { maximumFractionDigits: 2 })} Birr
             </span>
             <div className="flex items-center gap-1.5">
               {product.stock > 0 && product.stock <= 5 && (
