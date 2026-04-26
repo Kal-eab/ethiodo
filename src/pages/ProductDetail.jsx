@@ -170,7 +170,7 @@ export default function ProductDetail() {
               </div>
 
               <div className="border-t border-b border-border py-6">
-                <span className="font-mono text-3xl font-bold text-primary">{fmt(product.price)}</span>
+                <span className="font-mono text-3xl font-bold text-primary">{fmt(product.price)} <span className="text-lg font-normal">Birr</span></span>
                 {product.stock > 0 && (
                   <p className="font-mono text-xs text-accent mt-2">IN STOCK — {product.stock} available</p>
                 )}
@@ -241,7 +241,7 @@ export default function ProductDetail() {
                   onClick={handleBuyNow}
                   className="w-full h-12 bg-primary text-primary-foreground font-mono font-bold tracking-wider hover:bg-primary/90"
                 >
-                  BUY NOW — {fmt(product.price * quantity)}
+                  BUY NOW — {fmt(product.price * quantity)} Birr
                 </Button>
                 <Button
                   onClick={toggleFav}
@@ -286,7 +286,7 @@ export default function ProductDetail() {
           className="flex-1 h-14 bg-primary text-primary-foreground font-mono font-bold text-sm tracking-wider flex flex-col items-center justify-center leading-tight active:bg-primary/90"
         >
           <span className="text-[10px] font-normal opacity-75 uppercase tracking-widest">Buy Now</span>
-          <span className="text-base font-black">{fmt(product.price * quantity)}</span>
+          <span className="text-base font-black">{fmt(product.price * quantity)} Birr</span>
         </button>
       </div>
     </div>
