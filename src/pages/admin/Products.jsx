@@ -138,6 +138,14 @@ function ProductForm({ product, onClose, onSave }) {
     setForm(f => ({ ...f, images: f.images.filter((_, i) => i !== idx) }));
   };
 
+  const setPrimaryImage = (idx) => {
+    setForm(f => {
+      const imgs = [...f.images];
+      const [primary] = imgs.splice(idx, 1);
+      return { ...f, images: [primary, ...imgs] };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (PREDEFINED_CATEGORIES.includes(form.category) && form.sizes.length === 0) {
@@ -233,10 +241,30 @@ function ProductForm({ product, onClose, onSave }) {
       {/* Images */}
       <div>
         <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Images</label>
+        <p className="font-mono text-[10px] text-muted-foreground mb-2">Click ★ to set as the main (cover) photo. The first image is shown on the product listing.</p>
         <div className="flex flex-wrap gap-2 mb-2">
           {form.images.map((url, i) => (
-            <div key={i} className="relative w-20 h-20 bg-secondary border border-border overflow-hidden group">
+            <div key={i} className="relative w-20 h-20 bg-secondary border overflow-hidden group"
+              style={{ borderColor: i === 0 ? 'hsl(72,100%,50%)' : undefined }}
+            >
               <img src={url} alt="" className="w-full h-full object-cover" />
+              {/* Primary badge */}
+              {i === 0 && (
+                <div className="absolute bottom-0 left-0 right-0 bg-primary/80 text-primary-foreground font-mono text-[8px] text-center py-0.5">
+                  COVER
+                </div>
+              )}
+              {/* Set primary button */}
+              {i !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => setPrimaryImage(i)}
+                  className="absolute bottom-0 left-0 right-0 bg-black/60 text-yellow-300 font-mono text-[9px] text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  ★ Set Cover
+                </button>
+              )}
+              {/* Remove button */}
               <button
                 type="button"
                 onClick={() => removeImage(i)}
