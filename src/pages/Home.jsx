@@ -194,16 +194,26 @@ export default function Home() {
           <div className="space-y-2">
             <TrendingSection products={trendingProducts} favorites={favMap} />
 
-            {/* Sign-in nudge */}
+            {/* Sign-in / Register banner */}
             <div className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between gap-4 py-3 px-4 border border-border/50 bg-card/40 rounded-xl">
-                <p className="font-mono text-xs text-muted-foreground">Sign in to get recommendations made just for you</p>
-                <button
-                  onClick={() => base44.auth.redirectToLogin(window.location.href)}
-                  className="flex items-center gap-1.5 text-xs font-mono font-semibold text-primary border border-primary/40 px-3 py-1.5 rounded-full hover:bg-primary/10 transition-colors flex-shrink-0"
-                >
-                  <LogIn className="w-3 h-3" /> Sign In
-                </button>
+              <div className="border border-primary/20 bg-card/60 p-4 sm:p-5"
+                style={{ background: 'linear-gradient(135deg, rgba(180,255,0,0.04) 0%, rgba(0,0,0,0) 100%)' }}>
+                <p className="font-bold text-sm sm:text-base mb-1">Welcome to Ethiodo 👋</p>
+                <p className="font-mono text-xs text-muted-foreground mb-4">Sign in or create an account to get personalized recommendations, track orders, and save favorites.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => base44.auth.redirectToLogin(window.location.href)}
+                    className="flex-1 h-11 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono font-bold text-sm hover:bg-primary/90 transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" /> Login
+                  </button>
+                  <button
+                    onClick={() => base44.auth.redirectToLogin(window.location.href)}
+                    className="flex-1 h-11 flex items-center justify-center gap-2 border border-primary/50 text-primary font-mono font-bold text-sm hover:bg-primary/10 transition-colors"
+                  >
+                    Register
+                  </button>
+                </div>
               </div>
             </div>
 
