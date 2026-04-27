@@ -183,24 +183,13 @@ function OrderItemRow({ item, order, isDelivered, onReviewed }) {
           <p className="font-mono text-xs text-muted-foreground">×{item.quantity} — ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</p>
         </div>
         {isDelivered && (
-          <Button
-            size="sm"
-            onClick={() => setShowModal(true)}
-            className="bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/30 font-mono text-xs h-8 flex-shrink-0"
-          >
-            Review & Remove
-          </Button>
+          <span className="font-mono text-xs text-green-400 border border-green-400/30 bg-green-400/10 px-2 py-1 flex-shrink-0">
+            ✓ Received
+          </span>
         )}
       </div>
 
-      {showModal && (
-        <ReviewRemoveModal
-          item={item}
-          order={order}
-          onClose={() => setShowModal(false)}
-          onDone={() => { setShowModal(false); onReviewed(); }}
-        />
-      )}
+
     </>
   );
 }
@@ -373,11 +362,7 @@ export default function Orders() {
             </div>
           )}
 
-          {activeTab === 'delivered' && tabOrders.length > 0 && (
-            <p className="font-mono text-[11px] text-muted-foreground text-center mt-6">
-              To remove a delivered item, click "Review &amp; Remove" and submit a review with photos.
-            </p>
-          )}
+
         </div>
       </main>
     </div>
