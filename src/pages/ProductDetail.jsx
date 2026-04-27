@@ -143,7 +143,9 @@ export default function ProductDetail() {
                 {images.length > 1 && (
                   <>
                     <button
-                      onClick={() => setSelectedImage(i => (i - 1 + images.length) % images.length)}
+                      onClick={() => setSelectedImage(i => Math.max(0, i - 1))}
+                      disabled={selectedImage === 0}
+                      style={{ opacity: selectedImage === 0 ? 0.2 : 1, pointerEvents: selectedImage === 0 ? 'none' : 'auto' }}
                       className="hidden lg:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 items-center justify-center bg-black/50 hover:bg-black/75 text-white border border-white/20 transition-colors"
                       aria-label="Previous image"
                     >
