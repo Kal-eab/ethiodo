@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Package, Star, Upload, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
@@ -82,9 +83,9 @@ function ReviewRemoveModal({ item, order, onClose, onDone }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={e => e.stopPropagation()}>
-      <div className="bg-card border border-border w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+      <div className="bg-card border border-border w-full max-w-lg max-h-[90vh] overflow-y-auto" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div>
             <h2 className="font-bold text-base">Review & Remove</h2>
@@ -157,6 +158,8 @@ function ReviewRemoveModal({ item, order, onClose, onDone }) {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 
 // ─── Pending notice banner ───────────────────────────────────────────────────
