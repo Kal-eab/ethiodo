@@ -67,7 +67,7 @@ export default function AdminDashboard() {
     queryFn: () => base44.entities.ContactRequest.list('-created_date', 50),
   });
 
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.profit_recorded ?? 0), 0);
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
   const newRequests = requests.filter(r => r.status === 'new').length;
 
