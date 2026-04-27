@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Search, X, LogIn } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Footer from '@/components/store/Footer';
 import ProductCard from '@/components/store/ProductCard';
 import CategoryFilter from '@/components/store/CategoryFilter';
@@ -19,6 +20,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isAuth, setIsAuth] = useState(false);
   const [guestRecentIds, setGuestRecentIds] = useState([]);
@@ -208,7 +210,7 @@ export default function Home() {
                     <LogIn className="w-4 h-4" /> Login
                   </button>
                   <button
-                    onClick={() => base44.auth.redirectToLogin(window.location.href)}
+                    onClick={() => navigate('/register')}
                     className="flex-1 h-11 flex items-center justify-center gap-2 border border-primary/50 text-primary font-mono font-bold text-sm hover:bg-primary/10 transition-colors"
                   >
                     Register

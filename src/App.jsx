@@ -31,6 +31,7 @@ import RefundPolicy from '@/pages/legal/RefundPolicy';
 import Terms from '@/pages/legal/Terms';
 import Profile from '@/pages/Profile';
 import Dashboard from '@/pages/Dashboard';
+import Register from '@/pages/Register';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -46,6 +47,7 @@ const AnimatedRoutes = () => {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/refund" element={<RefundPolicy />} />
       <Route path="/legal/terms" element={<Terms />} />
