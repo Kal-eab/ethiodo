@@ -120,6 +120,8 @@ function ProductForm({ product, onClose, onSave }) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sizeError, setSizeError] = useState('');
+  const dragItem = useRef(null);
+  const dragOver = useRef(null);
 
   const handleUploadImages = async (e) => {
     const files = Array.from(e.target.files);
@@ -143,6 +145,20 @@ function ProductForm({ product, onClose, onSave }) {
       const imgs = [...f.images];
       const [primary] = imgs.splice(idx, 1);
       return { ...f, images: [primary, ...imgs] };
+    });
+  };
+
+  const handleDragStart = (idx) => { dragItem.current = idx; };
+  const handleDragEnter = (idx) => { dragOver.current = idx; };
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOver.current === null || dragItem.current === dragOver.current) return;
+    setForm(f => {
+      const imgs = [...f.images];
+      const [dragged] = imgs.splice(dragItem.current, 1);
+      imgs.splice(dragOver.current, 0, dragged);
+      dragItem.current = null;
+      dragOver.current = null;
+      return { ...f, images: imgs };
     });
   };
 
@@ -244,10 +260,17 @@ function ProductForm({ product, onClose, onSave }) {
         <p className="font-mono text-[10px] text-muted-foreground mb-2">Click ★ to set as the main (cover) photo. The first image is shown on the product listing.</p>
         <div className="flex flex-wrap gap-2 mb-2">
           {form.images.map((url, i) => (
-            <div key={i} className="relative w-20 h-20 bg-secondary border overflow-hidden group"
+            <div
+              key={url}
+              draggable
+              onDragStart={() => handleDragStart(i)}
+              onDragEnter={() => handleDragEnter(i)}
+              onDragEnd={handleDragEnd}
+              onDragOver={e => e.preventDefault()}
+              className="relative w-20 h-20 bg-secondary border overflow-hidden group cursor-grab active:cursor-grabbing select-none"
               style={{ borderColor: i === 0 ? 'hsl(72,100%,50%)' : undefined }}
             >
-              <img src={url} alt="" className="w-full h-full object-cover" />
+              <img src={url} alt="" className="w-full h-full object-cover pointer-events-none" />
               {/* Primary badge */}
               {i === 0 && (
                 <div className="absolute bottom-0 left-0 right-0 bg-primary/80 text-primary-foreground font-mono text-[8px] text-center py-0.5">
