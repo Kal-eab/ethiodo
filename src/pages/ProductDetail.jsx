@@ -139,6 +139,34 @@ export default function ProductDetail() {
                   className="relative z-10 w-auto h-auto max-w-full max-h-full m-auto block"
                   style={{ position: 'absolute', inset: 0, margin: 'auto', objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
                 />
+                {/* Prev / Next arrows — desktop only */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setSelectedImage(i => (i - 1 + images.length) % images.length)}
+                      className="hidden lg:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 items-center justify-center bg-black/50 hover:bg-black/75 text-white border border-white/20 transition-colors"
+                      aria-label="Previous image"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setSelectedImage(i => (i + 1) % images.length)}
+                      className="hidden lg:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 items-center justify-center bg-black/50 hover:bg-black/75 text-white border border-white/20 transition-colors"
+                      aria-label="Next image"
+                    >
+                      <ArrowLeft className="w-4 h-4 rotate-180" />
+                    </button>
+                    <div className="hidden lg:flex absolute bottom-3 left-1/2 -translate-x-1/2 z-20 gap-1.5">
+                      {images.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setSelectedImage(i)}
+                          className={`rounded-full transition-all ${i === selectedImage ? 'w-4 h-1.5 bg-primary' : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
               {images.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto">
