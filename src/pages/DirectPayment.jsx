@@ -451,7 +451,7 @@ export default function DirectPayment() {
           <div className="bg-primary/5 border border-primary/20 p-4 mb-4">
             <p className="font-mono text-xs font-bold text-primary uppercase mb-1">Instructions</p>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Transfer <strong className="text-foreground">{fmt(total)} Birr</strong> to the account above, then upload a screenshot of your payment confirmation below.
+              Transfer <strong className="text-foreground">{fmt(Math.round(total * 0.1))} Birr</strong> (10% deposit) to the account above, then upload a screenshot of your payment confirmation below.
             </p>
           </div>
 

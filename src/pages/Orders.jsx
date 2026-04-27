@@ -249,6 +249,59 @@ export default function Orders() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
+  // Request notification permission and subscribe to order status changes
+  useEffect(() => {
+    if (!user) return;
+
+    // Ask for permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    // Subscribe to order updates
+    const unsubscribe = base44.entities.Order.subscribe((event) => {
+      if (event.type !== 'update') return;
+      const order = event.data;
+      if (!order || order.customer_email !== user.email) return;
+
+      const statusLabels = {
+        confirmed: 'Your order has been confirmed! ✅',
+        shipped: 'Your order is on its way! 🚚',
+        delivered: 'Your order has been delivered! 🎉',
+      };
+      const msg = statusLabels[order.status];
+      if (!msg) return;
+
+      // Refresh orders list
+      queryClient.invalidateQueries({ queryKey: ['my-orders', user.email] });
+
+      // Play a subtle notification sound using Web Audio API
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.4);
+      } catch (_) {}
+
+      // Browser notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Ethiodo Order Update', {
+          body: msg,
+          icon: 'https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/6811e703c_Gemini_Generated_Image_olhtx9olhtx9olht.png',
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user, queryClient]);
+
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['my-orders', user?.email],
     queryFn: () => base44.entities.Order.filter({ created_by: user.email }, '-created_date', 100),
