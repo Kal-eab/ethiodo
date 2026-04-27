@@ -30,6 +30,7 @@ import PrivacyPolicy from '@/pages/legal/PrivacyPolicy';
 import RefundPolicy from '@/pages/legal/RefundPolicy';
 import Terms from '@/pages/legal/Terms';
 import Profile from '@/pages/Profile';
+import Dashboard from '@/pages/Dashboard';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -44,6 +45,7 @@ const AnimatedRoutes = () => {
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/refund" element={<RefundPolicy />} />
       <Route path="/legal/terms" element={<Terms />} />
