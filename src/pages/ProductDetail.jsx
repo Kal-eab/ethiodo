@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Heart, Star, Minus, Plus, ShieldCheck, Truck } from 'lucide-react';
@@ -23,6 +23,7 @@ export default function ProductDetail() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [sizeError, setSizeError] = useState('');
+  const sizeRef = useRef(null);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', productId],
@@ -56,7 +57,9 @@ export default function ProductDetail() {
   const handleBuyNow = async () => {
     if (product?.sizes?.length > 0 && !selectedSize) {
       setSizeError('Please select a size to continue.');
-      toast.error('Please select a size to continue');
+      if (sizeRef.current) {
+        sizeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
     setSizeError('');
@@ -192,7 +195,7 @@ export default function ProductDetail() {
 
               {/* Size / Options selector */}
               {product.sizes?.length > 0 && (
-                <div className="space-y-2">
+                <div ref={sizeRef} className="space-y-2">
                   <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                     {['clothing', 'shoes'].includes(product.category) ? 'Size' : 'Option'}
                   </p>
@@ -283,10 +286,10 @@ export default function ProductDetail() {
         {/* Right: Buy Now button */}
         <button
           onClick={handleBuyNow}
-          className="flex-1 h-14 bg-primary text-primary-foreground font-mono font-bold text-sm tracking-wider flex flex-col items-center justify-center leading-tight active:bg-primary/90"
+          className="flex-1 h-16 bg-primary text-primary-foreground font-mono flex flex-col items-center justify-center leading-tight active:bg-primary/90"
         >
-          <span className="text-[10px] font-normal opacity-75 uppercase tracking-widest">Buy Now</span>
-          <span className="text-base font-black">{fmt(product.price * quantity)} Birr</span>
+          <span className="text-lg font-black uppercase tracking-widest">BUY NOW</span>
+          <span className="text-sm font-semibold opacity-90">{fmt(product.price * quantity)} Birr</span>
         </button>
       </div>
     </div>
