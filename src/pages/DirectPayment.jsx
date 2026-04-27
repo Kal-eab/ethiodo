@@ -374,7 +374,7 @@ export default function DirectPayment() {
               </div>
               {selectedSize && (
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                  <span className="font-mono text-xs text-muted-foreground uppercase">Size</span>
+                  <span className="font-mono text-xs text-muted-foreground uppercase">{product?.category === 'phones' ? 'Color' : 'Size'}</span>
                   <span className="font-mono font-bold text-sm px-3 py-1 border border-primary text-primary">{selectedSize}</span>
                 </div>
               )}
