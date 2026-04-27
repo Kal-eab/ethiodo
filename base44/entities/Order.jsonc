@@ -66,6 +66,15 @@
     "delivered_date": {
       "type": "string",
       "description": "ISO timestamp when order was delivered"
+    },
+    "money_received": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether payment cash was received"
+    },
+    "money_received_date": {
+      "type": "string",
+      "description": "ISO timestamp when money was marked received"
     }
   },
   "required": [

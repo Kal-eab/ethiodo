@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Search, Clock, CheckCircle2, Package } from 'lucide-react';
+import { Search, Clock, CheckCircle2, Package, Trash2, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 import OrderDetailDrawer from '@/components/admin/OrderDetailDrawer';
 
 const TABS = [
@@ -28,6 +29,22 @@ export default function AdminOrders() {
     queryKey: ['admin-orders'],
     queryFn: () => base44.entities.Order.list('-created_date', 200),
   });
+
+  const handleDelete = async (orderId) => {
+    if (!window.confirm('Delete this fake order?')) return;
+    await base44.entities.Order.delete(orderId);
+    queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+    toast.success('Order deleted');
+  };
+
+  const handleMoneyReceived = async (order) => {
+    await base44.entities.Order.update(order.id, {
+      money_received: true,
+      money_received_date: new Date().toISOString(),
+    });
+    queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+    toast.success('Revenue recorded!');
+  };
 
   const handleStatusChange = async (orderId, newStatus) => {
     const order = orders.find(o => o.id === orderId);
@@ -77,7 +94,15 @@ export default function AdminOrders() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
-      <h1 className="font-mono text-lg font-bold uppercase tracking-wider">Orders</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-mono text-lg font-bold uppercase tracking-wider">Orders</h1>
+        <Link
+          to="/admin/revenue"
+          className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 text-primary font-mono text-xs uppercase hover:bg-primary/20 transition-colors"
+        >
+          <DollarSign className="w-3.5 h-3.5" /> View Revenue
+        </Link>
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
@@ -147,14 +172,22 @@ export default function AdminOrders() {
               </div>
 
               {/* Quick action buttons */}
-              <div onClick={e => e.stopPropagation()}>
+              <div onClick={e => e.stopPropagation()} className="flex items-center gap-2">
                 {order.status === 'pending' && (
-                  <button
-                    onClick={() => handleStatusChange(order.id, 'confirmed')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-400/10 border border-blue-400/30 text-blue-400 font-mono text-xs uppercase hover:bg-blue-400/20 transition-colors"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Confirm
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleStatusChange(order.id, 'confirmed')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-400/10 border border-blue-400/30 text-blue-400 font-mono text-xs uppercase hover:bg-blue-400/20 transition-colors"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Confirm
+                    </button>
+                    <button
+                      onClick={() => handleDelete(order.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 border border-destructive/30 text-destructive font-mono text-xs uppercase hover:bg-destructive/20 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
+                  </>
                 )}
                 {order.status === 'confirmed' && (
                   <button
@@ -163,6 +196,19 @@ export default function AdminOrders() {
                   >
                     <Package className="w-3.5 h-3.5" /> Delivered
                   </button>
+                )}
+                {order.status === 'delivered' && !order.money_received && (
+                  <button
+                    onClick={() => handleMoneyReceived(order)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/30 text-primary font-mono text-xs uppercase hover:bg-primary/20 transition-colors"
+                  >
+                    <DollarSign className="w-3.5 h-3.5" /> Money Received
+                  </button>
+                )}
+                {order.status === 'delivered' && order.money_received && (
+                  <span className="font-mono text-xs text-primary px-2 py-1 border border-primary/20 bg-primary/5">
+                    ✓ Recorded
+                  </span>
                 )}
               </div>
             </div>
