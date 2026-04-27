@@ -55,29 +55,31 @@ function ReviewRemoveModal({ item, order, onClose, onDone }) {
     if (body.trim().length < 10) { toast.error('Please write a review (at least 10 characters)'); return; }
     if (photos.length === 0) { toast.error('Please add at least one photo'); return; }
     setSubmitting(true);
+    try {
+      await base44.entities.Review.create({
+        product_id: item.product_id,
+        order_id: order.id,
+        rating,
+        body: body.trim(),
+        photos,
+        reviewer_name: order.customer_name || '',
+        reviewer_email: order.customer_email || '',
+        verified_buyer: true,
+        status: 'pending',
+      });
 
-    // Create review
-    await base44.entities.Review.create({
-      product_id: item.product_id,
-      order_id: order.id,
-      rating,
-      body: body.trim(),
-      photos,
-      reviewer_name: order.customer_name || '',
-      reviewer_email: order.customer_email || '',
-      verified_buyer: true,
-      status: 'pending',
-    });
+      const updatedItems = (order.items || []).map(orderItem =>
+        orderItem.product_id === item.product_id ? { ...orderItem, removed: true } : orderItem
+      );
+      await base44.entities.Order.update(order.id, { items: updatedItems });
 
-    // Remove this item from the order's items list (mark as reviewed/hidden)
-    const updatedItems = order.items.map(i =>
-      i.product_id === item.product_id ? { ...i, removed: true } : i
-    );
-    await base44.entities.Order.update(order.id, { items: updatedItems });
-
-    toast.success('Review submitted! The product has been removed from your list.');
-    setSubmitting(false);
-    onDone();
+      toast.success('Review submitted! Product removed from your list.');
+      onDone();
+    } catch (err) {
+      toast.error('Something went wrong: ' + err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
