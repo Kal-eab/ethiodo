@@ -78,10 +78,10 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
 
   const navLinks = [
     { label: 'Shop', path: '/' },
-    { label: 'Dashboard', path: '/dashboard' },
     { label: 'Orders', path: '/orders' },
     { label: 'Favorites', path: '/favorites' },
     { label: 'Messages', path: '/messages' },
+    { label: 'Dashboard', path: '/dashboard' },
     { label: 'About', path: '/about' },
   ];
 
