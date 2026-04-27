@@ -13,15 +13,14 @@ const CATEGORIES = ['electronics', 'clothing', 'accessories', 'sports', 'phones'
 
 const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44'];
 const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+const PHONE_COLORS = ['Black', 'White', 'Red', 'Green', 'Purple', 'Blue', 'Gold', 'Silver'];
 const PREDEFINED_CATEGORIES = ['clothing', 'shoes'];
 
 function SizeSelector({ category, sizes, onChange }) {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
 
-  const isPredefined = PREDEFINED_CATEGORIES.includes(category);
-
-  const toggleSize = (s) => {
+  const toggleItem = (s) => {
     const next = sizes.includes(s) ? sizes.filter(x => x !== s) : [...sizes, s];
     onChange(next);
   };
@@ -36,67 +35,93 @@ function SizeSelector({ category, sizes, onChange }) {
 
   const removeOption = (s) => onChange(sizes.filter(x => x !== s));
 
-  if (isPredefined) {
+  // Clothing / Shoes — predefined size chips
+  if (PREDEFINED_CATEGORIES.includes(category)) {
     const sizeList = category === 'shoes' ? SHOE_SIZES : CLOTHING_SIZES;
     return (
       <div className="space-y-2">
         <p className="font-mono text-[10px] text-muted-foreground">Click chips to toggle available sizes</p>
         <div className="flex flex-wrap gap-2">
           {sizeList.map(s => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => toggleSize(s)}
+            <button key={s} type="button" onClick={() => toggleItem(s)}
               className={`px-4 py-2 font-mono text-sm font-bold border transition-all select-none ${
-                sizes.includes(s)
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-secondary text-muted-foreground border-border hover:border-foreground'
-              }`}
-            >
+                sizes.includes(s) ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-foreground'
+              }`}>
               {s}
             </button>
           ))}
         </div>
-        {sizes.length > 0 && (
-          <p className="font-mono text-[10px] text-primary">Selected: {sizes.join(', ')}</p>
-        )}
+        {sizes.length > 0 && <p className="font-mono text-[10px] text-primary">Selected: {sizes.join(', ')}</p>}
       </div>
     );
   }
 
-  // Dynamic custom options for all other categories
+  // Phones — preset color chips + custom input
+  if (category === 'phones') {
+    return (
+      <div className="space-y-3">
+        <p className="font-mono text-[10px] text-muted-foreground">Click to toggle available colors</p>
+        <div className="flex flex-wrap gap-2">
+          {PHONE_COLORS.map(c => (
+            <button key={c} type="button" onClick={() => toggleItem(c)}
+              className={`px-4 py-2 font-mono text-sm font-bold border transition-all select-none ${
+                sizes.includes(c) ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-foreground'
+              }`}>
+              {c}
+            </button>
+          ))}
+        </div>
+        {/* Custom color input */}
+        <div className="flex gap-2">
+          <Input
+            ref={inputRef}
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomOption(); } }}
+            placeholder='Add custom color, e.g. "Rose Gold", "Mint"'
+            className="bg-secondary border-border h-10 flex-1"
+          />
+          <button type="button" onClick={addCustomOption} disabled={!inputValue.trim()}
+            className="flex items-center gap-1 px-4 h-10 border border-primary text-primary font-mono text-xs hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none">
+            <Plus className="w-3.5 h-3.5" /> Add
+          </button>
+        </div>
+        {/* Show custom (non-preset) colors as removable tags */}
+        {sizes.filter(s => !PHONE_COLORS.includes(s)).length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {sizes.filter(s => !PHONE_COLORS.includes(s)).map(s => (
+              <span key={s} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary border border-primary/40 font-mono text-xs text-primary">
+                {s}
+                <button type="button" onClick={() => removeOption(s)} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
+              </span>
+            ))}
+          </div>
+        )}
+        {sizes.length > 0 && <p className="font-mono text-[10px] text-primary">Selected: {sizes.join(', ')}</p>}
+      </div>
+    );
+  }
+
+  // All other categories — free-text options
   return (
     <div className="space-y-2">
       <p className="font-mono text-[10px] text-muted-foreground">Add selectable options customers can choose from</p>
-      {/* Existing options as removable tags */}
       {sizes.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {sizes.map(s => (
             <span key={s} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary border border-border font-mono text-xs">
               {s}
-              <button type="button" onClick={() => removeOption(s)} className="text-muted-foreground hover:text-destructive transition-colors">
-                <X className="w-3 h-3" />
-              </button>
+              <button type="button" onClick={() => removeOption(s)} className="text-muted-foreground hover:text-destructive transition-colors"><X className="w-3 h-3" /></button>
             </span>
           ))}
         </div>
       )}
-      {/* Add new option */}
       <div className="flex gap-2">
-        <Input
-          ref={inputRef}
-          value={inputValue}
-          onChange={e => setInputValue(e.target.value)}
+        <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomOption(); } }}
-          placeholder='e.g. "500ml", "Red", "Pack of 3"'
-          className="bg-secondary border-border h-10 flex-1"
-        />
-        <button
-          type="button"
-          onClick={addCustomOption}
-          disabled={!inputValue.trim()}
-          className="flex items-center gap-1 px-4 h-10 border border-primary text-primary font-mono text-xs hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
-        >
+          placeholder='e.g. "500ml", "Pack of 3"' className="bg-secondary border-border h-10 flex-1" />
+        <button type="button" onClick={addCustomOption} disabled={!inputValue.trim()}
+          className="flex items-center gap-1 px-4 h-10 border border-primary text-primary font-mono text-xs hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none">
           <Plus className="w-3.5 h-3.5" /> Add
         </button>
       </div>
@@ -215,7 +240,7 @@ function ProductForm({ product, onClose, onSave }) {
       {/* Options — dynamic by category */}
       <div>
         <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-          {PREDEFINED_CATEGORIES.includes(form.category) ? 'Available Sizes' : 'Product Options'}
+          {form.category === 'phones' ? 'Available Colors' : PREDEFINED_CATEGORIES.includes(form.category) ? 'Available Sizes' : 'Product Options'}
         </label>
         <SizeSelector
           category={form.category}

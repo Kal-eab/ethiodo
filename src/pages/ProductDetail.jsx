@@ -227,7 +227,7 @@ export default function ProductDetail() {
               {product.sizes?.length > 0 && (
                 <div ref={sizeRef} className="space-y-2">
                   <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-                    {['clothing', 'shoes'].includes(product.category) ? 'Size' : 'Option'}
+                    {product.category === 'phones' ? 'Color' : ['clothing', 'shoes'].includes(product.category) ? 'Size' : 'Option'}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {product.sizes.map(s => (
