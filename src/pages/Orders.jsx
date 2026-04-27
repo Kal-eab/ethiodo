@@ -83,8 +83,8 @@ function ReviewRemoveModal({ item, order, onClose, onDone }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="bg-card border border-border w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-card border border-border w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div>
             <h2 className="font-bold text-base">Review & Remove</h2>
@@ -104,7 +104,7 @@ function ReviewRemoveModal({ item, order, onClose, onDone }) {
             <p className="font-mono text-xs text-muted-foreground uppercase mb-2">Your Rating *</p>
             <div className="flex gap-1">
               {[1,2,3,4,5].map(i => (
-                <button key={i} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(0)} onClick={() => setRating(i)}>
+                <button type="button" key={i} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(0)} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setRating(i); }}>
                   <Star className={`w-7 h-7 transition-colors ${i <= (hover || rating) ? 'fill-primary text-primary' : 'text-border'}`} />
                 </button>
               ))}
@@ -144,14 +144,15 @@ function ReviewRemoveModal({ item, order, onClose, onDone }) {
             </div>
           </div>
 
-          <Button
+          <button
+            type="button"
             onClick={handleSubmit}
             disabled={submitting || uploading}
-            className="w-full h-11 bg-primary text-primary-foreground font-mono font-bold hover:bg-primary/90"
+            className="w-full h-11 bg-primary text-primary-foreground font-mono font-bold hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
             SUBMIT REVIEW & REMOVE
-          </Button>
+          </button>
         </div>
       </div>
     </div>
@@ -175,6 +176,12 @@ function OrderItemRow({ item, order, isDelivered, onReviewed }) {
   const [showModal, setShowModal] = useState(false);
   const [removed, setRemoved] = useState(false);
 
+  const { data: itemReviews = [] } = useQuery({
+    queryKey: ['order-item-reviews', item.product_id, order.id],
+    queryFn: () => base44.entities.Review.filter({ product_id: item.product_id, status: 'approved' }, '-created_date', 5),
+    enabled: isDelivered && !!item.product_id,
+  });
+
   if (removed) return null;
 
   return (
@@ -196,6 +203,39 @@ function OrderItemRow({ item, order, isDelivered, onReviewed }) {
           </button>
         )}
       </div>
+
+      {/* Inline reviews below delivered item */}
+      {isDelivered && itemReviews.length > 0 && (
+        <div className="mb-3 space-y-2 border-l-2 border-primary/20 pl-3 ml-1">
+          <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">Customer Reviews</p>
+          {itemReviews.map(review => (
+            <div key={review.id} className="bg-secondary/40 p-3 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0">
+                  {(review.reviewer_name || 'A')[0].toUpperCase()}
+                </div>
+                <span className="text-xs font-semibold">{review.reviewer_name || 'Anonymous'}</span>
+                {review.verified_buyer && <span className="font-mono text-[9px] text-accent border border-accent/30 px-1 py-0.5">✓ Verified</span>}
+                <div className="flex gap-0.5 ml-auto">
+                  {[1,2,3,4,5].map(i => (
+                    <Star key={i} className={`w-3 h-3 ${i <= review.rating ? 'fill-primary text-primary' : 'text-border'}`} />
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">{review.body}</p>
+              {review.photos?.length > 0 && (
+                <div className="flex gap-1.5 flex-wrap">
+                  {review.photos.slice(0, 3).map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt="" className="w-14 h-14 object-cover border border-border hover:opacity-80 transition-opacity" />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {showModal && (
         <ReviewRemoveModal
