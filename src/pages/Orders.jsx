@@ -183,13 +183,23 @@ function OrderItemRow({ item, order, isDelivered, onReviewed }) {
           <p className="font-mono text-xs text-muted-foreground">×{item.quantity} — ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</p>
         </div>
         {isDelivered && (
-          <span className="font-mono text-xs text-green-400 border border-green-400/30 bg-green-400/10 px-2 py-1 flex-shrink-0">
-            ✓ Received
-          </span>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs font-semibold border border-primary/40 text-primary bg-primary/5 hover:bg-primary/15 transition-colors"
+          >
+            <Star className="w-3 h-3" /> Review & Remove
+          </button>
         )}
       </div>
 
-
+      {showModal && (
+        <ReviewRemoveModal
+          item={item}
+          order={order}
+          onClose={() => setShowModal(false)}
+          onDone={() => { setShowModal(false); onReviewed(); }}
+        />
+      )}
     </>
   );
 }
