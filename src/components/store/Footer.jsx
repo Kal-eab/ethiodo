@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, Truck, RotateCcw } from 'lucide-react';
+import { ShieldCheck, Truck } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -12,7 +12,6 @@ export default function Footer() {
             {[
               { icon: ShieldCheck, title: 'Secure Checkout', desc: '256-bit SSL encryption' },
               { icon: Truck, title: 'Fast Delivery', desc: 'Tracked shipping on every order' },
-              { icon: RotateCcw, title: '14-Day Returns', desc: 'Hassle-free return policy' },
             ].map(b => {
               const Icon = b.icon;
               return (
