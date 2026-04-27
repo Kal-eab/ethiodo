@@ -1,9 +1,10 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Package, ShoppingCart, DollarSign, MessageSquare, Clock, Check, Truck } from 'lucide-react';
+import { Package, ShoppingCart, DollarSign, Clock, Trash2, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
@@ -22,6 +23,35 @@ function StatCard({ icon: Icon, label, value, color }) {
 }
 
 export default function AdminDashboard() {
+  const [resetting, setResetting] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleResetTestData = async () => {
+    if (!window.confirm('⚠️ This will permanently delete ALL orders, reviews, messages, notifications, and contact requests. Products will be kept. Are you sure?')) return;
+    setResetting(true);
+    try {
+      const [orders, reviews, messages, notifications, requests] = await Promise.all([
+        base44.entities.Order.list('-created_date', 500),
+        base44.entities.Review.list('-created_date', 500),
+        base44.entities.Message.list('-created_date', 500),
+        base44.entities.Notification.list('-created_date', 500),
+        base44.entities.ContactRequest.list('-created_date', 500),
+      ]);
+      await Promise.all([
+        ...orders.map(o => base44.entities.Order.delete(o.id)),
+        ...reviews.map(r => base44.entities.Review.delete(r.id)),
+        ...messages.map(m => base44.entities.Message.delete(m.id)),
+        ...notifications.map(n => base44.entities.Notification.delete(n.id)),
+        ...requests.map(r => base44.entities.ContactRequest.delete(r.id)),
+      ]);
+      queryClient.invalidateQueries();
+      toast.success('All test data cleared. Fresh start!');
+    } catch (err) {
+      toast.error('Error: ' + err.message);
+    }
+    setResetting(false);
+  };
+
   const { data: products = [] } = useQuery({
     queryKey: ['products'],
     queryFn: () => base44.entities.Product.list('-created_date', 200),
@@ -52,9 +82,19 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Overview of your store</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">Overview of your store</p>
+        </div>
+        <button
+          onClick={handleResetTestData}
+          disabled={resetting}
+          className="flex items-center gap-2 px-4 py-2 bg-destructive/10 border border-destructive/30 text-destructive font-mono text-xs uppercase hover:bg-destructive/20 transition-colors disabled:opacity-50"
+        >
+          {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+          Reset Test Data
+        </button>
       </div>
 
       {/* Stats */}

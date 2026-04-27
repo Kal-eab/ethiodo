@@ -15,9 +15,9 @@ export default function AdminRequests() {
   });
 
   const markHandled = async (id) => {
-    await base44.entities.ContactRequest.update(id, { status: 'handled' });
+    await base44.entities.ContactRequest.delete(id);
     queryClient.invalidateQueries({ queryKey: ['contact-requests'] });
-    toast.success('Marked as handled');
+    toast.success('Request deleted');
   };
 
   return (
