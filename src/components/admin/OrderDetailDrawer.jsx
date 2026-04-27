@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Hash, CheckCircle2, Package, Clock } from 'lucide-react';
+import { ImageIcon, CheckCircle2, Package, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
 const STATUS_CONFIG = {
@@ -90,17 +90,20 @@ export default function OrderDetailDrawer({ order, onClose, onStatusChange }) {
             </div>
           </div>
 
-          {/* Transaction ID */}
+          {/* Payment Screenshot */}
           {order.payment_proof_url && (
             <div>
               <p className="font-mono text-xs text-muted-foreground uppercase mb-3 flex items-center gap-2">
-                <Hash className="w-3 h-3" /> Transaction ID
+                <ImageIcon className="w-3 h-3" /> Payment Screenshot
               </p>
-              <div className="bg-secondary/50 border border-border px-4 py-3">
-                <span className="font-mono text-sm font-bold text-primary break-all select-all">
-                  {order.payment_proof_url}
-                </span>
-              </div>
+              <a href={order.payment_proof_url} target="_blank" rel="noopener noreferrer" className="block">
+                <img
+                  src={order.payment_proof_url}
+                  alt="Payment screenshot"
+                  className="w-full border border-border object-contain max-h-80 bg-secondary/30 hover:opacity-90 transition-opacity cursor-zoom-in"
+                />
+              </a>
+              <p className="font-mono text-[10px] text-muted-foreground mt-1">Click image to open full size</p>
             </div>
           )}
         </div>
