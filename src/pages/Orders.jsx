@@ -173,6 +173,9 @@ function PendingTransactionBanner() {
 // ─── Single order item row ────────────────────────────────────────────────────
 function OrderItemRow({ item, order, isDelivered, onReviewed }) {
   const [showModal, setShowModal] = useState(false);
+  const [removed, setRemoved] = useState(false);
+
+  if (removed) return null;
 
   return (
     <>
@@ -199,7 +202,11 @@ function OrderItemRow({ item, order, isDelivered, onReviewed }) {
           item={item}
           order={order}
           onClose={() => setShowModal(false)}
-          onDone={() => { setShowModal(false); onReviewed(); }}
+          onDone={() => {
+            setShowModal(false);
+            setRemoved(true);
+            onReviewed();
+          }}
         />
       )}
     </>
