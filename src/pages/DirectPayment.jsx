@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { CheckCircle, ArrowLeft, CreditCard, Smartphone, MapPin, Pencil, X, Minus, Plus, Loader2 } from 'lucide-react';
+import { CheckCircle, ArrowLeft, CreditCard, Smartphone, MapPin, Pencil, X, Minus, Plus, Loader2, Upload, GripVertical, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate, Link } from 'react-router-dom';
@@ -19,22 +19,15 @@ function getParams() {
   };
 }
 
+const fmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+
 const PAYMENT_ACCOUNTS = [
   {
     icon: CreditCard,
-    label: 'Bank Transfer',
+    label: 'Bank Transfer (CBE)',
     details: [
-      { key: 'Bank', value: 'Commercial Bank of Ethiopia' },
-      { key: 'Account Name', value: 'Ethiodo Store' },
-      { key: 'Account Number', value: '1000123456789' },
-    ],
-  },
-  {
-    icon: Smartphone,
-    label: 'Mobile Money (Telebirr)',
-    details: [
-      { key: 'Name', value: 'Ethiodo Store' },
-      { key: 'Number', value: '+251 9XX XXX XXXX' },
+      { key: 'Account Name', value: 'Wubalem Mamo' },
+      { key: 'Account Number', value: '1000071273192' },
     ],
   },
 ];
@@ -100,19 +93,113 @@ function AddressEditor({ user, onSave, onCancel }) {
   );
 }
 
+// ─── Draggable screenshot uploader ───────────────────────────────────────────
+function ScreenshotUploader({ screenshots, onChange }) {
+  const [uploading, setUploading] = useState(false);
+  const dragItem = useRef(null);
+  const dragOver = useRef(null);
+
+  const handleFiles = async (files) => {
+    if (!files.length) return;
+    setUploading(true);
+    const urls = [];
+    for (const file of Array.from(files)) {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      urls.push(file_url);
+    }
+    onChange([...screenshots, ...urls]);
+    setUploading(false);
+  };
+
+  const removeScreenshot = (idx) => {
+    onChange(screenshots.filter((_, i) => i !== idx));
+  };
+
+  const handleDragStart = (idx) => { dragItem.current = idx; };
+  const handleDragEnter = (idx) => { dragOver.current = idx; };
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOver.current === null) return;
+    const arr = [...screenshots];
+    const dragged = arr.splice(dragItem.current, 1)[0];
+    arr.splice(dragOver.current, 0, dragged);
+    dragItem.current = null;
+    dragOver.current = null;
+    onChange(arr);
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Uploaded screenshots — draggable row */}
+      {screenshots.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {screenshots.map((url, i) => (
+            <div
+              key={url}
+              draggable
+              onDragStart={() => handleDragStart(i)}
+              onDragEnter={() => handleDragEnter(i)}
+              onDragEnd={handleDragEnd}
+              onDragOver={e => e.preventDefault()}
+              className="relative flex-shrink-0 w-24 h-24 border overflow-hidden cursor-grab active:cursor-grabbing select-none"
+              style={{ borderColor: i === 0 ? 'hsl(72,100%,50%)' : undefined }}
+            >
+              <img src={url} alt="" className="w-full h-full object-cover pointer-events-none" />
+              {i === 0 && (
+                <div className="absolute bottom-0 left-0 right-0 bg-primary/80 text-primary-foreground font-mono text-[8px] text-center py-0.5">
+                  FIRST
+                </div>
+              )}
+              {/* Drag handle hint */}
+              <div className="absolute top-1 left-1 opacity-60">
+                <GripVertical className="w-3 h-3 text-white drop-shadow" />
+              </div>
+              <button
+                type="button"
+                onClick={() => removeScreenshot(i)}
+                className="absolute top-0 right-0 bg-destructive text-destructive-foreground p-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload button */}
+      <label className="flex items-center justify-center gap-2 h-12 border border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors bg-secondary/40">
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={e => handleFiles(e.target.files)}
+        />
+        {uploading ? (
+          <><Loader2 className="w-4 h-4 animate-spin text-primary" /><span className="font-mono text-xs text-muted-foreground">Uploading…</span></>
+        ) : (
+          <><Upload className="w-4 h-4 text-muted-foreground" /><span className="font-mono text-xs text-muted-foreground">Upload payment screenshot(s)</span></>
+        )}
+      </label>
+
+      {screenshots.length > 1 && (
+        <p className="font-mono text-[10px] text-muted-foreground">Drag images left/right to reorder — first image is shown first.</p>
+      )}
+    </div>
+  );
+}
+
 export default function DirectPayment() {
   const { productId, quantity: initialQty, size: initialSize } = getParams();
   const [selectedSize] = useState(initialSize);
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [quantity, setQuantity] = useState(initialQty);
-  const [transactionId, setTransactionId] = useState('');
+  const [screenshots, setScreenshots] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [editingAddress, setEditingAddress] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
   const sliderRef = useRef(null);
-  // shipping snapshot (might differ from profile if user edits inline)
   const [shipping, setShipping] = useState(null);
 
   useEffect(() => {
@@ -141,7 +228,7 @@ export default function DirectPayment() {
   const total = product ? product.price * quantity : 0;
 
   const handleSubmit = async () => {
-    if (!transactionId.trim()) { toast.error('Please enter your transaction ID'); return; }
+    if (screenshots.length === 0) { toast.error('Please upload a screenshot of your payment'); return; }
     if (!shipping?.phone) { toast.error('Phone number is missing — please edit your address'); return; }
     if (!shipping?.region || !shipping?.city) { toast.error('Shipping address is incomplete — please edit it'); return; }
 
@@ -161,7 +248,7 @@ export default function DirectPayment() {
       }],
       total,
       status: 'pending',
-      payment_proof_url: transactionId.trim(),
+      payment_proof_url: screenshots[0],
       customer_email: user.email,
       customer_name: user.full_name,
       shipping_address: shippingAddress,
@@ -170,7 +257,7 @@ export default function DirectPayment() {
 
     await base44.entities.Notification.create({
       type: 'order',
-      content: `New order from ${user.full_name || user.email} — $${total.toFixed(2)} (${product.name})`,
+      content: `New order from ${user.full_name || user.email} — ${fmt(total)} Birr (${product.name})`,
       link: '/admin/orders',
       is_read: false,
     });
@@ -208,7 +295,7 @@ export default function DirectPayment() {
         <div>
           <h1 className="text-2xl font-bold mb-2">Order Received!</h1>
           <p className="text-muted-foreground text-sm max-w-sm">
-            We've received your transaction ID and will confirm your order shortly.
+            We've received your payment screenshot and will confirm your order shortly.
           </p>
         </div>
         <div className="flex flex-col gap-3 w-full max-w-xs">
@@ -217,9 +304,9 @@ export default function DirectPayment() {
           <Button
             variant="ghost"
             className="w-full font-mono text-muted-foreground text-xs"
-            onClick={() => { setDone(false); setTransactionId(''); }}
+            onClick={() => { setDone(false); setScreenshots([]); }}
           >
-            ↩ Try Again (wrong transaction ID?)
+            ↩ Try Again
           </Button>
         </div>
       </div>
@@ -233,20 +320,16 @@ export default function DirectPayment() {
       <MobileHeader title="Place Order" />
       <Navbar />
 
-      {/* Extra bottom padding on mobile so content isn't hidden behind sticky bar */}
       <main className="pt-16 pb-8 md:pb-8" style={{ paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
         <div className="max-w-xl mx-auto px-4 sm:px-6 py-4 md:py-8">
           <Link to={`/product/${productId}`} className="hidden md:inline-flex items-center gap-2 text-muted-foreground text-sm font-mono mb-8 hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" /> BACK TO PRODUCT
           </Link>
 
-
-
-          {/* ── Product card — swipeable image carousel + info + qty ── */}
+          {/* ── Product card ── */}
           <div className="bg-card border border-border mb-3 overflow-hidden">
             {product.images?.length > 0 && (
               <div className="relative" style={{ aspectRatio: '4/5' }}>
-                {/* Slides */}
                 <div
                   ref={sliderRef}
                   className="flex h-full overflow-x-auto scrollbar-none snap-x snap-mandatory"
@@ -262,8 +345,6 @@ export default function DirectPayment() {
                     </div>
                   ))}
                 </div>
-
-                {/* Dot indicators */}
                 {product.images.length > 1 && (
                   <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
                     {product.images.map((_, i) => (
@@ -278,8 +359,6 @@ export default function DirectPayment() {
                     ))}
                   </div>
                 )}
-
-                {/* Image counter badge */}
                 {product.images.length > 1 && (
                   <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white font-mono text-[10px] px-2 py-0.5 rounded-full">
                     {activeImage + 1}/{product.images.length}
@@ -291,7 +370,7 @@ export default function DirectPayment() {
               <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{product.category}</p>
               <div className="flex items-start justify-between gap-2">
                 <h2 className="font-bold text-base leading-tight">{product.name}</h2>
-                <p className="font-mono text-xl font-black text-primary flex-shrink-0">${total.toFixed(2)}</p>
+                <p className="font-mono text-xl font-black text-primary flex-shrink-0">{fmt(total)} Birr</p>
               </div>
               {selectedSize && (
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
@@ -314,7 +393,7 @@ export default function DirectPayment() {
             </div>
           </div>
 
-          {/* ── Shipping address — same on mobile & desktop ── */}
+          {/* ── Shipping address ── */}
           <div className="mb-3">
             {editingAddress ? (
               <AddressEditor
@@ -344,9 +423,9 @@ export default function DirectPayment() {
             )}
           </div>
 
-          {/* Payment accounts — both mobile & desktop */}
+          {/* ── Payment account ── */}
           <div className="mb-4 space-y-3">
-            <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Pay to one of these accounts</p>
+            <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Pay to this account</p>
             {PAYMENT_ACCOUNTS.map(acc => {
               const Icon = acc.icon;
               return (
@@ -368,55 +447,47 @@ export default function DirectPayment() {
             })}
           </div>
 
-          {/* Instructions */}
+          {/* ── Instructions ── */}
           <div className="bg-primary/5 border border-primary/20 p-4 mb-4">
             <p className="font-mono text-xs font-bold text-primary uppercase mb-1">Instructions</p>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Pay <strong className="text-foreground">${total.toFixed(2)}</strong> to one of the accounts above, then enter your transaction ID below.
+              Transfer <strong className="text-foreground">{fmt(total)} Birr</strong> to the account above, then upload a screenshot of your payment confirmation below.
             </p>
           </div>
 
-          {/* Transaction ID input */}
+          {/* ── Payment screenshot upload ── */}
           <div className="mb-6">
-            <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-2">Transaction ID *</p>
-            <Input
-              value={transactionId}
-              onChange={e => setTransactionId(e.target.value)}
-              placeholder="e.g. TXN123456789"
-              className="bg-secondary border-border h-12 font-mono text-sm"
-            />
-            <p className="font-mono text-[10px] text-muted-foreground mt-1.5">Enter the transaction / reference ID from your payment confirmation.</p>
+            <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-2">
+              Payment Screenshot *
+            </p>
+            <ScreenshotUploader screenshots={screenshots} onChange={setScreenshots} />
           </div>
 
-          {/* Desktop submit button */}
+          {/* Desktop submit */}
           <Button
             onClick={handleSubmit}
-            disabled={submitting || !transactionId.trim() || !hasAddress}
+            disabled={submitting || screenshots.length === 0 || !hasAddress}
             className="hidden md:flex w-full h-12 bg-primary text-primary-foreground font-mono font-bold text-base hover:bg-primary/90"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}
-            SUBMIT ORDER — ${total.toFixed(2)}
+            SUBMIT ORDER — {fmt(total)} Birr
           </Button>
         </div>
       </main>
 
-      {/* ── MOBILE ONLY: Sticky bottom submit bar ── */}
+      {/* ── MOBILE: Sticky bottom submit bar ── */}
       <div
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <button
           onClick={handleSubmit}
-          disabled={submitting || !transactionId.trim() || !hasAddress}
+          disabled={submitting || screenshots.length === 0 || !hasAddress}
           className="w-full h-14 bg-primary text-primary-foreground font-mono font-bold flex items-center justify-center gap-3 disabled:opacity-50 active:bg-primary/90 transition-colors"
         >
-          {submitting ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <CheckCircle className="w-4 h-4" />
-          )}
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
           <span className="text-sm">SUBMIT ORDER</span>
-          <span className="font-black text-base ml-1">${total.toFixed(2)}</span>
+          <span className="font-black text-base ml-1">{fmt(total)} Birr</span>
         </button>
       </div>
     </div>
