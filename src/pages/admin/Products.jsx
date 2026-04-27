@@ -133,6 +133,7 @@ function ProductForm({ product, onClose, onSave }) {
   const [form, setForm] = useState({
     name: product?.name || '',
     price: product?.price || '',
+    profit: product?.profit || '',
     category: product?.category || 'electronics',
     description: product?.description || '',
     rating: product?.rating || 0,
@@ -198,6 +199,7 @@ function ProductForm({ product, onClose, onSave }) {
     await onSave({
       ...form,
       price: parseFloat(form.price) || 0,
+      profit: form.profit !== '' ? parseFloat(form.profit) : undefined,
       rating: parseFloat(form.rating) || 0,
       stock: parseInt(form.stock) || 0,
       tags: form.tags,
@@ -217,6 +219,10 @@ function ProductForm({ product, onClose, onSave }) {
         <div>
           <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Price ($)</label>
           <Input type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="bg-secondary border-border h-10" required />
+        </div>
+        <div>
+          <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Profit (Birr)</label>
+          <Input type="number" step="0.01" value={form.profit} onChange={e => setForm({ ...form, profit: e.target.value })} className="bg-secondary border-border h-10" placeholder="Optional — profit per unit" />
         </div>
         <div>
           <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Category</label>

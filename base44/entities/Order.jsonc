@@ -75,6 +75,10 @@
     "money_received_date": {
       "type": "string",
       "description": "ISO timestamp when money was marked received"
+    },
+    "profit_recorded": {
+      "type": "number",
+      "description": "Profit amount recorded when money was received"
     }
   },
   "required": [

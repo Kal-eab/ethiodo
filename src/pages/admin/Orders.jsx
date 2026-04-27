@@ -38,9 +38,18 @@ export default function AdminOrders() {
   };
 
   const handleMoneyReceived = async (order) => {
+    // Calculate profit from items (use product profit if set, otherwise full price)
+    let profit = 0;
+    for (const item of order.items || []) {
+      const products = await base44.entities.Product.filter({ id: item.product_id });
+      const product = products[0];
+      const perUnit = (product?.profit != null) ? product.profit : (item.price || 0);
+      profit += perUnit * (item.quantity || 1);
+    }
     await base44.entities.Order.update(order.id, {
       money_received: true,
       money_received_date: new Date().toISOString(),
+      profit_recorded: profit,
     });
     queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
     toast.success('Revenue recorded!');

@@ -13,7 +13,7 @@ export default function Revenue() {
   });
 
   const revenueOrders = orders.filter(o => o.money_received);
-  const totalRevenue = revenueOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const totalRevenue = revenueOrders.reduce((sum, o) => sum + (o.profit_recorded ?? o.total ?? 0), 0);
 
   return (
     <div className="space-y-6">
@@ -76,7 +76,10 @@ export default function Revenue() {
                     {order.money_received_date ? format(new Date(order.money_received_date), 'MMM d, yyyy') : '—'}
                   </td>
                   <td className="p-3 text-right font-mono font-black text-primary text-base">
-                    {fmt(order.total)} <span className="text-xs font-normal">Birr</span>
+                    {fmt(order.profit_recorded ?? order.total)} <span className="text-xs font-normal">Birr</span>
+                    {order.profit_recorded != null && order.profit_recorded !== order.total && (
+                      <p className="font-mono text-[10px] text-muted-foreground font-normal">sale: {fmt(order.total)}</p>
+                    )}
                   </td>
                 </tr>
               ))}
