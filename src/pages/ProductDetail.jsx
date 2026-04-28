@@ -12,6 +12,7 @@ import ReviewSection from '@/components/product/ReviewSection';
 import RelatedProducts from '@/components/product/RelatedProducts';
 import Footer from '@/components/store/Footer';
 import { trackView, trackWishlist } from '@/lib/behaviorTracker';
+import { trackProductView, trackBeginCheckout, trackAddToFavorites } from '@/lib/analytics';
 
 const fmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
 
@@ -49,6 +50,7 @@ export default function ProductDetail() {
   useEffect(() => {
     if (!product) return;
     base44.auth.me().then(u => trackView(product, u)).catch(() => trackView(product, null));
+    trackProductView(product);
   }, [product?.id]);
 
   const fav = favorites.find(f => f.product_id === productId);
@@ -64,6 +66,7 @@ export default function ProductDetail() {
       return;
     }
     setSizeError('');
+    trackBeginCheckout(product);
     // Require login before buying
     const isAuth = await base44.auth.isAuthenticated();
     if (!isAuth) {
@@ -79,6 +82,7 @@ export default function ProductDetail() {
       await base44.entities.Favorite.delete(fav.id);
     } else {
       await base44.entities.Favorite.create({ product_id: productId });
+      trackAddToFavorites(product);
       // track wishlist event
       base44.auth.me().then(u => trackWishlist(productId, u)).catch(() => {});
     }

@@ -65,7 +65,11 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-SZRFZCDWL8');
+      gtag('config', 'G-SZRFZCDWL8', {
+        page_title: document.title,
+        page_location: window.location.href,
+        send_page_view: false
+      });
     </script>
 
     <link rel="icon" type="image/png" href="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/6811e703c_Gemini_Generated_Image_olhtx9olhtx9olht.png" />

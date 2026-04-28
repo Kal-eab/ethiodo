@@ -8,6 +8,7 @@ import {
   ArrowRight, CheckCircle, LogIn
 } from 'lucide-react';
 import { REGIONS, REGIONS_CITIES } from '@/lib/ethiopiaRegions';
+import { trackSignUp } from '@/lib/analytics';
 
 const PHONE_REGEX = /^\+251\s?[79]\d{8}$|^0[79]\d{8}$/;
 
@@ -79,6 +80,7 @@ export default function Register() {
         specific_address: form.specific_address.trim(),
         profile_complete: true,
       });
+      trackSignUp();
       setDone(true);
     } catch (err) {
       toast.error(err.message || 'Failed to save. Please try again.');

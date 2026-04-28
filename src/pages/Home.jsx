@@ -17,6 +17,7 @@ import RecommendedSection from '@/components/home/RecommendedSection';
 import BecauseYouViewedSection from '@/components/home/BecauseYouViewedSection';
 import NewAndRisingSection from '@/components/home/NewAndRisingSection';
 import { getGuestRecentlyViewed } from '@/lib/behaviorTracker';
+import { trackSearch, trackCategoryFilter } from '@/lib/analytics';
 
 export default function Home() {
   const [searchInput, setSearchInput] = useState('');
@@ -99,6 +100,10 @@ export default function Home() {
     .filter(Boolean)
     .slice(0, 6);
 
+  useEffect(() => {
+    if (search.length > 2) trackSearch(search);
+  }, [search]);
+
   const isFiltering = search.trim() || category !== 'all';
 
   return (
@@ -110,11 +115,11 @@ export default function Home() {
         url="https://www.ethiodo.com"
       />
       <PullToRefreshIndicator progress={progress} pulling={pulling} />
-      <Navbar onSearchChange={setSearchInput} searchValue={searchInput} category={category} onCategoryChange={(c) => { setCategory(c); setPage(1); }} />
+      <Navbar onSearchChange={setSearchInput} searchValue={searchInput} category={category} onCategoryChange={(c) => { setCategory(c); setPage(1); trackCategoryFilter(c); }} />
 
       {/* Sticky category bar under navbar — desktop only */}
       <div className="hidden md:block fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2">
-        <CategoryFilter active={category} onChange={setCategory} />
+        <CategoryFilter active={category} onChange={(c) => { setCategory(c); trackCategoryFilter(c); }} />
       </div>
 
       <main className="pt-16 md:pt-28 pb-20 md:pb-4">

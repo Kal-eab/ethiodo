@@ -1,4 +1,5 @@
 import React from 'react';
+import { trackPageView, trackLogin } from '@/lib/analytics';
 import { Toaster } from "@/components/ui/toaster"
 import { base44 } from '@/api/base44Client';
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -37,6 +38,11 @@ import Register from '@/pages/Register';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
+
+  React.useEffect(() => {
+    trackPageView(location.pathname, document.title);
+  }, [location.pathname]);
+
   return (
     <Routes location={location}>
       <Route path="/" element={<Home />} />
@@ -85,6 +91,7 @@ const AuthenticatedApp = () => {
           window.location.href = '/register';
         }
         if (u) {
+          trackLogin();
           base44.auth.updateMe({
             last_login_at: new Date().toISOString(),
             login_count: (u.login_count || 0) + 1,
