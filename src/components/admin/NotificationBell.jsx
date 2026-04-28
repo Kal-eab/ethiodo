@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const [pulse, setPulse] = useState(false);
   const ref = useRef(null);
   const queryClient = useQueryClient();
 
@@ -17,6 +18,19 @@ export default function NotificationBell() {
   });
 
   const unread = notifications.filter(n => !n.is_read).length;
+
+  // Real-time subscription — instantly updates when a new notification is created
+  useEffect(() => {
+    const unsubscribe = base44.entities.Notification.subscribe((event) => {
+      if (event.type === 'create') {
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        // Trigger pulse animation
+        setPulse(true);
+        setTimeout(() => setPulse(false), 2000);
+      }
+    });
+    return unsubscribe;
+  }, [queryClient]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -43,7 +57,12 @@ export default function NotificationBell() {
         onClick={() => setOpen(!open)}
         className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className={`w-5 h-5 transition-all ${pulse ? 'text-primary scale-125' : ''}`} />
+        {unread > 0 && (
+          <span className={`absolute top-1 right-1 bg-primary text-primary-foreground text-[10px] font-mono font-bold w-4 h-4 flex items-center justify-center rounded-full ${pulse ? 'animate-ping' : ''}`}>
+            {pulse ? '' : (unread > 9 ? '9+' : unread)}
+          </span>
+        )}
         {unread > 0 && (
           <span className="absolute top-1 right-1 bg-primary text-primary-foreground text-[10px] font-mono font-bold w-4 h-4 flex items-center justify-center rounded-full">
             {unread > 9 ? '9+' : unread}
