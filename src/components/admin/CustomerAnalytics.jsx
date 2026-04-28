@@ -3,14 +3,6 @@ import { base44 } from '@/api/base44Client';
 import { Users, ShoppingBag, UserPlus, Calendar, RefreshCw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-const timeAgo = (dateStr) => {
-  if (!dateStr) return 'Never';
-  const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
-  if (diff < 60) return diff + 's ago';
-  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-  return Math.floor(diff / 86400) + 'd ago';
-};
 
 function CustomerStatCard({ icon: Icon, label, value, color, sub }) {
   return (
@@ -49,7 +41,7 @@ export default function CustomerAnalytics() {
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [tick, setTick] = useState(0); // for timeAgo re-render
+
 
   const fetchData = useCallback(async () => {
     const users = await base44.entities.User.list('-created_date', 500);
@@ -62,9 +54,7 @@ export default function CustomerAnalytics() {
     fetchData();
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchData, 30000);
-    // Tick for timeAgo updates
-    const tickInterval = setInterval(() => setTick(t => t + 1), 10000);
-    return () => { clearInterval(interval); clearInterval(tickInterval); };
+    return () => { clearInterval(interval); };
   }, [fetchData]);
 
   const handleRefresh = async () => {
@@ -117,12 +107,6 @@ export default function CustomerAnalytics() {
   }).length;
   const growthPercent = lastWeekUsers === 0 ? 100 : Math.round(((thisWeekUsers - lastWeekUsers) / lastWeekUsers) * 100);
   const bestDay = chartData.reduce((best, day) => day.count > best.count ? day : best, chartData[0] || { day: '—', count: 0 });
-
-  // ── Recent logins ──
-  const recentLogins = [...allUsers]
-    .filter(u => u.last_login_at)
-    .sort((a, b) => new Date(b.last_login_at) - new Date(a.last_login_at))
-    .slice(0, 8);
 
   if (loading) {
     return (
@@ -203,54 +187,36 @@ export default function CustomerAnalytics() {
           </div>
         </div>
 
-        {/* Recent logins — 40% */}
+        {/* Customers table — 40% */}
         <div className="lg:col-span-2 bg-card border border-border" style={{ background: '#0d0d0d' }}>
-          <div className="p-4 border-b border-border flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: '#B4FF00' }} />
-              <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: '#B4FF00' }} />
-            </span>
-            <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">Live — Recent Logins</p>
+          <div className="p-4 border-b border-border">
+            <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">Customers</p>
           </div>
-          <div className="divide-y divide-border">
-            {recentLogins.length === 0 ? (
-              <p className="p-4 font-mono text-xs text-muted-foreground text-center">No logins tracked yet</p>
-            ) : (
-              recentLogins.map((u, i) => {
-                const isVeryRecent = u.last_login_at && (new Date() - new Date(u.last_login_at)) < 5 * 60 * 1000;
-                return (
-                  <div
-                    key={u.id}
-                    className="flex items-center gap-3 px-4 py-3"
-                    style={i === 0 ? { background: 'rgba(180,255,0,0.04)' } : {}}
-                  >
-                    {/* Avatar */}
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center font-mono text-xs font-bold flex-shrink-0"
-                      style={{
-                        background: isVeryRecent ? 'rgba(180,255,0,0.15)' : 'rgba(255,255,255,0.06)',
-                        color: isVeryRecent ? '#B4FF00' : '#888',
-                        border: `1px solid ${isVeryRecent ? 'rgba(180,255,0,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                      }}
-                    >
-                      {(u.full_name || u.email || '?')[0].toUpperCase()}
-                    </div>
-                    {/* Name + email */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold truncate">{u.full_name || 'Unknown'}</p>
-                      <p className="font-mono text-[10px] text-muted-foreground truncate">{u.email}</p>
-                    </div>
-                    {/* Time + orders */}
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-mono text-[10px]" style={{ color: isVeryRecent ? '#B4FF00' : '#666' }}>
-                        {timeAgo(u.last_login_at)}
-                      </p>
-                      <p className="font-mono text-[9px] text-muted-foreground">{u.login_count || 1} login{(u.login_count || 1) !== 1 ? 's' : ''}</p>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="px-4 py-2 text-left font-mono text-[10px] text-muted-foreground uppercase">Username</th>
+                  <th className="px-4 py-2 text-left font-mono text-[10px] text-muted-foreground uppercase">Email</th>
+                  <th className="px-4 py-2 text-left font-mono text-[10px] text-muted-foreground uppercase">Phone</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {allUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-6 text-center font-mono text-xs text-muted-foreground">No customers yet</td>
+                  </tr>
+                ) : (
+                  allUsers.slice(0, 20).map(u => (
+                    <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-4 py-2.5 text-xs font-medium truncate max-w-[120px]">{u.full_name || '—'}</td>
+                      <td className="px-4 py-2.5 font-mono text-[11px] text-muted-foreground truncate max-w-[160px]">{u.email || '—'}</td>
+                      <td className="px-4 py-2.5 font-mono text-[11px] text-muted-foreground">{u.phone || '—'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

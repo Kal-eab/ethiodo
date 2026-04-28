@@ -106,9 +106,6 @@ export default function AdminDashboard() {
         <StatCard icon={Clock} label="Pending" value={pendingOrders} color={pendingOrders > 0 ? 'text-yellow-400' : 'text-foreground'} />
       </div>
 
-      {/* ── Customer Analytics ── */}
-      <CustomerAnalytics />
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Orders */}
         <div className="bg-card border border-border">
@@ -169,6 +166,9 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Customer Analytics ── */}
+      <CustomerAnalytics />
     </div>
   );
 }
