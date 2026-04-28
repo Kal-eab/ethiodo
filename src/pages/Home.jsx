@@ -9,6 +9,7 @@ import CategoryFilter from '@/components/store/CategoryFilter';
 import Navbar from '@/components/store/Navbar';
 import SEO from '@/components/SEO';
 import { searchProducts } from '@/lib/searchProducts';
+import { useDebounce } from '@/lib/useDebounce';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
 import TrendingSection from '@/components/home/TrendingSection';
@@ -18,8 +19,11 @@ import NewAndRisingSection from '@/components/home/NewAndRisingSection';
 import { getGuestRecentlyViewed } from '@/lib/behaviorTracker';
 
 export default function Home() {
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const search = useDebounce(searchInput, 400);
   const [category, setCategory] = useState('all');
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -39,6 +43,7 @@ export default function Home() {
     queryFn: () => base44.entities.Product.list('-created_date', 200),
     retry: false,
     throwOnError: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: favorites = [] } = useQuery({
@@ -80,6 +85,8 @@ export default function Home() {
 
   const searchResults = searchProducts(products, search);
   const filtered = searchResults.filter(p => category === 'all' || p.category === category);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const paginatedFiltered = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   // Trending: top 8 by trendingScore
   const trendingProducts = [...products]
@@ -103,7 +110,7 @@ export default function Home() {
         url="https://www.ethiodo.com"
       />
       <PullToRefreshIndicator progress={progress} pulling={pulling} />
-      <Navbar onSearchChange={setSearch} searchValue={search} category={category} onCategoryChange={setCategory} />
+      <Navbar onSearchChange={setSearchInput} searchValue={searchInput} category={category} onCategoryChange={(c) => { setCategory(c); setPage(1); }} />
 
       {/* Sticky category bar under navbar — desktop only */}
       <div className="hidden md:block fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2">
@@ -119,12 +126,12 @@ export default function Home() {
               <input
                 type="text"
                 placeholder="Search products..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={e => { setSearchInput(e.target.value); setPage(1); }}
                 className="bg-transparent text-sm outline-none w-full placeholder:text-muted-foreground"
               />
-              {search && (
-                <button onClick={() => setSearch('')} className="ml-1 text-muted-foreground">
+              {searchInput && (
+                <button onClick={() => { setSearchInput(''); setPage(1); }} className="ml-1 text-muted-foreground">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -154,16 +161,39 @@ export default function Home() {
                 <p className="font-mono text-muted-foreground text-sm">NO PRODUCTS FOUND</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
-                {filtered.map(product => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    isFavorite={!!favMap[product.id]}
-                    favoriteId={favMap[product.id]}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
+                  {paginatedFiltered.map(product => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      isFavorite={!!favMap[product.id]}
+                      favoriteId={favMap[product.id]}
+                    />
+                  ))}
+                </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-8">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="font-mono text-[10px] px-4 py-2 border border-border text-muted-foreground hover:border-foreground transition-colors disabled:opacity-30"
+                    >
+                      ← PREV
+                    </button>
+                    <span className="font-mono text-[10px] text-muted-foreground px-4 py-2 border border-border">
+                      {page} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="font-mono text-[10px] px-4 py-2 border border-border text-muted-foreground hover:border-foreground transition-colors disabled:opacity-30"
+                    >
+                      NEXT →
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </section>
         ) : isAuth ? (

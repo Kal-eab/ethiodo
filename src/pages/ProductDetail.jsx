@@ -138,12 +138,15 @@ export default function ProductDetail() {
                   src={images[selectedImage]}
                   alt=""
                   aria-hidden="true"
+                  loading="lazy"
                   className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110"
                 />
                 {/* Main image — contained, no crop */}
                 <img
                   src={images[selectedImage]}
                   alt={product.name}
+                  loading="lazy"
+                  onError={(e) => { e.target.src = '/placeholder.png'; }}
                   className="relative z-10 w-auto h-auto max-w-full max-h-full m-auto block"
                   style={{ position: 'absolute', inset: 0, margin: 'auto', objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
                 />
@@ -186,7 +189,7 @@ export default function ProductDetail() {
                       onClick={() => setSelectedImage(i)}
                       className={`w-20 h-20 flex-shrink-0 border overflow-hidden ${selectedImage === i ? 'border-primary' : 'border-border'}`}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>

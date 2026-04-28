@@ -42,6 +42,8 @@ export default function ProductCard({ product, isFavorite, favoriteId, badge }) 
           <img
             src={image}
             alt={product.name}
+            loading="lazy"
+            onError={(e) => { e.target.src = '/placeholder.png'; }}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           {/* Gradient overlay with cart button */}
