@@ -66,7 +66,7 @@ export default function Footer() {
         </div>
         <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <img src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/6811e703c_Gemini_Generated_Image_olhtx9olhtx9olht.png" alt="Ethiodo" className="h-6 w-auto" />
+            <img src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/9143c5b71_Gemini_Generated_Image_gon5mugon5mugon5.png" alt="Ethiodo" className="h-6 w-auto" />
             <span className="font-bold text-sm">Ethiodo</span>
           </div>
           <p className="font-mono text-xs text-muted-foreground">© 2026 Ethiodo. All rights reserved.</p>

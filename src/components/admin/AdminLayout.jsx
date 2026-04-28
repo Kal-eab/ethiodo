@@ -46,7 +46,7 @@ export default function AdminLayout() {
       }`}>
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/6811e703c_Gemini_Generated_Image_olhtx9olhtx9olht.png" alt="Ethiodo" className="h-7 w-auto" />
+            <img src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/9143c5b71_Gemini_Generated_Image_gon5mugon5mugon5.png" alt="Ethiodo" className="h-7 w-auto" />
             <span className="font-bold text-sm">Admin</span>
           </div>
           <button className="lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>

@@ -106,7 +106,7 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 flex-shrink-0 group">
             <img
-              src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/6811e703c_Gemini_Generated_Image_olhtx9olhtx9olht.png"
+              src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/9143c5b71_Gemini_Generated_Image_gon5mugon5mugon5.png"
               alt="Ethiodo"
               className="h-8 w-8 rounded-full"
               style={{ boxShadow: '0 0 10px rgba(180,255,0,0.35)' }}
