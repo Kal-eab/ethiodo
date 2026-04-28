@@ -16,31 +16,54 @@ const STATUS_CONFIG = {
   delivered: { label: 'Delivered', color: 'text-accent',     bg: 'bg-accent/10 border-accent/30',         icon: CheckCircle,   step: 3 },
 };
 
-const STEPS = ['pending', 'confirmed', 'shipped', 'delivered'];
+const STEPS = [
+  { key: 'pending',   label: 'Order Placed',  desc: 'Awaiting payment verification' },
+  { key: 'confirmed', label: 'Confirmed',      desc: 'Payment verified, preparing' },
+  { key: 'shipped',   label: 'On the Way',     desc: 'Your order is being delivered' },
+  { key: 'delivered', label: 'Delivered',      desc: 'Order completed!' },
+];
 
 function DeliveryProgress({ status }) {
   const currentStep = STATUS_CONFIG[status]?.step ?? 0;
   return (
-    <div className="flex items-center gap-0 mt-3">
-      {STEPS.map((s, i) => {
-        const active = i <= currentStep;
-        const isCurrent = i === currentStep;
-        return (
-          <React.Fragment key={s}>
-            <div className={`flex flex-col items-center gap-1 flex-shrink-0 ${isCurrent ? 'scale-110' : ''} transition-transform`}>
-              <div className={`w-2.5 h-2.5 rounded-full border-2 transition-colors ${
-                active ? 'bg-primary border-primary' : 'bg-transparent border-border'
+    <div className="mt-3 space-y-2">
+      {/* Progress bar */}
+      <div className="flex items-center gap-0">
+        {STEPS.map((s, i) => {
+          const done = i < currentStep;
+          const active = i === currentStep;
+          return (
+            <React.Fragment key={s.key}>
+              <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 transition-all ${
+                done  ? 'bg-primary border-primary' :
+                active ? 'bg-primary/30 border-primary scale-125' :
+                'bg-transparent border-border'
               }`} />
-              <span className={`font-mono text-[9px] uppercase ${active ? (isCurrent ? 'text-primary font-bold' : 'text-muted-foreground') : 'text-border'}`}>
-                {s === 'pending' ? 'Placed' : s === 'confirmed' ? 'Confirmed' : s === 'shipped' ? 'Shipped' : 'Done'}
-              </span>
+              {i < STEPS.length - 1 && (
+                <div className={`flex-1 h-0.5 transition-colors ${done ? 'bg-primary' : 'bg-border'}`} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      {/* Step labels */}
+      <div className="flex items-start justify-between">
+        {STEPS.map((s, i) => {
+          const done = i < currentStep;
+          const active = i === currentStep;
+          return (
+            <div key={s.key} className={`flex-1 text-center ${i === 0 ? 'text-left' : i === STEPS.length - 1 ? 'text-right' : ''}`}>
+              <p className={`font-mono text-[9px] uppercase font-bold leading-tight ${
+                active ? 'text-primary' : done ? 'text-muted-foreground' : 'text-border'
+              }`}>{s.label}</p>
             </div>
-            {i < STEPS.length - 1 && (
-              <div className={`flex-1 h-0.5 mb-4 mx-1 transition-colors ${i < currentStep ? 'bg-primary' : 'bg-border'}`} />
-            )}
-          </React.Fragment>
-        );
-      })}
+          );
+        })}
+      </div>
+      {/* Current step description */}
+      <p className="font-mono text-[10px] text-muted-foreground italic">
+        {STEPS[currentStep]?.desc}
+      </p>
     </div>
   );
 }
