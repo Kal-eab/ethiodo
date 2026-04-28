@@ -23,6 +23,7 @@ import AdminMessages from '@/pages/admin/Messages';
 import AdminReviews from '@/pages/admin/Reviews';
 import ReviewInsights from '@/pages/admin/ReviewInsights';
 import Revenue from '@/pages/admin/Revenue';
+import ConversionRates from '@/pages/admin/ConversionRates';
 import AdminCustomers from '@/pages/admin/Customers';
 import Messages from '@/pages/Messages';
 import About from '@/pages/About';
@@ -61,6 +62,7 @@ const AnimatedRoutes = () => {
         <Route path="reviews" element={<AdminReviews />} />
         <Route path="review-insights" element={<ReviewInsights />} />
         <Route path="revenue" element={<Revenue />} />
+        <Route path="conversion-rates" element={<ConversionRates />} />
         <Route path="customers" element={<AdminCustomers />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
