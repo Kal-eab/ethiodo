@@ -50,7 +50,7 @@ function AddressEditor({ user, onSave, onCancel }) {
     if (!form.region) { toast.error('Region is required'); return; }
     if (!form.city) { toast.error('City is required'); return; }
     setSaving(true);
-    await base44.auth.updateMe({ ...form });
+    await base44.auth.updateMe({ ...form, profile_complete: true });
     toast.success('Address updated');
     setSaving(false);
     onSave(form);
@@ -204,6 +204,11 @@ export default function DirectPayment() {
 
   useEffect(() => {
     base44.auth.me().then(u => {
+      if (!u.profile_complete) {
+        toast.error('Please complete your profile before ordering.');
+        navigate('/register');
+        return;
+      }
       setUser(u);
       setShipping({
         phone: u.phone || '',
@@ -248,6 +253,7 @@ export default function DirectPayment() {
       }],
       total,
       status: 'pending',
+      payment_proof_screenshots: screenshots,
       payment_proof_url: screenshots[0],
       customer_email: user.email,
       customer_name: user.full_name,

@@ -8,7 +8,6 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import MobileTabBar from '@/components/store/MobileTabBar';
-import RegistrationModal from '@/components/store/RegistrationModal';
 
 import Home from '@/pages/Home';
 import ProductDetail from '@/pages/ProductDetail';
@@ -70,15 +69,14 @@ const AnimatedRoutes = () => {
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
   const [user, setUser] = React.useState(null);
-  const [showRegistration, setShowRegistration] = React.useState(false);
+  const location = useLocation();
 
   React.useEffect(() => {
     if (!isLoadingAuth) {
       base44.auth.me().then(u => {
         setUser(u);
-        // Show registration modal if logged in but profile not complete
-        if (u && !u.profile_complete) {
-          setShowRegistration(true);
+        if (u && !u.profile_complete && location.pathname !== '/register') {
+          window.location.href = '/register';
         }
       }).catch(() => {});
     }
@@ -102,15 +100,6 @@ const AuthenticatedApp = () => {
     <>
       <AnimatedRoutes />
       <MobileTabBar />
-      {showRegistration && user && (
-        <RegistrationModal
-          user={user}
-          onComplete={() => {
-            setShowRegistration(false);
-            base44.auth.me().then(setUser).catch(() => {});
-          }}
-        />
-      )}
     </>
   );
 };

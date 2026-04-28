@@ -90,19 +90,26 @@ export default function OrderDetailDrawer({ order, onClose, onStatusChange }) {
             </div>
           </div>
 
-          {/* Payment Screenshot */}
-          {order.payment_proof_url && (
+          {/* Payment Screenshots */}
+          {(order.payment_proof_screenshots?.length > 0 || order.payment_proof_url) && (
             <div>
               <p className="font-mono text-xs text-muted-foreground uppercase mb-3 flex items-center gap-2">
-                <ImageIcon className="w-3 h-3" /> Payment Screenshot
+                <ImageIcon className="w-3 h-3" /> Payment Screenshot{(order.payment_proof_screenshots?.length > 1) ? 's' : ''}
               </p>
-              <a href={order.payment_proof_url} target="_blank" rel="noopener noreferrer" className="block">
-                <img
-                  src={order.payment_proof_url}
-                  alt="Payment screenshot"
-                  className="w-full border border-border object-contain max-h-80 bg-secondary/30 hover:opacity-90 transition-opacity cursor-zoom-in"
-                />
-              </a>
+              <div className="space-y-3">
+                {(order.payment_proof_screenshots?.length > 0
+                  ? order.payment_proof_screenshots
+                  : [order.payment_proof_url]
+                ).map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
+                    <img
+                      src={url}
+                      alt={`Payment screenshot ${i + 1}`}
+                      className="w-full border border-border object-contain max-h-80 bg-secondary/30 hover:opacity-90 transition-opacity cursor-zoom-in"
+                    />
+                  </a>
+                ))}
+              </div>
               <p className="font-mono text-[10px] text-muted-foreground mt-1">Click image to open full size</p>
             </div>
           )}
