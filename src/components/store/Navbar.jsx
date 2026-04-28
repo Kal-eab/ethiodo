@@ -108,7 +108,7 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
             <img
               src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/9143c5b71_Gemini_Generated_Image_gon5mugon5mugon5.png"
               alt="Ethiodo"
-              className="h-10 w-10 rounded-lg"
+              className="h-12 w-12 rounded-full"
               style={{ boxShadow: '0 0 10px rgba(180,255,0,0.35)' }}
             />
             <span className="font-bold text-base tracking-tight hidden sm:block text-white" style={{ textShadow: '0 0 12px rgba(180,255,0,0.3)' }}>
