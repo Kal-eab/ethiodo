@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /payment
+Sitemap: https://www.ethiodo.com/sitemap.xml

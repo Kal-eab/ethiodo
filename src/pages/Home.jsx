@@ -7,6 +7,7 @@ import Footer from '@/components/store/Footer';
 import ProductCard from '@/components/store/ProductCard';
 import CategoryFilter from '@/components/store/CategoryFilter';
 import Navbar from '@/components/store/Navbar';
+import SEO from '@/components/SEO';
 import { searchProducts } from '@/lib/searchProducts';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
@@ -95,6 +96,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Ethiodo — Online Shopping in Ethiopia | ኢትዮዶ"
+        description="Ethiopia's #1 online store. Shop electronics, fashion, home goods. Fast delivery to Addis Ababa, Dire Dawa, Bahir Dar and all regions. Pay on delivery available."
+        keywords="Ethiopian online shop, online shopping Ethiopia, buy online Ethiopia, ኦንላይን ሱቅ, online order Ethiopia"
+        url="https://www.ethiodo.com"
+      />
       <PullToRefreshIndicator progress={progress} pulling={pulling} />
       <Navbar onSearchChange={setSearch} searchValue={search} category={category} onCategoryChange={setCategory} />
 

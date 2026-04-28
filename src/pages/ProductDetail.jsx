@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
+import SEO from '@/components/SEO';
 import MobileHeader from '@/components/store/MobileHeader';
 import ReviewSection from '@/components/product/ReviewSection';
 import RelatedProducts from '@/components/product/RelatedProducts';
@@ -111,6 +112,13 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`${product.name} — Buy Online in Ethiopia | Ethiodo`}
+        description={`Buy ${product.name} online in Ethiopia for ${product.price} Birr. Fast delivery to all regions. Pay on delivery available.`}
+        keywords={`${product.name}, buy ${product.name} Ethiopia, ${product.category} online Ethiopia`}
+        url={`https://www.ethiodo.com/product/${product.id}`}
+        image={product.images?.[0]}
+      />
       <MobileHeader title={product?.name || 'Product'} />
       <Navbar />
       {/* Mobile: extra bottom padding so content isn't hidden behind sticky bar */}
