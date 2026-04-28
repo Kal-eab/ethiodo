@@ -10,6 +10,11 @@
       "type": "number",
       "default": 1,
       "description": "Quantity"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes or details about this cart item",
+      "maxLength": 1000
     }
   },
   "required": [

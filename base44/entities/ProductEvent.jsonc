@@ -21,6 +21,11 @@
     "session_id": {
       "type": "string",
       "description": "Session ID for dedup"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional details about the event context",
+      "maxLength": 1000
     }
   },
   "required": [

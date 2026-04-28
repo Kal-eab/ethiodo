@@ -5,6 +5,11 @@
     "product_id": {
       "type": "string",
       "description": "Product ID"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional note about why this product was saved",
+      "maxLength": 1000
     }
   },
   "required": [

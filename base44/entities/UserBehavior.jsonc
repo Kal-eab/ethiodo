@@ -45,6 +45,11 @@
       "items": {
         "type": "string"
       }
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this user's behavior profile",
+      "maxLength": 1000
     }
   },
   "required": [
