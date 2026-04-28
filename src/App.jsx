@@ -75,12 +75,14 @@ const AuthenticatedApp = () => {
     if (!isLoadingAuth) {
       base44.auth.me().then(u => {
         setUser(u);
-        if (u && !u.profile_complete && location.pathname !== '/register') {
+        const skipPaths = ['/register', '/admin', '/legal'];
+        const shouldSkip = skipPaths.some(p => location.pathname.startsWith(p));
+        if (u && !u.profile_complete && !shouldSkip) {
           window.location.href = '/register';
         }
       }).catch(() => {});
     }
-  }, [isLoadingAuth]);
+  }, [isLoadingAuth, location.pathname]);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
