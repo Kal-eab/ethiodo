@@ -35,14 +35,23 @@ export default function Register() {
   const cities = form.region ? (REGIONS_CITIES[form.region] || []) : [];
 
   useEffect(() => {
-    // If already logged in but profile incomplete, go to step 1 (address)
     base44.auth.me().then(u => {
       setUser(u);
       setAlreadyAuthed(true);
-      setForm(f => ({ ...f, full_name: u.full_name || '' }));
+
       if (u.profile_complete) {
         navigate('/');
+        return;
+      }
+
+      const saved = sessionStorage.getItem('reg_form');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        sessionStorage.removeItem('reg_form');
+        setForm(f => ({ ...f, ...parsed, full_name: u.full_name || parsed.full_name }));
+        setStep(1);
       } else {
+        setForm(f => ({ ...f, full_name: u.full_name || '' }));
         setStep(0);
       }
     }).catch(() => {
@@ -104,16 +113,7 @@ export default function Register() {
     navigate('/');
   };
 
-  // Restore saved form after redirect back
-  useEffect(() => {
-    const saved = sessionStorage.getItem('reg_form');
-    if (saved && alreadyAuthed) {
-      const parsed = JSON.parse(saved);
-      setForm(f => ({ ...f, ...parsed, full_name: user?.full_name || parsed.full_name }));
-      sessionStorage.removeItem('reg_form');
-      setStep(1);
-    }
-  }, [alreadyAuthed, user]);
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-10"

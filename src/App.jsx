@@ -122,7 +122,7 @@ function App() {
         <Router>
           <AuthenticatedApp />
         </Router>
-        <Toaster />
+        <Toaster position="top-center" toastOptions={{ style: { zIndex: 99999 } }} />
       </QueryClientProvider>
     </AuthProvider>
   )
