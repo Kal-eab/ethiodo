@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Package, ShoppingCart, DollarSign, Clock, Trash2, Loader2 } from 'lucide-react';
+import CustomerAnalytics from '@/components/admin/CustomerAnalytics';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -104,6 +105,9 @@ export default function AdminDashboard() {
         <StatCard icon={DollarSign} label="Revenue" value={`$${totalRevenue.toFixed(2)}`} color="text-primary" />
         <StatCard icon={Clock} label="Pending" value={pendingOrders} color={pendingOrders > 0 ? 'text-yellow-400' : 'text-foreground'} />
       </div>
+
+      {/* ── Customer Analytics ── */}
+      <CustomerAnalytics />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Orders */}

@@ -80,6 +80,12 @@ const AuthenticatedApp = () => {
         if (u && !u.profile_complete && !shouldSkip) {
           window.location.href = '/register';
         }
+        if (u) {
+          base44.auth.updateMe({
+            last_login_at: new Date().toISOString(),
+            login_count: (u.login_count || 0) + 1,
+          }).catch(() => {});
+        }
       }).catch(() => {});
     }
   }, [isLoadingAuth, location.pathname]);
