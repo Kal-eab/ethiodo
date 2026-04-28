@@ -48,9 +48,9 @@ export default function AdminCustomers() {
             <tr className="border-b border-border bg-secondary/50">
               <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider">User</th>
               <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Email</th>
-              <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden md:table-cell">Role</th>
+              <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden md:table-cell">Phone</th>
+              <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Role</th>
               <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Joined</th>
-              <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Last Login</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -92,6 +92,9 @@ export default function AdminCustomers() {
                     <p className="font-mono text-xs text-muted-foreground">{user.email}</p>
                   </td>
                   <td className="p-4 hidden md:table-cell">
+                    <p className="font-mono text-xs text-muted-foreground">{user.phone || '—'}</p>
+                  </td>
+                  <td className="p-4 hidden lg:table-cell">
                     <span className={`font-mono text-[10px] uppercase px-2 py-0.5 border ${
                       user.role === 'admin'
                         ? 'text-primary border-primary/30 bg-primary/5'
@@ -103,11 +106,6 @@ export default function AdminCustomers() {
                   <td className="p-4 hidden lg:table-cell">
                     <p className="font-mono text-xs text-muted-foreground">
                       {user.created_date ? format(new Date(user.created_date), 'MMM d, yyyy') : '—'}
-                    </p>
-                  </td>
-                  <td className="p-4 hidden lg:table-cell">
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {user.last_login_at ? format(new Date(user.last_login_at), 'MMM d, HH:mm') : '—'}
                     </p>
                   </td>
                 </tr>
