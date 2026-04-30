@@ -1,11 +1,12 @@
 import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { ImageIcon, CheckCircle2, Package, Clock } from 'lucide-react';
+import { ImageIcon, CheckCircle2, Package, Clock, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 
 const STATUS_CONFIG = {
   pending:   { label: 'Pending',   color: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400/30', icon: Clock },
   confirmed: { label: 'Confirmed', color: 'text-blue-400',   bg: 'bg-blue-400/10',   border: 'border-blue-400/30',   icon: CheckCircle2 },
+  shipped:   { label: 'Shipped',   color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/30', icon: Truck },
   delivered: { label: 'Delivered', color: 'text-accent',     bg: 'bg-accent/10',     border: 'border-accent/30',     icon: Package },
 };
 
@@ -33,8 +34,21 @@ export default function OrderDetailDrawer({ order, onClose, onStatusChange }) {
             <p className="font-mono text-xs text-muted-foreground uppercase mb-3">Order Lifecycle</p>
             <TimelineRow label="Placed" date={order.created_date} active />
             <TimelineRow label="Confirmed" date={order.confirmed_date} active={!!order.confirmed_date} />
+            <TimelineRow label="Shipped" date={order.shipped_date} active={!!order.shipped_date} />
             <TimelineRow label="Delivered" date={order.delivered_date} active={!!order.delivered_date} />
           </div>
+
+          {/* Shipped photo */}
+          {order.shipped_photo_url && (
+            <div>
+              <p className="font-mono text-xs text-muted-foreground uppercase mb-2 flex items-center gap-2">
+                <Truck className="w-3 h-3" /> Shipped Package Photo
+              </p>
+              <a href={order.shipped_photo_url} target="_blank" rel="noopener noreferrer">
+                <img src={order.shipped_photo_url} alt="Shipped package" className="w-full border border-border object-contain max-h-60 bg-secondary/30 hover:opacity-90 transition-opacity cursor-zoom-in" />
+              </a>
+            </div>
+          )}
 
           {/* Action buttons */}
           <div className="flex gap-2">
@@ -46,7 +60,7 @@ export default function OrderDetailDrawer({ order, onClose, onStatusChange }) {
                 <CheckCircle2 className="w-4 h-4" /> Confirm Order
               </button>
             )}
-            {order.status === 'confirmed' && (
+            {order.status === 'shipped' && (
               <button
                 onClick={() => onStatusChange(order.id, 'delivered')}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-accent/10 border border-accent/30 text-accent font-mono text-xs uppercase hover:bg-accent/20 transition-colors"

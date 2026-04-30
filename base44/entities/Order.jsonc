@@ -38,6 +38,7 @@
       "enum": [
         "pending",
         "confirmed",
+        "shipped",
         "delivered"
       ],
       "default": "pending",
@@ -62,6 +63,14 @@
     "confirmed_date": {
       "type": "string",
       "description": "ISO timestamp when order was confirmed"
+    },
+    "shipped_date": {
+      "type": "string",
+      "description": "ISO timestamp when order was shipped"
+    },
+    "shipped_photo_url": {
+      "type": "string",
+      "description": "Photo of packaged/shipped product"
     },
     "delivered_date": {
       "type": "string",

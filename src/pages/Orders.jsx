@@ -13,10 +13,11 @@ import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
 
 const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered'];
 
+
 const statusColors = {
   pending: 'text-yellow-400 border-yellow-400/30 bg-yellow-400/5',
   confirmed: 'text-blue-400 border-blue-400/30 bg-blue-400/5',
-  shipped: 'text-primary border-primary/30 bg-primary/5',
+  shipped: 'text-purple-400 border-purple-400/30 bg-purple-400/5',
   delivered: 'text-accent border-accent/30 bg-accent/5',
 };
 
@@ -285,6 +286,14 @@ function OrderCard({ order, onRefresh }) {
       </div>
       {order.status === 'pending' && (
         <PendingTransactionBanner />
+      )}
+      {order.status === 'shipped' && order.shipped_photo_url && (
+        <div className="mx-5 mb-4">
+          <p className="font-mono text-[10px] text-purple-400 uppercase tracking-wider mb-2">📦 Your package is on its way!</p>
+          <a href={order.shipped_photo_url} target="_blank" rel="noopener noreferrer">
+            <img src={order.shipped_photo_url} alt="Shipped package" className="w-full max-h-48 object-cover border border-purple-400/30 rounded hover:opacity-90 transition-opacity" />
+          </a>
+        </div>
       )}
     </div>
   );

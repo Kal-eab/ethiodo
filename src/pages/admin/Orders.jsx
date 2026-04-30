@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Search, Clock, CheckCircle2, Package, Trash2, DollarSign } from 'lucide-react';
+import { Search, Clock, CheckCircle2, Package, Trash2, DollarSign, Truck, Upload, Loader2, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -10,19 +10,85 @@ import OrderDetailDrawer from '@/components/admin/OrderDetailDrawer';
 const TABS = [
   { key: 'pending',   label: 'Pending',   icon: Clock,         color: 'text-yellow-400', border: 'border-yellow-400' },
   { key: 'confirmed', label: 'Confirmed', icon: CheckCircle2,  color: 'text-blue-400',   border: 'border-blue-400' },
+  { key: 'shipped',   label: 'Shipped',   icon: Truck,         color: 'text-purple-400', border: 'border-purple-400' },
   { key: 'delivered', label: 'Delivered', icon: Package,       color: 'text-accent',     border: 'border-accent' },
 ];
 
 const STATUS_ROW_STYLE = {
   pending:   'border-l-2 border-l-yellow-400/60',
   confirmed: 'border-l-2 border-l-blue-400/60',
+  shipped:   'border-l-2 border-l-purple-400/60',
   delivered: 'border-l-2 border-l-accent/60',
 };
+
+// ─── Ship modal: upload photo then mark as shipped ────────────────────────────
+function ShipModal({ order, onClose, onShipped }) {
+  const [uploading, setUploading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    setPreview(URL.createObjectURL(file));
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setPhotoUrl(file_url);
+    setUploading(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!photoUrl) { toast.error('Please upload a photo first'); return; }
+    setSubmitting(true);
+    await onShipped(order, photoUrl);
+    setSubmitting(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="font-mono text-sm font-bold uppercase">Mark as Shipped</h2>
+          <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
+        </div>
+        <p className="text-sm text-muted-foreground">Upload a photo of the packaged product before marking as shipped.</p>
+
+        {preview ? (
+          <div className="relative">
+            <img src={preview} alt="package" className="w-full h-48 object-cover border border-border" />
+            <button onClick={() => { setPreview(null); setPhotoUrl(null); }}
+              className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-0.5 rounded">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <label className="flex flex-col items-center justify-center h-36 border border-dashed border-border bg-secondary/40 cursor-pointer hover:border-primary/50 transition-colors gap-2">
+            <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+            {uploading ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Upload className="w-5 h-5 text-muted-foreground" />}
+            <span className="font-mono text-xs text-muted-foreground">{uploading ? 'Uploading…' : 'Click to upload photo'}</span>
+          </label>
+        )}
+
+        <button
+          onClick={handleSubmit}
+          disabled={!photoUrl || submitting}
+          className="w-full h-10 bg-purple-500 text-white font-mono text-xs uppercase font-bold hover:bg-purple-500/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+        >
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Truck className="w-4 h-4" />}
+          Confirm Shipped
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminOrders() {
   const [activeTab, setActiveTab] = useState('pending');
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [shipTarget, setShipTarget] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: orders = [], isLoading } = useQuery({
@@ -55,15 +121,42 @@ export default function AdminOrders() {
     toast.success('Revenue recorded!');
   };
 
-  const handleStatusChange = async (orderId, newStatus) => {
+  const sendStatusMessage = async (order, newStatus, shippedPhotoUrl) => {
+    const conversationId = order.customer_email;
+    if (!conversationId) return;
+
+    const statusMessages = {
+      confirmed: `✅ Great news! Your order #${order.id?.slice(-8).toUpperCase()} has been **confirmed**. We're preparing your items now.`,
+      shipped:   `📦 Your order #${order.id?.slice(-8).toUpperCase()} has been **shipped**! Check the photo of your packaged items below. We'll notify you when it arrives.`,
+      delivered: `🎉 Your order #${order.id?.slice(-8).toUpperCase()} has been **delivered**! Thank you for shopping with us. Please leave a review in your Orders page.`,
+    };
+
+    const content = statusMessages[newStatus];
+    if (!content) return;
+
+    await base44.entities.Message.create({
+      conversation_id: conversationId,
+      user_email: order.customer_email,
+      user_name: order.customer_name || order.customer_email,
+      content,
+      image_url: newStatus === 'shipped' ? shippedPhotoUrl : null,
+      sender: 'admin',
+      is_read: false,
+    });
+  };
+
+  const handleStatusChange = async (orderId, newStatus, shippedPhotoUrl) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
     const updates = { status: newStatus };
     if (newStatus === 'confirmed') updates.confirmed_date = new Date().toISOString();
+    if (newStatus === 'shipped') {
+      updates.shipped_date = new Date().toISOString();
+      if (shippedPhotoUrl) updates.shipped_photo_url = shippedPhotoUrl;
+    }
     if (newStatus === 'delivered') {
       updates.delivered_date = new Date().toISOString();
-      // Update product purchase counts
       for (const item of order.items || []) {
         const products = await base44.entities.Product.filter({ id: item.product_id });
         if (products[0]) {
@@ -75,16 +168,21 @@ export default function AdminOrders() {
     }
 
     await base44.entities.Order.update(orderId, updates);
+    // Send message notification to customer
+    await sendStatusMessage({ ...order, ...updates }, newStatus, shippedPhotoUrl);
     queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
     toast.success(`Order marked as ${newStatus}`);
 
-    // Update selected order if open
     if (selectedOrder?.id === orderId) {
       setSelectedOrder({ ...selectedOrder, ...updates });
     }
   };
 
-  const STATUS_ORDER = { pending: 0, confirmed: 1, delivered: 2 };
+  const handleShipped = async (order, photoUrl) => {
+    await handleStatusChange(order.id, 'shipped', photoUrl);
+  };
+
+  const STATUS_ORDER = { pending: 0, confirmed: 1, shipped: 2, delivered: 3 };
 
   const filtered = orders
     .filter(o => {
@@ -200,6 +298,14 @@ export default function AdminOrders() {
                 )}
                 {order.status === 'confirmed' && (
                   <button
+                    onClick={() => setShipTarget(order)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-400/10 border border-purple-400/30 text-purple-400 font-mono text-xs uppercase hover:bg-purple-400/20 transition-colors"
+                  >
+                    <Truck className="w-3.5 h-3.5" /> Ship
+                  </button>
+                )}
+                {order.status === 'shipped' && (
+                  <button
                     onClick={() => handleStatusChange(order.id, 'delivered')}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/30 text-accent font-mono text-xs uppercase hover:bg-accent/20 transition-colors"
                   >
@@ -230,6 +336,14 @@ export default function AdminOrders() {
         onClose={() => setSelectedOrder(null)}
         onStatusChange={handleStatusChange}
       />
+
+      {shipTarget && (
+        <ShipModal
+          order={shipTarget}
+          onClose={() => setShipTarget(null)}
+          onShipped={handleShipped}
+        />
+      )}
     </div>
   );
 }
