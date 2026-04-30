@@ -1,9 +1,10 @@
 /**
  * Central category configuration.
  * Top-level categories and their subcategories.
- * Edit this file to add/remove categories or subcategories.
+ * Reads from localStorage first (admin-managed), falls back to hardcoded defaults.
  */
-export const CATEGORY_TREE = [
+
+const DEFAULT_TREE = [
   {
     value: 'electronics',
     label: 'Electronics',
@@ -58,6 +59,19 @@ export const CATEGORY_TREE = [
     subcategories: [],
   },
 ];
+
+/** Get CATEGORY_TREE from localStorage (admin-managed) or use defaults */
+export const CATEGORY_TREE = (() => {
+  try {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ethiodo_categories');
+      if (saved) return JSON.parse(saved);
+    }
+  } catch {
+    // Fall through to defaults
+  }
+  return DEFAULT_TREE;
+})();
 
 /** Flat list of all top-level category values */
 export const TOP_LEVEL_CATEGORIES = CATEGORY_TREE.map(c => c.value);
