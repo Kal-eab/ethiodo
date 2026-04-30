@@ -26,33 +26,6 @@
     },
     "category": {
       "type": "string",
-      "enum": [
-        "electronics",
-        "electronics_phones",
-        "electronics_laptops",
-        "electronics_earphones",
-        "electronics_tablets",
-        "electronics_accessories",
-        "clothing",
-        "clothing_dress",
-        "clothing_tshirt",
-        "clothing_jacket",
-        "clothing_pants",
-        "clothing_hoodie",
-        "clothing_mens",
-        "clothing_womens",
-        "clothing_kids",
-        "shoes",
-        "shoes_mens",
-        "shoes_womens",
-        "shoes_kids",
-        "shoes_sport",
-        "sports",
-        "sports_fitness",
-        "sports_outdoor",
-        "accessories",
-        "phones"
-      ],
       "description": "Product category or subcategory"
     },
     "tags": {
