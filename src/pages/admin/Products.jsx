@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Pencil, Trash2, Upload, X, Loader2, Globe, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, X, Loader2, FileText, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -188,18 +188,8 @@ function ProductForm({ product, onClose, onSave }) {
     });
   };
 
-  const canPublish = form.name.trim() && form.price && form.images.length > 0;
-
-  const handleSubmit = async (e, publish = false) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (publish && !canPublish) {
-      toast.error('To publish, product needs a name, price, and at least one photo.');
-      return;
-    }
-    if (publish && PREDEFINED_CATEGORIES.includes(form.category) && form.sizes.length === 0) {
-      setSizeError('Please select at least one size to publish.');
-      return;
-    }
     setSizeError('');
     setSaving(true);
     await onSave({
@@ -210,7 +200,7 @@ function ProductForm({ product, onClose, onSave }) {
       stock: parseInt(form.stock) || 0,
       tags: form.tags,
       sizes: form.sizes,
-      published: publish ? true : (form.published || false),
+      published: false,
     });
     setSaving(false);
     onClose();
@@ -354,23 +344,12 @@ function ProductForm({ product, onClose, onSave }) {
       <div className="flex gap-3 justify-end pt-2 flex-wrap">
         <Button type="button" variant="outline" onClick={onClose} className="font-mono border-border">Cancel</Button>
         <Button
-          type="button"
+          type="submit"
           disabled={saving}
-          onClick={(e) => handleSubmit(e, false)}
-          className="bg-secondary text-foreground border border-border font-mono hover:bg-secondary/80 flex items-center gap-2"
+          className="bg-primary text-primary-foreground font-mono hover:bg-primary/90 flex items-center gap-2"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-          {product ? 'Save Draft' : 'Create Draft'}
-        </Button>
-        <Button
-          type="button"
-          disabled={saving || !canPublish}
-          onClick={(e) => handleSubmit(e, true)}
-          className="bg-primary text-primary-foreground font-mono hover:bg-primary/90 flex items-center gap-2 disabled:opacity-40"
-          title={!canPublish ? 'Add name, price and at least one photo to publish' : ''}
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
-          Publish
+          {product ? 'Save' : 'Create'}
         </Button>
       </div>
     </form>
@@ -477,7 +456,7 @@ export default function AdminProducts() {
                           : 'bg-secondary border-border text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary'
                       }`}
                     >
-                      {product.published ? <><Globe className="w-3 h-3" /> Published</> : <><FileText className="w-3 h-3" /> Draft</>}
+                      {product.published ? <><CheckCircle2 className="w-3 h-3" /> Published</> : <><FileText className="w-3 h-3" /> Draft</>}
                     </button>
                   </td>
                   <td className="p-3 text-right">
