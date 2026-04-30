@@ -30,30 +30,22 @@ export default function Home() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isAuth, setIsAuth] = useState(false);
-  const [userLoaded, setUserLoaded] = useState(false);
   const [guestRecentIds, setGuestRecentIds] = useState([]);
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(auth => {
       setIsAuth(auth);
-      if (auth) {
-        base44.auth.me().then(u => { setUser(u); setUserLoaded(true); }).catch(() => setUserLoaded(true));
-      } else {
-        setUserLoaded(true); // guests see published products immediately
-      }
-    }).catch(() => setUserLoaded(true));
+      if (auth) base44.auth.me().then(setUser).catch(() => {});
+    }).catch(() => {});
     setGuestRecentIds(getGuestRecentlyViewed());
   }, []);
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products', user?.role ?? 'guest'],
-    queryFn: () => user?.role === 'admin'
-      ? base44.entities.Product.list('-created_date', 200)
-      : base44.entities.Product.filter({ published: true }, '-created_date', 200),
+    queryKey: ['products'],
+    queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
     retry: false,
     throwOnError: false,
     staleTime: 5 * 60 * 1000,
-    enabled: userLoaded,
   });
 
   const { data: favorites = [] } = useQuery({
@@ -189,7 +181,6 @@ export default function Home() {
                       product={product}
                       isFavorite={!!favMap[product.id]}
                       favoriteId={favMap[product.id]}
-                      badge={!product.published && user?.role === 'admin' ? { label: 'DRAFT', color: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/40' } : null}
                     />
                   ))}
                 </div>
@@ -244,7 +235,6 @@ export default function Home() {
                     product={product}
                     isFavorite={!!favMap[product.id]}
                     favoriteId={favMap[product.id]}
-                    badge={!product.published && user?.role === 'admin' ? { label: 'DRAFT', color: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/40' } : null}
                   />
                 ))}
               </div>
