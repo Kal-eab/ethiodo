@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Pencil, Trash2, Upload, X, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, X, Loader2, Globe, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -188,10 +188,16 @@ function ProductForm({ product, onClose, onSave }) {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const canPublish = form.name.trim() && form.price && form.images.length > 0;
+
+  const handleSubmit = async (e, publish = false) => {
     e.preventDefault();
-    if (PREDEFINED_CATEGORIES.includes(form.category) && form.sizes.length === 0) {
-      setSizeError('Please select at least one available size.');
+    if (publish && !canPublish) {
+      toast.error('To publish, product needs a name, price, and at least one photo.');
+      return;
+    }
+    if (publish && PREDEFINED_CATEGORIES.includes(form.category) && form.sizes.length === 0) {
+      setSizeError('Please select at least one size to publish.');
       return;
     }
     setSizeError('');
@@ -204,6 +210,7 @@ function ProductForm({ product, onClose, onSave }) {
       stock: parseInt(form.stock) || 0,
       tags: form.tags,
       sizes: form.sizes,
+      published: publish ? true : (form.published || false),
     });
     setSaving(false);
     onClose();
@@ -335,11 +342,26 @@ function ProductForm({ product, onClose, onSave }) {
         </div>
       </div>
 
-      <div className="flex gap-3 justify-end pt-2">
+      <div className="flex gap-3 justify-end pt-2 flex-wrap">
         <Button type="button" variant="outline" onClick={onClose} className="font-mono border-border">Cancel</Button>
-        <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground font-mono hover:bg-primary/90">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {product ? 'Update' : 'Create'}
+        <Button
+          type="button"
+          disabled={saving}
+          onClick={(e) => handleSubmit(e, false)}
+          className="bg-secondary text-foreground border border-border font-mono hover:bg-secondary/80 flex items-center gap-2"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+          {product ? 'Save Draft' : 'Create Draft'}
+        </Button>
+        <Button
+          type="button"
+          disabled={saving || !canPublish}
+          onClick={(e) => handleSubmit(e, true)}
+          className="bg-primary text-primary-foreground font-mono hover:bg-primary/90 flex items-center gap-2 disabled:opacity-40"
+          title={!canPublish ? 'Add name, price and at least one photo to publish' : ''}
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+          Publish
         </Button>
       </div>
     </form>
@@ -352,25 +374,36 @@ export default function AdminProducts() {
   const queryClient = useQueryClient();
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products'],
+    queryKey: ['admin-products'],
     queryFn: () => base44.entities.Product.list('-created_date', 200),
   });
 
   const handleSave = async (data) => {
     if (editing) {
       await base44.entities.Product.update(editing.id, data);
-      toast.success('Product updated');
+      toast.success(data.published ? 'Product published!' : 'Draft saved');
     } else {
       await base44.entities.Product.create(data);
-      toast.success('Product created');
+      toast.success(data.published ? 'Product published!' : 'Draft saved');
     }
-    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+  };
+
+  const handleTogglePublish = async (product) => {
+    const newVal = !product.published;
+    if (newVal && (!product.name || !product.price || !product.images?.length)) {
+      toast.error('Product needs a name, price, and at least one photo to publish.');
+      return;
+    }
+    await base44.entities.Product.update(product.id, { published: newVal });
+    queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    toast.success(newVal ? 'Product published!' : 'Moved to draft');
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this product?')) return;
     await base44.entities.Product.delete(id);
-    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-products'] });
     toast.success('Product deleted');
   };
 
@@ -379,7 +412,9 @@ export default function AdminProducts() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Products</h1>
-          <p className="font-mono text-xs text-muted-foreground mt-1">{products.length} total</p>
+          <p className="font-mono text-xs text-muted-foreground mt-1">
+            {products.length} total · <span className="text-primary">{products.filter(p => p.published).length} published</span> · <span className="text-muted-foreground">{products.filter(p => !p.published).length} drafts</span>
+          </p>
         </div>
         <Button
           onClick={() => { setEditing(null); setShowForm(true); }}
@@ -399,16 +434,22 @@ export default function AdminProducts() {
                 <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase hidden sm:table-cell">Category</th>
                 <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Price</th>
                 <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase hidden md:table-cell">Stock</th>
+                <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase hidden sm:table-cell">Status</th>
                 <th className="text-right p-3 font-mono text-xs text-muted-foreground uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {products.map(product => (
-                <tr key={product.id} className="hover:bg-secondary/30 transition-colors">
+                <tr key={product.id} className={`hover:bg-secondary/30 transition-colors ${!product.published ? 'opacity-70' : ''}`}>
                   <td className="p-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-secondary border border-border overflow-hidden flex-shrink-0">
+                      <div className="w-10 h-10 bg-secondary border border-border overflow-hidden flex-shrink-0 relative">
                         {product.images?.[0] && <img src={product.images[0]} alt="" className="w-full h-full object-cover" />}
+                        {!product.published && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <FileText className="w-3 h-3 text-white" />
+                          </div>
+                        )}
                       </div>
                       <span className="text-sm font-medium truncate max-w-[200px]">{product.name}</span>
                     </div>
@@ -418,6 +459,18 @@ export default function AdminProducts() {
                   </td>
                   <td className="p-3 font-mono font-bold text-primary">${product.price?.toFixed(2)}</td>
                   <td className="p-3 font-mono text-sm hidden md:table-cell">{product.stock || 0}</td>
+                  <td className="p-3 hidden sm:table-cell">
+                    <button
+                      onClick={() => handleTogglePublish(product)}
+                      className={`flex items-center gap-1.5 px-2 py-1 font-mono text-[10px] uppercase border transition-colors ${
+                        product.published
+                          ? 'bg-primary/10 border-primary/30 text-primary hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive'
+                          : 'bg-secondary border-border text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary'
+                      }`}
+                    >
+                      {product.published ? <><Globe className="w-3 h-3" /> Published</> : <><FileText className="w-3 h-3" /> Draft</>}
+                    </button>
+                  </td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button

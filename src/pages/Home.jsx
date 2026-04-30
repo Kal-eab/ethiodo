@@ -41,7 +41,7 @@ export default function Home() {
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
-    queryFn: () => base44.entities.Product.list('-created_date', 200),
+    queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
     retry: false,
     throwOnError: false,
     staleTime: 5 * 60 * 1000,

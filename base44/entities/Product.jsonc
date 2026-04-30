@@ -66,6 +66,11 @@
       "type": "boolean",
       "default": false
     },
+    "published": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the product is visible to customers. Unpublished = draft."
+    },
     "trendingScore": {
       "type": "number",
       "default": 0,
