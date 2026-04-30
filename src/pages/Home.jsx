@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Search, X, Heart } from 'lucide-react';
@@ -22,6 +22,7 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products', 'published'],
@@ -93,11 +94,11 @@ export default function Home() {
         url="https://www.ethiodo.com"
       />
       <PullToRefreshIndicator progress={progress} pulling={pulling} />
-      <Navbar onSearchChange={setSearchInput} searchValue={searchInput} category={category} onCategoryChange={(c) => { setCategory(c); setPage(1); trackCategoryFilter(c); }} />
+      <Navbar onSearchChange={setSearchInput} searchValue={searchInput} category={category} onCategoryChange={(c) => { setCategory(c); setPage(1); }} />
 
       {/* Sticky category bar under navbar — desktop only */}
       <div className="hidden md:block fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2">
-        <CategoryFilter active={category} onChange={(c) => { setCategory(c); trackCategoryFilter(c); }} />
+        <CategoryFilter active={category} onChange={(c) => { setCategory(c); setPage(1); trackCategoryFilter(c); }} />
       </div>
 
       <main className="pt-16 md:pt-28 pb-20 md:pb-4">
@@ -145,9 +146,12 @@ export default function Home() {
             ) : (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
-                  {paginatedFiltered.map(product => (
-                    <ProductCard key={product.id} product={product} isFavorite={false} favoriteId={null} />
-                  ))}
+                  {paginatedFiltered.map(product => {
+                    const fav = favorites.find(f => f.product_id === product.id);
+                    return (
+                      <ProductCard key={product.id} product={product} isFavorite={!!fav} favoriteId={fav?.id} />
+                    );
+                  })}
                 </div>
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center gap-2 mt-8">
@@ -173,41 +177,47 @@ export default function Home() {
               <h2 className="font-mono text-xs text-muted-foreground uppercase tracking-widest">All Products</h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
-              {products.map(product => (
-                <ProductCard key={product.id} product={product} isFavorite={false} favoriteId={null} />
-              ))}
-              {draftFiltered.map(product => (
-                <Link key={product.id} to={`/product/${product.id}`} className="block group">
-                  <div className="bg-card border border-border/60 rounded-xl overflow-hidden transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-[0_4px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(180,255,0,0.06)] group-hover:-translate-y-1">
-                    <div className="relative aspect-[4/3] bg-secondary flex items-center justify-center overflow-hidden">
-                      {product.images?.[0]
-                        ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                        : <div className="w-full h-full bg-secondary" />
-                      }
-                      <div className="absolute inset-0 flex flex-col items-end justify-start p-2 gap-1">
-                        <span className="font-mono text-[10px] font-bold text-primary uppercase tracking-widest bg-black/70 px-2 py-0.5 rounded">Coming Soon</span>
-                        <button
-                          onClick={(e) => toggleFavorite(e, product)}
-                          className="w-7 h-7 flex items-center justify-center bg-background/60 backdrop-blur-sm rounded-full border border-border/40 transition-colors hover:bg-background/90"
-                        >
-                          <Heart className={`w-3.5 h-3.5 ${favorites.find(f => f.product_id === product.id) ? 'fill-primary text-primary' : 'text-white'}`} />
-                        </button>
-                      </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="absolute bottom-0 left-0 right-0 p-2">
-                          <Link to={`/product/${product.id}`} className="block w-full bg-primary text-primary-foreground font-mono text-[10px] h-8 hover:bg-primary/90 rounded-lg flex items-center justify-center gap-1">
-                            BUY NOW
-                          </Link>
+              {products.map(product => {
+                const fav = favorites.find(f => f.product_id === product.id);
+                return (
+                  <ProductCard key={product.id} product={product} isFavorite={!!fav} favoriteId={fav?.id} />
+                );
+              })}
+              {draftFiltered.map(product => {
+                const fav = favorites.find(f => f.product_id === product.id);
+                return (
+                  <div key={product.id} className="block group cursor-pointer" onClick={() => navigate(`/product/${product.id}`)}>
+                    <div className="bg-card border border-border/60 rounded-xl overflow-hidden transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-[0_4px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(180,255,0,0.06)] group-hover:-translate-y-1">
+                      <div className="relative aspect-[4/3] bg-secondary flex items-center justify-center overflow-hidden">
+                        {product.images?.[0]
+                          ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          : <div className="w-full h-full bg-secondary" />
+                        }
+                        <div className="absolute inset-0 flex flex-col items-end justify-start p-2 gap-1">
+                          <span className="font-mono text-[10px] font-bold text-primary uppercase tracking-widest bg-black/70 px-2 py-0.5 rounded">Coming Soon</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleFavorite(e, product); }}
+                            className="w-7 h-7 flex items-center justify-center bg-background/60 backdrop-blur-sm rounded-full border border-border/40 transition-colors hover:bg-background/90"
+                          >
+                            <Heart className={`w-3.5 h-3.5 ${fav ? 'fill-primary text-primary' : 'text-white'}`} />
+                          </button>
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="absolute bottom-0 left-0 right-0 p-2">
+                            <div className="block w-full bg-primary text-primary-foreground font-mono text-[10px] h-8 hover:bg-primary/90 rounded-lg flex items-center justify-center gap-1">
+                              BUY NOW
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="p-2.5 space-y-1">
-                      <h3 className="font-medium text-xs truncate leading-tight text-muted-foreground">{product.name}</h3>
-                      <span className="font-mono text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 rounded-sm">Coming Soon</span>
+                      <div className="p-2.5 space-y-1">
+                        <h3 className="font-medium text-xs truncate leading-tight text-muted-foreground">{product.name}</h3>
+                        <span className="font-mono text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 rounded-sm">Coming Soon</span>
+                      </div>
                     </div>
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
