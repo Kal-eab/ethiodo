@@ -86,12 +86,7 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50"
-      style={{
-  background: darkMode
-    ? 'linear-gradient(90deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%)'
-    : 'linear-gradient(90deg, #ffffff 0%, #f5f5f5 50%, #ffffff 100%)',
-  borderBottom: '1px solid rgba(180,255,0,0.12)'
-}}
+      style={{ background: 'linear-gradient(90deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%)', borderBottom: '1px solid rgba(180,255,0,0.12)' }}
     >
       <div className="max-w-[140rem] mx-auto px-3 sm:px-5">
 
