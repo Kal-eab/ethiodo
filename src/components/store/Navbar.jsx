@@ -59,7 +59,7 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
 
   const { data: products = [] } = useQuery({
     queryKey: ['products'],
-    queryFn: () => base44.entities.Product.list('-created_date', 100),
+    queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 100),
   });
 
   const handleSearchInput = (value) => {
