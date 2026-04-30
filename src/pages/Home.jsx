@@ -39,14 +39,14 @@ export default function Home() {
       if (auth) {
         base44.auth.me().then(u => { setUser(u); setUserLoaded(true); }).catch(() => setUserLoaded(true));
       } else {
-        setUserLoaded(true);
+        setUserLoaded(true); // guests see published products immediately
       }
     }).catch(() => setUserLoaded(true));
     setGuestRecentIds(getGuestRecentlyViewed());
   }, []);
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products', user?.role],
+    queryKey: ['products', user?.role ?? 'guest'],
     queryFn: () => user?.role === 'admin'
       ? base44.entities.Product.list('-created_date', 200)
       : base44.entities.Product.filter({ published: true }, '-created_date', 200),
