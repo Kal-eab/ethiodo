@@ -22,13 +22,15 @@ export default function Home() {
   const ITEMS_PER_PAGE = 20;
   const queryClient = useQueryClient();
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: allProducts = [], isLoading } = useQuery({
     queryKey: ['products'],
-    queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
+    queryFn: () => base44.entities.Product.list('-created_date', 200),
     retry: false,
     throwOnError: false,
     staleTime: 5 * 60 * 1000,
   });
+  const products = allProducts.filter(p => p.published);
+  const draftProducts = allProducts.filter(p => !p.published);
 
   const handleRefresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -143,6 +145,25 @@ export default function Home() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
               {products.map(product => (
                 <ProductCard key={product.id} product={product} isFavorite={false} favoriteId={null} />
+              ))}
+              {draftProducts.map(product => (
+                <div key={product.id} className="block">
+                  <div className="bg-card border border-border/60 rounded-xl overflow-hidden opacity-70">
+                    <div className="relative aspect-[4/3] bg-secondary flex items-center justify-center">
+                      {product.images?.[0]
+                        ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover blur-sm" />
+                        : <div className="w-full h-full bg-secondary" />
+                      }
+                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1">
+                        <span className="font-mono text-xs font-bold text-primary uppercase tracking-widest">Coming Soon</span>
+                      </div>
+                    </div>
+                    <div className="p-2.5 space-y-1">
+                      <h3 className="font-medium text-xs truncate leading-tight text-muted-foreground">{product.name}</h3>
+                      <span className="font-mono text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 rounded-sm">Coming Soon</span>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </section>

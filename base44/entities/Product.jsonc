@@ -3,18 +3,7 @@
   "type": "object",
   "rls": {
     "create": false,
-    "read": {
-      "$or": [
-        {
-          "published": true
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
+    "read": true,
     "update": false,
     "delete": true
   },

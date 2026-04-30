@@ -188,7 +188,7 @@ function ProductForm({ product, onClose, onSave }) {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, publish) => {
     e.preventDefault();
     setSizeError('');
     setSaving(true);
@@ -200,7 +200,7 @@ function ProductForm({ product, onClose, onSave }) {
       stock: parseInt(form.stock) || 0,
       tags: form.tags,
       sizes: form.sizes,
-      published: false,
+      published: publish,
     });
     setSaving(false);
     onClose();
@@ -344,12 +344,22 @@ function ProductForm({ product, onClose, onSave }) {
       <div className="flex gap-3 justify-end pt-2 flex-wrap">
         <Button type="button" variant="outline" onClick={onClose} className="font-mono border-border">Cancel</Button>
         <Button
-          type="submit"
+          type="button"
           disabled={saving}
-          className="bg-primary text-primary-foreground font-mono hover:bg-primary/90 flex items-center gap-2"
+          onClick={e => handleSubmit(e, false)}
+          className="bg-secondary text-foreground border border-border font-mono hover:bg-secondary/80 flex items-center gap-2"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-          {product ? 'Save' : 'Create'}
+          Save as Draft
+        </Button>
+        <Button
+          type="button"
+          disabled={saving}
+          onClick={e => handleSubmit(e, true)}
+          className="bg-primary text-primary-foreground font-mono hover:bg-primary/90 flex items-center gap-2"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+          Publish
         </Button>
       </div>
     </form>
