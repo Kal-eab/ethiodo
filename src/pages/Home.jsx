@@ -158,7 +158,7 @@ export default function Home() {
                   <div className="bg-card border border-border/60 rounded-xl overflow-hidden opacity-70">
                     <div className="relative aspect-[4/3] bg-secondary flex items-center justify-center">
                       {product.images?.[0]
-                        ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover blur-sm" />
+                        ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" style={{ filter: 'blur(2px) brightness(0.75)' }} />
                         : <div className="w-full h-full bg-secondary" />
                       }
                       <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1">
