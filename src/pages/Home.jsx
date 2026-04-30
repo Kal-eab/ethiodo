@@ -193,13 +193,9 @@ export default function Home() {
                       </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
                         <div className="absolute bottom-0 left-0 right-0 p-2">
-                          <button
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(e, product); }}
-                            className="w-full bg-primary text-primary-foreground font-mono text-[10px] h-8 hover:bg-primary/90 rounded-lg flex items-center justify-center gap-1"
-                          >
-                            <Heart className="w-3.5 h-3.5" />
-                            SAVE PREORDER
-                          </button>
+                          <Link to={`/product/${product.id}`} className="block w-full bg-primary text-primary-foreground font-mono text-[10px] h-8 hover:bg-primary/90 rounded-lg flex items-center justify-center gap-1">
+                            BUY NOW
+                          </Link>
                         </div>
                       </div>
                     </div>
