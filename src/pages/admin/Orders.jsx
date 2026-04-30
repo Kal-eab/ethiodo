@@ -279,22 +279,14 @@ export default function AdminOrders() {
               </div>
 
               {/* Quick action buttons */}
-              <div onClick={e => e.stopPropagation()} className="flex items-center gap-2">
+              <div onClick={e => e.stopPropagation()} className="flex flex-col items-end gap-1.5">
                 {order.status === 'pending' && (
-                  <>
-                    <button
-                      onClick={() => handleStatusChange(order.id, 'confirmed')}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-400/10 border border-blue-400/30 text-blue-400 font-mono text-xs uppercase hover:bg-blue-400/20 transition-colors"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Confirm
-                    </button>
-                    <button
-                      onClick={() => handleDelete(order.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 border border-destructive/30 text-destructive font-mono text-xs uppercase hover:bg-destructive/20 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Delete
-                    </button>
-                  </>
+                  <button
+                    onClick={() => handleStatusChange(order.id, 'confirmed')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-400/10 border border-blue-400/30 text-blue-400 font-mono text-xs uppercase hover:bg-blue-400/20 transition-colors"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Confirm
+                  </button>
                 )}
                 {order.status === 'confirmed' && (
                   <button
@@ -324,6 +316,14 @@ export default function AdminOrders() {
                   <span className="font-mono text-xs text-primary px-2 py-1 border border-primary/20 bg-primary/5">
                     ✓ Recorded
                   </span>
+                )}
+                {['pending', 'confirmed', 'shipped'].includes(order.status) && (
+                  <button
+                    onClick={() => handleDelete(order.id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 border border-destructive/30 text-destructive font-mono text-xs uppercase hover:bg-destructive/20 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
                 )}
               </div>
             </div>
