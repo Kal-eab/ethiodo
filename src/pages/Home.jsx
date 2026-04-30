@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Search, X } from 'lucide-react';
+import { Search, X, Heart } from 'lucide-react';
 import Footer from '@/components/store/Footer';
 import ProductCard from '@/components/store/ProductCard';
 import CategoryFilter from '@/components/store/CategoryFilter';
@@ -38,6 +38,27 @@ export default function Home() {
     throwOnError: false,
     staleTime: 5 * 60 * 1000,
   });
+
+  const { data: favorites = [] } = useQuery({
+    queryKey: ['favorites'],
+    queryFn: () => base44.entities.Favorite.list().catch(() => []),
+    retry: false,
+  });
+
+  const toggleFavorite = async (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const fav = favorites.find(f => f.product_id === product.id);
+    if (fav) {
+      queryClient.setQueryData(['favorites'], (old = []) => old.filter(f => f.id !== fav.id));
+      await base44.entities.Favorite.delete(fav.id);
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      queryClient.setQueryData(['favorites'], (old = []) => [...old, { id: tempId, product_id: product.id }]);
+      await base44.entities.Favorite.create({ product_id: product.id });
+    }
+    queryClient.invalidateQueries({ queryKey: ['favorites'] });
+  };
 
   const handleRefresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -161,8 +182,14 @@ export default function Home() {
                         ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
                         : <div className="w-full h-full bg-secondary" />
                       }
-                      <div className="absolute inset-0 flex flex-col items-end justify-start p-2">
+                      <div className="absolute inset-0 flex flex-col items-end justify-start p-2 gap-1">
                         <span className="font-mono text-[10px] font-bold text-primary uppercase tracking-widest bg-black/70 px-2 py-0.5 rounded">Coming Soon</span>
+                        <button
+                          onClick={(e) => toggleFavorite(e, product)}
+                          className="w-7 h-7 flex items-center justify-center bg-background/60 backdrop-blur-sm rounded-full border border-border/40 transition-colors hover:bg-background/90"
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${favorites.find(f => f.product_id === product.id) ? 'fill-primary text-primary' : 'text-white'}`} />
+                        </button>
                       </div>
                     </div>
                     <div className="p-2.5 space-y-1">
