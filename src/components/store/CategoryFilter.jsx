@@ -47,6 +47,17 @@ export default function CategoryFilter({ active, onChange }) {
       {/* Subcategory row — shown when a top-level with subcategories is selected */}
       {subcategories.length > 0 && (
         <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+          {/* "All [Category]" chip — shows all products in the top-level group */}
+          <button
+            onClick={() => onChange(selectedTop)}
+            className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest whitespace-nowrap flex-shrink-0 border transition-all duration-200 rounded-full active:scale-95 ${
+              active === selectedTop
+                ? 'bg-accent text-accent-foreground border-accent shadow-[0_0_8px_rgba(0,255,157,0.3)]'
+                : 'bg-transparent text-muted-foreground border-border/60 hover:border-accent/60 hover:text-accent/80'
+            }`}
+          >
+            All
+          </button>
           {subcategories.map(sub => (
             <button
               key={sub.value}

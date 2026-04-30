@@ -19,28 +19,15 @@ export const CATEGORY_TREE = [
     value: 'clothing',
     label: 'Clothing',
     subcategories: [
+      { value: 'clothing_dress', label: 'Dress' },
+      { value: 'clothing_tshirt', label: 'T-Shirt' },
+      { value: 'clothing_jacket', label: 'Jacket' },
+      { value: 'clothing_pants', label: 'Pants' },
+      { value: 'clothing_hoodie', label: 'Hoodie' },
       { value: 'clothing_mens', label: "Men's" },
       { value: 'clothing_womens', label: "Women's" },
       { value: 'clothing_kids', label: 'Kids' },
     ],
-  },
-  {
-    value: 'accessories',
-    label: 'Accessories',
-    subcategories: [],
-  },
-  {
-    value: 'sports',
-    label: 'Sports',
-    subcategories: [
-      { value: 'sports_fitness', label: 'Fitness' },
-      { value: 'sports_outdoor', label: 'Outdoor' },
-    ],
-  },
-  {
-    value: 'phones',
-    label: 'Phones',
-    subcategories: [],
   },
   {
     value: 'shoes',
@@ -51,6 +38,24 @@ export const CATEGORY_TREE = [
       { value: 'shoes_kids', label: 'Kids' },
       { value: 'shoes_sport', label: 'Sport' },
     ],
+  },
+  {
+    value: 'sports',
+    label: 'Sports',
+    subcategories: [
+      { value: 'sports_fitness', label: 'Fitness' },
+      { value: 'sports_outdoor', label: 'Outdoor' },
+    ],
+  },
+  {
+    value: 'accessories',
+    label: 'Accessories',
+    subcategories: [],
+  },
+  {
+    value: 'phones',
+    label: 'Phones',
+    subcategories: [],
   },
 ];
 

@@ -26,6 +26,7 @@ import ReviewInsights from '@/pages/admin/ReviewInsights';
 import Revenue from '@/pages/admin/Revenue';
 import ConversionRates from '@/pages/admin/ConversionRates';
 import AdminCustomers from '@/pages/admin/Customers';
+import AdminCategories from '@/pages/admin/Categories';
 import Messages from '@/pages/Messages';
 import About from '@/pages/About';
 import ContactPage from '@/pages/ContactPage';
@@ -70,6 +71,7 @@ const AnimatedRoutes = () => {
         <Route path="revenue" element={<Revenue />} />
         <Route path="conversion-rates" element={<ConversionRates />} />
         <Route path="customers" element={<AdminCustomers />} />
+        <Route path="categories" element={<AdminCategories />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

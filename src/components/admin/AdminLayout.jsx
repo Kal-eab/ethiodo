@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, MessageSquare, ArrowLeft, Menu, X, Mail, Star, Sparkles, DollarSign, Users, BarChart2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Package, ShoppingCart, MessageSquare, ArrowLeft, Menu, X, Mail, Star, Sparkles, DollarSign, Users, BarChart2, FolderTree } from 'lucide-react';
 import NotificationBell from '@/components/admin/NotificationBell';
 
 const navItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { path: '/admin/products', label: 'Products', icon: Package },
+  { path: '/admin/categories', label: 'Categories', icon: FolderTree },
   { path: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { path: '/admin/messages', label: 'Messages', icon: Mail },
   { path: '/admin/requests', label: 'Requests', icon: MessageSquare },
