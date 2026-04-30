@@ -13,10 +13,9 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
-    // Respect saved preference, else fall back to system
     const saved = localStorage.getItem('theme');
     if (saved) return saved === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return true; // Default to dark theme
   });
   const searchRef = useRef(null);
   const location = useLocation();
