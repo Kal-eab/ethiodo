@@ -67,12 +67,14 @@ export default function Home() {
   const { pulling, progress } = usePullToRefresh(handleRefresh);
 
   const searchResults = searchProducts(products, search);
-  const filtered = searchResults.filter(p => {
+  const categoryMatches = (p) => {
     if (category === 'all') return true;
     if (p.category === category) return true;
     const subs = getSubcategories(category);
     return subs.some(s => s.value === p.category);
-  });
+  };
+  const filtered = searchResults.filter(categoryMatches);
+  const draftFiltered = draftProducts.filter(categoryMatches);
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginatedFiltered = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
@@ -174,7 +176,7 @@ export default function Home() {
               {products.map(product => (
                 <ProductCard key={product.id} product={product} isFavorite={false} favoriteId={null} />
               ))}
-              {draftProducts.map(product => (
+              {draftFiltered.map(product => (
                 <Link key={product.id} to={`/product/${product.id}`} className="block group">
                   <div className="bg-card border border-border/60 rounded-xl overflow-hidden transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-[0_4px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(180,255,0,0.06)] group-hover:-translate-y-1">
                     <div className="relative aspect-[4/3] bg-secondary flex items-center justify-center overflow-hidden">
