@@ -28,13 +28,27 @@
       "type": "string",
       "enum": [
         "electronics",
+        "electronics_phones",
+        "electronics_laptops",
+        "electronics_earphones",
+        "electronics_tablets",
+        "electronics_accessories",
         "clothing",
+        "clothing_mens",
+        "clothing_womens",
+        "clothing_kids",
         "accessories",
         "sports",
+        "sports_fitness",
+        "sports_outdoor",
         "phones",
-        "shoes"
+        "shoes",
+        "shoes_mens",
+        "shoes_womens",
+        "shoes_kids",
+        "shoes_sport"
       ],
-      "description": "Product category"
+      "description": "Product category or subcategory"
     },
     "tags": {
       "type": "string",

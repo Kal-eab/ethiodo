@@ -8,13 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-
-const CATEGORIES = ['electronics', 'clothing', 'accessories', 'sports', 'phones', 'shoes'];
+import { CATEGORY_TREE, getCategoryLabel } from '@/lib/categories';
 
 const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44'];
 const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const PHONE_COLORS = ['Black', 'White', 'Red', 'Green', 'Purple', 'Blue', 'Gold', 'Silver'];
-const PREDEFINED_CATEGORIES = ['clothing', 'shoes'];
+const PREDEFINED_CATEGORIES = ['clothing', 'clothing_mens', 'clothing_womens', 'clothing_kids', 'shoes', 'shoes_mens', 'shoes_womens', 'shoes_kids', 'shoes_sport'];
+const PHONE_CATEGORIES = ['phones', 'electronics_phones'];
 
 function SizeSelector({ category, sizes, onChange }) {
   const [inputValue, setInputValue] = useState('');
@@ -57,7 +57,7 @@ function SizeSelector({ category, sizes, onChange }) {
   }
 
   // Phones — preset color chips + custom input
-  if (category === 'phones') {
+  if (PHONE_CATEGORIES.includes(category)) {
     return (
       <div className="space-y-3">
         <p className="font-mono text-[10px] text-muted-foreground">Click to toggle available colors</p>
@@ -238,8 +238,17 @@ function ProductForm({ product, onClose, onSave }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {CATEGORIES.map(c => (
-                <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</SelectItem>
+              {CATEGORY_TREE.map(parent => (
+                <React.Fragment key={parent.value}>
+                  <SelectItem value={parent.value}>
+                    <span className="font-semibold">{parent.label}</span>
+                  </SelectItem>
+                  {parent.subcategories.map(sub => (
+                    <SelectItem key={sub.value} value={sub.value}>
+                      <span className="pl-3 text-muted-foreground">↳ {sub.label}</span>
+                    </SelectItem>
+                  ))}
+                </React.Fragment>
               ))}
             </SelectContent>
           </Select>
@@ -455,7 +464,7 @@ export default function AdminProducts() {
                     </div>
                   </td>
                   <td className="p-3 hidden sm:table-cell">
-                    <span className="font-mono text-xs text-muted-foreground uppercase">{product.category}</span>
+                    <span className="font-mono text-xs text-muted-foreground uppercase">{getCategoryLabel(product.category)}</span>
                   </td>
                   <td className="p-3 font-mono font-bold text-primary">${product.price?.toFixed(2)}</td>
                   <td className="p-3 font-mono text-sm hidden md:table-cell">{product.stock || 0}</td>

@@ -18,6 +18,7 @@ import BecauseYouViewedSection from '@/components/home/BecauseYouViewedSection';
 import NewAndRisingSection from '@/components/home/NewAndRisingSection';
 import { getGuestRecentlyViewed } from '@/lib/behaviorTracker';
 import { trackSearch, trackCategoryFilter } from '@/lib/analytics';
+import { getSubcategories } from '@/lib/categories';
 
 export default function Home() {
   const [searchInput, setSearchInput] = useState('');
@@ -85,7 +86,13 @@ export default function Home() {
   )];
 
   const searchResults = searchProducts(products, search);
-  const filtered = searchResults.filter(p => category === 'all' || p.category === category);
+  const filtered = searchResults.filter(p => {
+    if (category === 'all') return true;
+    if (p.category === category) return true;
+    // If top-level category selected, also show products in its subcategories
+    const subs = getSubcategories(category);
+    return subs.some(s => s.value === p.category);
+  });
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginatedFiltered = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
