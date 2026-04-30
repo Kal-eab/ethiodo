@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { CATEGORY_TREE, getCategoryLabel } from '@/lib/categories';
+import { getCategoryTreeDynamic, getCategoryLabel } from '@/lib/categories';
 
 const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44'];
 const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
@@ -130,6 +130,7 @@ function SizeSelector({ category, sizes, onChange }) {
 }
 
 function ProductForm({ product, onClose, onSave }) {
+  const CATEGORY_TREE = getCategoryTreeDynamic();
   const [form, setForm] = useState({
     name: product?.name || '',
     price: product?.price || '',

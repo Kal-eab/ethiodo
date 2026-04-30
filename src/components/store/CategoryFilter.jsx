@@ -1,7 +1,9 @@
 import React from 'react';
-import { CATEGORY_TREE, getSubcategories } from '@/lib/categories';
+import { getCategoryTreeDynamic, getSubcategories } from '@/lib/categories';
 
 export default function CategoryFilter({ active, onChange }) {
+  const CATEGORY_TREE = getCategoryTreeDynamic();
+  
   // Determine if active is a subcategory and find its parent
   const activeParent = CATEGORY_TREE.find(c =>
     c.subcategories.some(s => s.value === active)

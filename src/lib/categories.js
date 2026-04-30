@@ -61,7 +61,7 @@ const DEFAULT_TREE = [
 ];
 
 /** Get CATEGORY_TREE from localStorage (admin-managed) or use defaults */
-export const CATEGORY_TREE = (() => {
+function getCategoryTree() {
   try {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('ethiodo_categories');
@@ -71,7 +71,9 @@ export const CATEGORY_TREE = (() => {
     // Fall through to defaults
   }
   return DEFAULT_TREE;
-})();
+}
+
+export const CATEGORY_TREE = getCategoryTree();
 
 /** Flat list of all top-level category values */
 export const TOP_LEVEL_CATEGORIES = CATEGORY_TREE.map(c => c.value);
@@ -100,10 +102,21 @@ export const ALL_CATEGORY_VALUES = [
 
 /** Get label for any category value */
 export function getCategoryLabel(value) {
-  for (const cat of CATEGORY_TREE) {
+  const tree = getCategoryTree();
+  for (const cat of tree) {
     if (cat.value === value) return cat.label;
     const sub = cat.subcategories.find(s => s.value === value);
     if (sub) return sub.label;
   }
   return value;
+}
+
+/** Get all top-level categories dynamically */
+export function getTopLevelCategories() {
+  return getCategoryTree().map(c => c.value);
+}
+
+/** Get category tree dynamically (always reads from localStorage) */
+export function getCategoryTreeDynamic() {
+  return getCategoryTree();
 }
