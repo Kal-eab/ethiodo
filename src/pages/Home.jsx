@@ -22,15 +22,21 @@ export default function Home() {
   const ITEMS_PER_PAGE = 20;
   const queryClient = useQueryClient();
 
-  const { data: allProducts = [], isLoading } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => base44.entities.Product.list('-created_date', 200),
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ['products', 'published'],
+    queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
     retry: false,
     throwOnError: false,
     staleTime: 5 * 60 * 1000,
   });
-  const products = allProducts.filter(p => p.published);
-  const draftProducts = allProducts.filter(p => !p.published);
+
+  const { data: draftProducts = [] } = useQuery({
+    queryKey: ['products', 'coming_soon'],
+    queryFn: () => base44.entities.Product.filter({ published: false, coming_soon: true }, '-created_date', 50),
+    retry: false,
+    throwOnError: false,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const handleRefresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['products'] });

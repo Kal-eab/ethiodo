@@ -139,6 +139,7 @@ function ProductForm({ product, onClose, onSave }) {
     rating: product?.rating || 0,
     stock: product?.stock || 0,
     featured: product?.featured || false,
+    coming_soon: product?.coming_soon || false,
     tags: product?.tags || '',
     images: product?.images || [],
     sizes: product?.sizes || [],
@@ -200,6 +201,7 @@ function ProductForm({ product, onClose, onSave }) {
       stock: parseInt(form.stock) || 0,
       tags: form.tags,
       sizes: form.sizes,
+      coming_soon: form.coming_soon,
       published: publish,
     });
     setSaving(false);
@@ -267,10 +269,14 @@ function ProductForm({ product, onClose, onSave }) {
           <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Rating (0-5)</label>
           <Input type="number" step="0.1" min="0" max="5" value={form.rating} onChange={e => setForm({ ...form, rating: e.target.value })} className="bg-secondary border-border h-10" />
         </div>
-        <div className="flex items-end">
+        <div className="flex items-end gap-4">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={form.featured} onChange={e => setForm({ ...form, featured: e.target.checked })} className="accent-primary" />
             <span className="font-mono text-xs text-muted-foreground uppercase">Featured</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={form.coming_soon} onChange={e => setForm({ ...form, coming_soon: e.target.checked })} className="accent-primary" />
+            <span className="font-mono text-xs text-muted-foreground uppercase">Show as Coming Soon</span>
           </label>
         </div>
       </div>

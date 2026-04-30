@@ -90,6 +90,11 @@
       "default": false,
       "description": "Whether the product is visible to customers. Unpublished = draft."
     },
+    "coming_soon": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show this draft product as Coming Soon on the store."
+    },
     "trendingScore": {
       "type": "number",
       "default": 0,
