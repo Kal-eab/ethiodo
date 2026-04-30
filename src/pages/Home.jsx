@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Search, X } from 'lucide-react';
@@ -153,7 +154,7 @@ export default function Home() {
                 <ProductCard key={product.id} product={product} isFavorite={false} favoriteId={null} />
               ))}
               {draftProducts.map(product => (
-                <div key={product.id} className="block">
+                <Link key={product.id} to={`/product/${product.id}`} className="block">
                   <div className="bg-card border border-border/60 rounded-xl overflow-hidden opacity-70">
                     <div className="relative aspect-[4/3] bg-secondary flex items-center justify-center">
                       {product.images?.[0]
@@ -169,7 +170,7 @@ export default function Home() {
                       <span className="font-mono text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 rounded-sm">Coming Soon</span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </section>

@@ -283,13 +283,21 @@ export default function ProductDetail() {
 
 
 
+              {/* Coming Soon banner */}
+              {product.coming_soon && !product.published && (
+                <div className="border border-primary/40 bg-primary/5 px-4 py-3 font-mono text-sm text-primary text-center tracking-widest uppercase">
+                  🕐 Coming Soon — Not available yet
+                </div>
+              )}
+
               {/* Desktop Actions */}
               <div className="hidden md:block space-y-3">
                 <Button
-                  onClick={handleBuyNow}
-                  className="w-full h-12 bg-primary text-primary-foreground font-mono font-bold tracking-wider hover:bg-primary/90"
+                  onClick={product.coming_soon && !product.published ? undefined : handleBuyNow}
+                  disabled={!!(product.coming_soon && !product.published)}
+                  className="w-full h-12 bg-primary text-primary-foreground font-mono font-bold tracking-wider hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  BUY NOW — {fmt(product.price * quantity)} Birr
+                  {product.coming_soon && !product.published ? 'COMING SOON' : `BUY NOW — ${fmt(product.price * quantity)} Birr`}
                 </Button>
                 <Button
                   onClick={toggleFav}
@@ -330,11 +338,18 @@ export default function ProductDetail() {
 
         {/* Right: Buy Now button */}
         <button
-          onClick={handleBuyNow}
-          className="flex-1 h-16 bg-primary text-primary-foreground font-mono flex flex-col items-center justify-center leading-tight active:bg-primary/90"
+          onClick={product.coming_soon && !product.published ? undefined : handleBuyNow}
+          disabled={!!(product.coming_soon && !product.published)}
+          className="flex-1 h-16 bg-primary text-primary-foreground font-mono flex flex-col items-center justify-center leading-tight active:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <span className="text-lg font-black uppercase tracking-widest">BUY NOW</span>
-          <span className="text-sm font-semibold opacity-90">{fmt(product.price * quantity)} Birr</span>
+          {product.coming_soon && !product.published ? (
+            <span className="text-lg font-black uppercase tracking-widest">COMING SOON</span>
+          ) : (
+            <>
+              <span className="text-lg font-black uppercase tracking-widest">BUY NOW</span>
+              <span className="text-sm font-semibold opacity-90">{fmt(product.price * quantity)} Birr</span>
+            </>
+          )}
         </button>
       </div>
     </div>
