@@ -2,9 +2,10 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Search, X, Heart } from 'lucide-react';
+import { Search, X, AlertCircle } from 'lucide-react';
 import Footer from '@/components/store/Footer';
 import ProductCard from '@/components/store/ProductCard';
+import ComingSoonProductCard from '@/components/store/ComingSoonProductCard';
 import CategoryFilter from '@/components/store/CategoryFilter';
 import Navbar from '@/components/store/Navbar';
 import SEO from '@/components/SEO';
@@ -24,11 +25,10 @@ export default function Home() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading, error: productsError } = useQuery({
     queryKey: ['products', 'published'],
     queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
     retry: false,
-    throwOnError: false,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -46,7 +46,7 @@ export default function Home() {
     retry: false,
   });
 
-  const toggleFavorite = async (e, product) => {
+  const toggleFavorite = useCallback(async (e, product) => {
     e.preventDefault();
     e.stopPropagation();
     const fav = favorites.find(f => f.product_id === product.id);
@@ -59,7 +59,7 @@ export default function Home() {
       await base44.entities.Favorite.create({ product_id: product.id });
     }
     queryClient.invalidateQueries({ queryKey: ['favorites'] });
-  };
+  }, [favorites, queryClient]);
 
   const handleRefresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -123,6 +123,21 @@ export default function Home() {
           </div>
         </div>
 
+        {productsError && (
+          <div className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 py-8">
+            <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-destructive">Failed to load products</p>
+                <p className="font-mono text-xs text-destructive/70 mt-0.5">Please try refreshing the page</p>
+              </div>
+              <button onClick={() => queryClient.invalidateQueries({ queryKey: ['products'] })}
+                className="px-4 py-2 bg-destructive text-destructive-foreground font-mono text-xs rounded hover:bg-destructive/90 transition-colors flex-shrink-0">
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
         {isLoading ? (
           <div className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
@@ -186,36 +201,13 @@ export default function Home() {
               {draftFiltered.map(product => {
                 const fav = favorites.find(f => f.product_id === product.id);
                 return (
-                  <div key={product.id} className="block group cursor-pointer" onClick={() => navigate(`/product/${product.id}`)}>
-                    <div className="bg-card border border-border/60 rounded-xl overflow-hidden transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-[0_4px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(180,255,0,0.06)] group-hover:-translate-y-1">
-                      <div className="relative aspect-[4/3] bg-secondary flex items-center justify-center overflow-hidden">
-                        {product.images?.[0]
-                          ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                          : <div className="w-full h-full bg-secondary" />
-                        }
-                        <div className="absolute inset-0 flex flex-col items-end justify-start p-2 gap-1">
-                          <span className="font-mono text-[10px] font-bold text-primary uppercase tracking-widest bg-black/70 px-2 py-0.5 rounded">Coming Soon</span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); toggleFavorite(e, product); }}
-                            className="w-7 h-7 flex items-center justify-center bg-background/60 backdrop-blur-sm rounded-full border border-border/40 transition-colors hover:bg-background/90"
-                          >
-                            <Heart className={`w-3.5 h-3.5 ${fav ? 'fill-primary text-primary' : 'text-white'}`} />
-                          </button>
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
-                          <div className="absolute bottom-0 left-0 right-0 p-2">
-                            <div className="block w-full bg-primary text-primary-foreground font-mono text-[10px] h-8 hover:bg-primary/90 rounded-lg flex items-center justify-center gap-1">
-                              BUY NOW
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-2.5 space-y-1">
-                        <h3 className="font-medium text-xs truncate leading-tight text-muted-foreground">{product.name}</h3>
-                        <span className="font-mono text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 rounded-sm">Coming Soon</span>
-                      </div>
-                    </div>
-                  </div>
+                  <ComingSoonProductCard
+                    key={product.id}
+                    product={product}
+                    isFavorite={!!fav}
+                    onToggleFavorite={toggleFavorite}
+                    onNavigate={navigate}
+                  />
                 );
               })}
             </div>
