@@ -36,6 +36,7 @@ function isFuzzyMatch(word, target) {
 }
 
 function scoreProduct(product, keywords) {
+  if (!product) return 0;
   const name = (product.name || '').toLowerCase();
   const category = (product.category || '').toLowerCase();
   const description = (product.description || '').toLowerCase();
@@ -44,6 +45,7 @@ function scoreProduct(product, keywords) {
   let totalScore = 0;
 
   for (const kw of keywords) {
+    if (!kw) continue;
     let kwScore = 0;
 
     // Exact name match (highest)

@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getAutocompleteSuggestions } from '@/lib/searchProducts';
 import CategoryFilter from '@/components/store/CategoryFilter';
 
-export default function Navbar({ onSearchChange, searchValue, category, onCategoryChange }) {
+export default function Navbar({ onSearchChange = null, searchValue = '', category = 'all', onCategoryChange = null }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [userLoaded, setUserLoaded] = useState(false);
@@ -61,15 +61,17 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
     queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 100).catch(() => []),
   });
 
+  /** @param {string} value */
   const handleSearchInput = (value) => {
-    onSearchChange(value);
+    if (onSearchChange) onSearchChange(value);
     const s = getAutocompleteSuggestions(products, value, 6);
     setSuggestions(s);
     setShowSuggestions(s.length > 0 && value.trim().length > 0);
   };
 
+  /** @param {string} suggestion */
   const handleSuggestionClick = (suggestion) => {
-    onSearchChange(suggestion);
+    if (onSearchChange) onSearchChange(suggestion);
     setShowSuggestions(false);
   };
 
@@ -150,7 +152,13 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
                   value={searchValue || ''}
                   onChange={e => handleSearchInput(e.target.value)}
                   onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
-                  onKeyDown={e => { if (e.key === 'Escape') setShowSuggestions(false); }}
+                  onKeyDown={e => {
+                    if (e.key === 'Escape') setShowSuggestions(false);
+                    if (e.key === 'Enter') {
+                      setShowSuggestions(false);
+                      e.target.blur();
+                    }
+                  }}
                   className="flex-1 bg-transparent text-sm outline-none px-3 py-2.5 text-white placeholder-white/30 min-w-0"
                 />
                 {searchValue && (
@@ -185,12 +193,8 @@ export default function Navbar({ onSearchChange, searchValue, category, onCatego
             </div>
           )}
 
-          {/* Mobile: categories fill the middle */}
-          {onCategoryChange && (
-            <div className="flex-1 min-w-0 overflow-x-auto scrollbar-none md:hidden" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
-              <CategoryFilter active={category} onChange={onCategoryChange} />
-            </div>
-          )}
+          {/* Mobile: middle space */}
+          <div className="flex-1 md:hidden" />
 
           {/* Right side actions */}
           <div className="flex items-center gap-1.5 flex-shrink-0">

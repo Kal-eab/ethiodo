@@ -27,6 +27,7 @@ export default function Home() {
 
   const { data: products = [], isLoading, error: productsError } = useQuery({
     queryKey: ['products', 'published'],
+    // @ts-ignore
     queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
     retry: false,
     staleTime: 5 * 60 * 1000,
@@ -34,6 +35,7 @@ export default function Home() {
 
   const { data: draftProducts = [] } = useQuery({
     queryKey: ['products', 'coming_soon'],
+    // @ts-ignore
     queryFn: () => base44.entities.Product.filter({ published: false, coming_soon: true }, '-created_date', 50),
     retry: false,
     throwOnError: false,
@@ -42,19 +44,27 @@ export default function Home() {
 
   const { data: favorites = [] } = useQuery({
     queryKey: ['favorites'],
+    // @ts-ignore
     queryFn: () => base44.entities.Favorite.list().catch(() => []),
     retry: false,
   });
 
+  /**
+   * @param {React.MouseEvent} e
+   * @param {any} product
+   */
   const toggleFavorite = useCallback(async (e, product) => {
+    if (!product) return;
     e.preventDefault();
     e.stopPropagation();
     const fav = favorites.find(f => f.product_id === product.id);
     if (fav) {
+      // @ts-ignore
       queryClient.setQueryData(['favorites'], (old = []) => old.filter(f => f.id !== fav.id));
       await base44.entities.Favorite.delete(fav.id);
     } else {
       const tempId = `temp-${Date.now()}`;
+      // @ts-ignore
       queryClient.setQueryData(['favorites'], (old = []) => [...old, { id: tempId, product_id: product.id }]);
       await base44.entities.Favorite.create({ product_id: product.id });
     }
@@ -67,13 +77,20 @@ export default function Home() {
 
   const { pulling, progress } = usePullToRefresh(handleRefresh);
 
-  const searchResults = searchProducts(products, search);
+  const allSearchable = [...products, ...draftProducts];
+  const searchResults = searchProducts(allSearchable, search);
+  
+  /** @param {any} p */
   const categoryMatches = (p) => {
+    if (!p) return false;
     if (category === 'all') return true;
-    if (p.category === category) return true;
+    const pCat = (p.category || '').toLowerCase();
+    const targetCat = category.toLowerCase();
+    if (pCat === targetCat) return true;
     const subs = getSubcategories(category);
-    return subs.some(s => s.value === p.category);
+    return subs.some(s => s.value && s.value.toLowerCase() === pCat);
   };
+
   const filtered = searchResults.filter(categoryMatches);
   const draftFiltered = draftProducts.filter(categoryMatches);
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
@@ -92,16 +109,17 @@ export default function Home() {
         description="Ethiopia's #1 online store. Shop electronics, fashion, home goods. Fast delivery to Addis Ababa, Dire Dawa, Bahir Dar and all regions. Pay on delivery available."
         keywords="Ethiopian online shop, online shopping Ethiopia, buy online Ethiopia, ኦንላይን ሱቅ, online order Ethiopia"
         url="https://www.ethiodo.com"
+        image="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/9143c5b71_Gemini_Generated_Image_gon5mugon5mugon5.png"
       />
       <PullToRefreshIndicator progress={progress} pulling={pulling} />
       <Navbar onSearchChange={setSearchInput} searchValue={searchInput} category={category} onCategoryChange={(c) => { setCategory(c); setPage(1); }} />
 
-      {/* Sticky category bar under navbar — desktop only */}
-      <div className="hidden md:block fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2">
+      {/* Sticky category bar under navbar */}
+      <div className="fixed top-14 md:top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2">
         <CategoryFilter active={category} onChange={(c) => { setCategory(c); setPage(1); trackCategoryFilter(c); }} />
       </div>
 
-      <main className="pt-16 md:pt-28 pb-20 md:pb-4">
+      <main className="pt-24 md:pt-28 pb-20 md:pb-4">
         {/* Mobile search */}
         <div className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 pt-3">
           <div className="lg:hidden mb-3">
@@ -164,6 +182,17 @@ export default function Home() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
                   {paginatedFiltered.map(product => {
                     const fav = favorites.find(f => f.product_id === product.id);
+                    if (product.coming_soon) {
+                      return (
+                        <ComingSoonProductCard
+                          key={product.id}
+                          product={product}
+                          isFavorite={!!fav}
+                          onToggleFavorite={toggleFavorite}
+                          onNavigate={navigate}
+                        />
+                      );
+                    }
                     return (
                       <ProductCard key={product.id} product={product} isFavorite={!!fav} favoriteId={fav?.id} />
                     );

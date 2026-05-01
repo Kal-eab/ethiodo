@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 
-export default function ProductCard({ product, isFavorite, favoriteId, badge }) {
+export default function ProductCard({ product, isFavorite, favoriteId, badge = null }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const image = product.images?.[0] || '/placeholder.png';
@@ -21,10 +21,12 @@ export default function ProductCard({ product, isFavorite, favoriteId, badge }) 
     e.stopPropagation();
     // Optimistic update
     if (isFavorite && favoriteId) {
+      // @ts-ignore
       queryClient.setQueryData(['favorites'], (old = []) => old.filter(f => f.id !== favoriteId));
       await base44.entities.Favorite.delete(favoriteId);
     } else {
       const tempId = `temp-${Date.now()}`;
+      // @ts-ignore
       queryClient.setQueryData(['favorites'], (old = []) => [
         ...old,
         { id: tempId, product_id: product.id },
@@ -43,7 +45,10 @@ export default function ProductCard({ product, isFavorite, favoriteId, badge }) 
             src={image}
             alt={product.name}
             loading="lazy"
-            onError={(e) => { e.target.src = '/placeholder.png'; }}
+            onError={(e) => { 
+              const target = /** @type {HTMLImageElement} */ (e.currentTarget);
+              target.src = '/placeholder.png'; 
+            }}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           {/* Gradient overlay with cart button */}

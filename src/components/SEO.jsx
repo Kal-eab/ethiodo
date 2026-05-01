@@ -1,6 +1,14 @@
 import { useEffect } from 'react';
 
-export default function SEO({ title, description, keywords, url, image }) {
+/**
+ * @param {object} props
+ * @param {string} [props.title]
+ * @param {string} [props.description]
+ * @param {string} [props.keywords]
+ * @param {string} [props.url]
+ * @param {string} [props.image]
+ */
+export default function SEO({ title = '', description = '', keywords = '', url = '', image = '' }) {
   useEffect(() => {
     document.title = title || "Ethiodo — Ethiopia's #1 Online Store";
     setMeta('description', description || 'Shop online in Ethiopia. Fast delivery, pay on delivery.');
@@ -23,22 +31,22 @@ export default function SEO({ title, description, keywords, url, image }) {
 }
 
 function setMeta(name, content) {
-  let el = document.querySelector(`meta[name='${name}']`);
+  let el = /** @type {HTMLMetaElement | null} */ (document.querySelector(`meta[name='${name}']`));
   if (!el) {
     el = document.createElement('meta');
     el.name = name;
     document.head.appendChild(el);
   }
-  el.content = content;
+  if (el) el.content = content;
 }
 
 function setOG(property, content) {
   if (!content) return;
-  let el = document.querySelector(`meta[property='${property}']`);
+  let el = /** @type {HTMLMetaElement | null} */ (document.querySelector(`meta[property='${property}']`));
   if (!el) {
     el = document.createElement('meta');
     el.setAttribute('property', property);
     document.head.appendChild(el);
   }
-  el.content = content;
+  if (el) el.content = content;
 }
