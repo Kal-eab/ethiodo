@@ -119,7 +119,7 @@ export default function Home() {
         <CategoryFilter active={category} onChange={(c) => { setCategory(c); setPage(1); trackCategoryFilter(c); }} />
       </div>
 
-      <main className="pt-24 md:pt-28 pb-20 md:pb-4">
+      <main className="pt-[88px] md:pt-[92px] pb-20 md:pb-4">
         {/* Mobile search */}
         <div className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8">
           <div className="lg:hidden mb-2">
