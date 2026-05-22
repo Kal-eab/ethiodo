@@ -105,8 +105,45 @@ const AuthenticatedApp = () => {
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent animate-spin"></div>
+      <div className="min-h-screen bg-background">
+        {/* Navbar skeleton */}
+        <div className="fixed top-0 left-0 right-0 z-50 h-14 border-b border-border/30" style={{ background: '#0a0a0a' }}>
+          <div className="max-w-[140rem] mx-auto px-3 sm:px-5 h-full flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-secondary animate-pulse" />
+            <div className="w-24 h-4 rounded bg-secondary animate-pulse hidden sm:block" />
+            <div className="hidden md:flex gap-2 mx-2">
+              {[60,52,64,72,80,48].map((w,i) => <div key={i} className="h-6 rounded-full bg-secondary animate-pulse" style={{width:w}} />)}
+            </div>
+            <div className="flex-1 hidden md:block mx-2">
+              <div className="h-9 rounded-full bg-secondary animate-pulse" />
+            </div>
+            <div className="flex-1 md:hidden" />
+            <div className="flex gap-2">
+              <div className="w-8 h-8 rounded-full bg-secondary animate-pulse" />
+              <div className="w-20 h-8 rounded-full bg-secondary animate-pulse hidden md:block" />
+            </div>
+          </div>
+        </div>
+        {/* Category bar skeleton */}
+        <div className="fixed top-14 left-0 right-0 z-40 border-b border-border/30 px-4 py-2" style={{ background: '#0a0a0a' }}>
+          <div className="flex gap-2 overflow-hidden">
+            {[40,90,72,52,60,92].map((w,i) => <div key={i} className="h-7 rounded-full bg-secondary animate-pulse flex-shrink-0" style={{width:w}} />)}
+          </div>
+        </div>
+        {/* Product grid skeleton */}
+        <div className="pt-[96px] px-3 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 pt-2">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="bg-card border border-border rounded-xl animate-pulse overflow-hidden">
+                <div className="aspect-[4/3] bg-secondary" />
+                <div className="p-2.5 space-y-1.5">
+                  <div className="h-3 bg-secondary rounded w-3/4" />
+                  <div className="h-4 bg-secondary rounded w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
