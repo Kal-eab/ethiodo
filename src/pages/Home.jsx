@@ -121,8 +121,8 @@ export default function Home() {
 
       <main className="pt-24 md:pt-28 pb-20 md:pb-4">
         {/* Mobile search */}
-        <div className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 pt-3">
-          <div className="lg:hidden mb-3">
+        <div className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="lg:hidden mb-2">
             <div className="flex items-center bg-secondary border border-border px-3 py-2 w-full rounded-lg">
               <Search className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0" />
               <input
@@ -217,10 +217,10 @@ export default function Home() {
             )}
           </section>
         ) : (
-          <section className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="font-mono text-xs text-muted-foreground uppercase tracking-widest">All Products</h2>
-            </div>
+          <section className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 py-1">
+            <div className="flex items-center gap-2 mb-2">
+            <h2 className="font-mono text-xs text-muted-foreground uppercase tracking-widest">All Products</h2>
+          </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
               {products.map(product => {
                 const fav = favorites.find(f => f.product_id === product.id);
