@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { getCategoryTreeDynamic, getCategoryLabel } from '@/lib/categories';
 
-const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44'];
+const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
 const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const PHONE_COLORS = ['Black', 'White', 'Red', 'Green', 'Purple', 'Blue', 'Gold', 'Silver'];
 const PREDEFINED_CATEGORIES = ['clothing', 'clothing_mens', 'clothing_womens', 'clothing_kids', 'shoes', 'shoes_mens', 'shoes_womens', 'shoes_kids', 'shoes_sport'];
@@ -37,7 +37,7 @@ function SizeSelector({ category, sizes, onChange }) {
 
   // Clothing / Shoes — predefined size chips
   if (PREDEFINED_CATEGORIES.includes(category)) {
-    const sizeList = category === 'shoes' ? SHOE_SIZES : CLOTHING_SIZES;
+    const sizeList = category.startsWith('shoes') ? SHOE_SIZES : CLOTHING_SIZES;
     return (
       <div className="space-y-2">
         <p className="font-mono text-[10px] text-muted-foreground">Click chips to toggle available sizes</p>
