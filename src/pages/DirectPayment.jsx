@@ -28,7 +28,7 @@ const PAYMENT_ACCOUNTS = [
     label: 'Bank Transfer (CBE)',
     details: [
       { key: 'Account Name', value: 'Wubalem Mamo' },
-      { key: 'Account Number', value: '1000071273192' },
+      { key: 'Account Number', value: '1000518281287' },
     ],
   },
 ];
