@@ -103,13 +103,18 @@ function ScreenshotUploader({ screenshots, onChange }) {
   const handleFiles = async (files) => {
     if (!files.length) return;
     setUploading(true);
-    const urls = [];
-    for (const file of Array.from(files)) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      urls.push(file_url);
+    try {
+      const urls = [];
+      for (const file of Array.from(files)) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        urls.push(file_url);
+      }
+      onChange([...screenshots, ...urls]);
+    } catch (err) {
+      toast.error('Upload failed: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setUploading(false);
     }
-    onChange([...screenshots, ...urls]);
-    setUploading(false);
   };
 
   const removeScreenshot = (idx) => {

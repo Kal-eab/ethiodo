@@ -155,13 +155,18 @@ function ProductForm({ product, onClose, onSave }) {
     const files = Array.from(e.target.files);
     if (!files.length) return;
     setUploading(true);
-    const urls = [];
-    for (const file of files) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      urls.push(file_url);
+    try {
+      const urls = [];
+      for (const file of files) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        urls.push(file_url);
+      }
+      setForm(f => ({ ...f, images: [...f.images, ...urls] }));
+    } catch (err) {
+      toast.error('Upload failed: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setUploading(false);
     }
-    setForm(f => ({ ...f, images: [...f.images, ...urls] }));
-    setUploading(false);
   };
 
   const removeImage = (idx) => {
