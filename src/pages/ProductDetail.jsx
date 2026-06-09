@@ -191,9 +191,9 @@ export default function ProductDetail() {
                     <button
                       key={i}
                       onClick={() => setSelectedImage(i)}
-                      className={`w-20 h-20 flex-shrink-0 border overflow-hidden ${selectedImage === i ? 'border-primary' : 'border-border'}`}
+                      className={`w-20 h-20 flex-shrink-0 border overflow-hidden bg-black/40 ${selectedImage === i ? 'border-primary' : 'border-border'}`}
                     >
-                      <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
+                      <img src={img} alt="" loading="lazy" className="w-full h-full object-contain" />
                     </button>
                   ))}
                 </div>

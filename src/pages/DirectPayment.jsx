@@ -347,21 +347,21 @@ export default function DirectPayment() {
           {/* ── Product card ── */}
           <div className="bg-card border border-border mb-3 overflow-hidden">
             {product.images?.length > 0 && (
-              <div className="relative" style={{ aspectRatio: '4/5' }}>
-                <div
-                  ref={sliderRef}
-                  className="flex h-full overflow-x-auto scrollbar-none snap-x snap-mandatory"
-                  style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}
-                  onScroll={e => {
-                    const idx = Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth);
-                    setActiveImage(idx);
-                  }}
-                >
-                  {product.images.map((img, i) => (
-                    <div key={i} className="flex-shrink-0 w-full h-full snap-center">
-                      <img src={img} alt={product.name} className="w-full h-full object-cover" />
-                    </div>
-                  ))}
+            <div className="relative" style={{ aspectRatio: '4/5', backgroundColor: '#0a0a0a' }}>
+            <div
+            ref={sliderRef}
+            className="flex h-full overflow-x-auto scrollbar-none snap-x snap-mandatory"
+            style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}
+            onScroll={e => {
+              const idx = Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth);
+              setActiveImage(idx);
+            }}
+            >
+            {product.images.map((img, i) => (
+              <div key={i} className="flex-shrink-0 w-full h-full snap-center bg-black/40">
+                <img src={img} alt={product.name} className="w-full h-full object-contain" />
+              </div>
+            ))}
                 </div>
                 {product.images.length > 1 && (
                   <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">

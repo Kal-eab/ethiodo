@@ -40,7 +40,7 @@ export default function ProductCard({ product, isFavorite, favoriteId, badge = n
     <Link to={`/product/${product.id}`} className="group block">
       <div className="bg-card border border-border/60 rounded-xl overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-[0_4px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(180,255,0,0.06)] hover:-translate-y-1">
         {/* Image — rectangular 4:3 */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
+        <div className="relative aspect-[4/3] overflow-hidden bg-black/40">
           <img
             src={image}
             alt={product.name}
@@ -49,7 +49,7 @@ export default function ProductCard({ product, isFavorite, favoriteId, badge = n
               const target = /** @type {HTMLImageElement} */ (e.currentTarget);
               target.src = '/placeholder.png'; 
             }}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
           />
           {/* Gradient overlay with cart button */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
