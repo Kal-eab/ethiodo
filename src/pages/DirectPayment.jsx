@@ -28,8 +28,8 @@ const PAYMENT_ACCOUNTS = [
     icon: CreditCard,
     label: 'Bank Transfer (CBE)',
     details: [
-      { key: 'Account Name', value: 'Kaleab Mamo' },
-      { key: 'Account Number', value: '1000518281287' },
+      { key: 'Account Name', value: 'Kaleab Mamo', copyable: false },
+      { key: 'Account Number', value: '1000518281287', copyable: true },
     ],
   },
 ];
@@ -485,7 +485,12 @@ export default function DirectPayment() {
                   </div>
                   <div className="space-y-2">
                     {acc.details.map(d => (
-                      <CopyableRow key={d.key} label={d.key} value={d.value} />
+                      d.copyable
+                        ? <CopyableRow key={d.key} label={d.key} value={d.value} />
+                        : <div key={d.key} className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground font-mono text-xs">{d.key}</span>
+                            <span className="font-semibold">{d.value}</span>
+                          </div>
                     ))}
                   </div>
                 </div>
