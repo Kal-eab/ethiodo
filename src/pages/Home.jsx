@@ -119,11 +119,11 @@ export default function Home() {
       <Navbar onSearchChange={setSearchInput} searchValue={searchInput} category={category} onCategoryChange={(c) => { setCategory(c); setPage(1); }} />
 
       {/* Sticky category bar under navbar */}
-      <div className="fixed top-14 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2">
+      <div className="fixed top-[104px] md:top-14 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2">
         <CategoryFilter active={category} onChange={(c) => { setCategory(c); setPage(1); trackCategoryFilter(c); }} />
       </div>
 
-      <main className="pt-[96px] pb-20 md:pb-4">
+      <main className="pt-[148px] md:pt-[96px] pb-20 md:pb-4">
 
 
         {productsError && (

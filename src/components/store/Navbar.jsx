@@ -197,27 +197,7 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
             </div>
           )}
 
-          {/* Mobile: inline search bar */}
-          {onSearchChange && (
-            <div className="flex-1 md:hidden mx-1">
-              <div className="flex items-center rounded-full overflow-hidden px-3 py-1.5" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                <Search className="w-3.5 h-3.5 flex-shrink-0 mr-2" style={{ color: 'rgba(255,255,255,0.4)' }} />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchValue || ''}
-                  onChange={e => onSearchChange(e.target.value)}
-                  className="bg-transparent text-sm outline-none w-full text-white placeholder-white/30 min-w-0"
-                />
-                {searchValue && (
-                  <button onClick={() => onSearchChange('')} className="ml-1">
-                    <X className="w-3 h-3" style={{ color: 'rgba(255,255,255,0.4)' }} />
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-          {!onSearchChange && <div className="flex-1 md:hidden" />}
+          <div className="flex-1 md:hidden" />
 
           {/* Right side actions */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -270,6 +250,26 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
             )}
           </div>
         </div>
+      {/* ── Row 2 (mobile only): full-width search bar ── */}
+      {onSearchChange && (
+        <div className="md:hidden px-3 pb-2">
+          <div className="flex items-center rounded-full px-3 py-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}>
+            <Search className="w-3.5 h-3.5 flex-shrink-0 mr-2" style={{ color: 'rgba(255,255,255,0.4)' }} />
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchValue || ''}
+              onChange={e => onSearchChange(e.target.value)}
+              className="bg-transparent text-sm outline-none w-full text-white placeholder-white/30 min-w-0"
+            />
+            {searchValue && (
+              <button onClick={() => onSearchChange('')} className="ml-1">
+                <X className="w-3 h-3" style={{ color: 'rgba(255,255,255,0.4)' }} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       </div>
 
       {/* Mobile menu */}
