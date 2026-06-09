@@ -15,7 +15,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
 import { trackSearch, trackCategoryFilter } from '@/lib/analytics';
 import { trackSearch as trackBehaviorSearch } from '@/lib/behaviorTracker';
-import { getSubcategories } from '@/lib/categories';
+import { getSubcategories, getCategoryTreeDynamic as getCategoryTreeFromLib } from '@/lib/categories';
 
 export default function Home() {
   const [searchInput, setSearchInput] = useState('');
@@ -106,6 +106,13 @@ export default function Home() {
 
   const isFiltering = search.trim() || category !== 'all';
 
+  // Does the selected category have subcategories? (affects category bar height)
+  const hasSubcats = (() => {
+    const tree = getCategoryTreeFromLib();
+    const topCat = tree.find(c => c.value === category || c.subcategories.some(s => s.value === category));
+    return topCat ? topCat.subcategories.length > 0 : false;
+  })();
+
   return (
     <div className="min-h-screen bg-background">
       <SEO
@@ -123,7 +130,7 @@ export default function Home() {
         <CategoryFilter active={category} onChange={(c) => { setCategory(c); setPage(1); trackCategoryFilter(c); }} />
       </div>
 
-      <main className="pt-[148px] pb-4">
+      <main className={hasSubcats ? 'pt-[186px] pb-4' : 'pt-[148px] pb-4'}>
 
 
         {productsError && (
