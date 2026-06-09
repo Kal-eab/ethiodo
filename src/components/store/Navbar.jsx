@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Heart, Search, X, LogOut, UserCircle, Sun, Moon, LogIn } from 'lucide-react';
+import { Heart, Search, X, LogOut, UserCircle, Sun, Moon, LogIn, Menu } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { getAutocompleteSuggestions } from '@/lib/searchProducts';
@@ -18,9 +18,13 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
     // Default is dark — apply class immediately
     return true;
   });
+  const [mobileOpen, setMobileOpen] = useState(false);
   const searchRef = useRef(null);
   const navRef = useRef(null);
   const location = useLocation();
+
+  // Close mobile menu on route change
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
 
 
@@ -112,6 +116,18 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
 
         {/* ── Row 1: logo + nav links + right actions ── */}
         <div className="flex items-center gap-2 h-14">
+
+          {/* Hamburger — mobile only */}
+          <button
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded-full transition-all flex-shrink-0"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+            onClick={() => setMobileOpen(o => !o)}
+          >
+            {mobileOpen
+              ? <X className="w-4 h-4 text-white/70" />
+              : <Menu className="w-4 h-4 text-white/70" />
+            }
+          </button>
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 flex-shrink-0 group">
@@ -266,6 +282,61 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
       </div>
 
 
+      {/* ── Mobile dropdown menu ── */}
+      {mobileOpen && (
+        <div className="md:hidden px-4 pb-4 pt-2" style={{ background: '#111', borderTop: '1px solid rgba(180,255,0,0.1)' }}>
+          <div className="flex flex-col gap-1">
+            {navLinks.map(link => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  color: location.pathname === link.path ? 'hsl(72,100%,50%)' : 'rgba(255,255,255,0.65)',
+                  background: location.pathname === link.path ? 'rgba(180,255,0,0.08)' : 'transparent',
+                }}
+              >
+                {link.label}
+              </Link>
+            ))}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setMobileOpen(false)}
+                className="px-3 py-2.5 rounded-lg text-sm font-medium"
+                style={{ color: 'hsl(157,100%,50%)' }}
+              >
+                Admin Panel
+              </Link>
+            )}
+            <div className="border-t mt-2 pt-2" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              {userLoaded && (user ? (
+                <>
+                  <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                    <UserCircle className="w-4 h-4" /> {user.full_name?.split(' ')[0] || 'Profile'}
+                  </Link>
+                  <button
+                    onClick={() => { setMobileOpen(false); base44.auth.logout('/'); }}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium w-full text-left"
+                    style={{ color: 'rgba(255,100,100,0.8)' }}
+                  >
+                    <LogOut className="w-4 h-4" /> Logout
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => { setMobileOpen(false); base44.auth.redirectToLogin(); }}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold w-full text-left"
+                  style={{ color: 'hsl(72,100%,50%)' }}
+                >
+                  <LogIn className="w-4 h-4" /> Login
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
