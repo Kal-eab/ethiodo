@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Search, X, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import Footer from '@/components/store/Footer';
 import ProductCard from '@/components/store/ProductCard';
 import ComingSoonProductCard from '@/components/store/ComingSoonProductCard';
@@ -124,26 +124,7 @@ export default function Home() {
       </div>
 
       <main className="pt-[96px] pb-20 md:pb-4">
-        {/* Mobile search */}
-        <div className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="lg:hidden mb-2">
-            <div className="flex items-center bg-secondary border border-border px-3 py-2 w-full rounded-lg">
-              <Search className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchInput}
-                onChange={e => { setSearchInput(e.target.value); setPage(1); }}
-                className="bg-transparent text-sm outline-none w-full placeholder:text-muted-foreground"
-              />
-              {searchInput && (
-                <button onClick={() => { setSearchInput(''); setPage(1); }} className="ml-1 text-muted-foreground">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+
 
         {productsError && (
           <div className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 py-8">
