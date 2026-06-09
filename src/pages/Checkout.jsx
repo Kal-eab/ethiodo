@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Upload, Check, ArrowLeft, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
 
 export default function Checkout() {
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '' });
   const [paymentProof, setPaymentProof] = useState(null);
@@ -26,14 +28,12 @@ export default function Checkout() {
 
   const { data: products = [] } = useQuery({
     queryKey: ['products'],
-    queryFn: () => base44.entities.Product.list('-created_date', 200),
+    queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
   });
 
   useEffect(() => {
-    base44.auth.me().then(user => {
-      setForm(f => ({ ...f, name: user.full_name || '', email: user.email || '' }));
-    }).catch(() => {});
-  }, []);
+    if (user) setForm(f => ({ ...f, name: user.full_name || '', email: user.email || '' }));
+  }, [user]);
 
   const productMap = {};
   products.forEach(p => { productMap[p.id] = p; });

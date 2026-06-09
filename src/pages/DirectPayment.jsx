@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { CheckCircle, ArrowLeft, CreditCard, Smartphone, MapPin, Pencil, X, Minus, Plus, Loader2, Upload, GripVertical, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -198,7 +199,7 @@ export default function DirectPayment() {
   const { productId, quantity: initialQty, size: initialSize } = getParams();
   const [selectedSize] = useState(initialSize);
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user, isLoadingAuth } = useAuth();
   const [quantity, setQuantity] = useState(initialQty);
   const [screenshots, setScreenshots] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -209,23 +210,23 @@ export default function DirectPayment() {
   const [shipping, setShipping] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      if (!u.profile_complete) {
-        toast.error('Please complete your profile before ordering.');
-        navigate('/register');
-        return;
-      }
-      setUser(u);
-      setShipping({
-        phone: u.phone || '',
-        region: u.region || '',
-        city: u.city || '',
-        specific_address: u.specific_address || '',
-      });
-    }).catch(() => {
+    if (isLoadingAuth) return;
+    if (!user) {
       base44.auth.redirectToLogin(window.location.href);
+      return;
+    }
+    if (!user.profile_complete) {
+      toast.error('Please complete your profile before ordering.');
+      navigate('/register');
+      return;
+    }
+    setShipping({
+      phone: user.phone || '',
+      region: user.region || '',
+      city: user.city || '',
+      specific_address: user.specific_address || '',
     });
-  }, []);
+  }, [isLoadingAuth, user, navigate]);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', productId],

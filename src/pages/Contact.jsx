@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Send, Upload, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
 
 export default function Contact() {
+  const { user } = useAuth();
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -15,10 +17,8 @@ export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then(user => {
-      setForm(f => ({ ...f, name: user.full_name || '', email: user.email || '' }));
-    }).catch(() => {});
-  }, []);
+    if (user) setForm(f => ({ ...f, name: user.full_name || '', email: user.email || '' }));
+  }, [user]);
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];

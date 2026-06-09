@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Package, Clock, CheckCircle, Truck, ShoppingBag, Heart, ArrowRight, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -129,11 +130,7 @@ function RecentOrderCard({ order }) {
 }
 
 export default function Dashboard() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['my-orders', user?.email],

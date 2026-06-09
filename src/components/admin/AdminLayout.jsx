@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Package, ShoppingCart, MessageSquare, ArrowLeft, Menu, X, Mail, Star, Sparkles, DollarSign, Users, BarChart2, FolderTree } from 'lucide-react';
 import NotificationBell from '@/components/admin/NotificationBell';
@@ -21,15 +22,13 @@ const navItems = [
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user, isLoadingAuth } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      if (u.role !== 'admin') navigate('/');
-      else setUser(u);
-    }).catch(() => navigate('/'));
-  }, []);
+    if (!isLoadingAuth && user && user.role !== 'admin') navigate('/');
+    if (!isLoadingAuth && !user) navigate('/');
+  }, [isLoadingAuth, user, navigate]);
 
   if (!user) {
     return (

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Star, CheckCircle, Upload, X, Loader2, ThumbsUp, Image as ImageIcon } from 'lucide-react';
@@ -84,17 +85,13 @@ function ReviewCard({ review }) {
 
 function ReviewForm({ productId, orderId, onClose }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [form, setForm] = useState({ rating: 5, title: '', body: '' });
   const [photos, setPhotos] = useState([]);
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [videos, setVideos] = useState([]);
   const [videoPreviews, setVideoPreviews] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [user, setUser] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const handlePhotoAdd = (e) => {
     const files = Array.from(e.target.files);

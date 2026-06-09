@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Package, Star, Upload, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import Navbar from '@/components/store/Navbar';
@@ -300,13 +301,9 @@ function OrderCard({ order, onRefresh }) {
 
 // ─── Main Orders page ─────────────────────────────────────────────────────────
 export default function Orders() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('pending');
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   // Request notification permission and subscribe to order status changes
   useEffect(() => {

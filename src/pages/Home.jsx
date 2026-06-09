@@ -27,7 +27,7 @@ export default function Home() {
   const navigate = useNavigate();
 
   const { data: products = [], isLoading, error: productsError } = useQuery({
-    queryKey: ['products', 'published'],
+    queryKey: ['products'],
     // @ts-ignore
     queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
     retry: false,

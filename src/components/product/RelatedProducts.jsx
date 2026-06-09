@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 export default function RelatedProducts({ product, favorites = {} }) {
   const { data: products = [] } = useQuery({
     queryKey: ['products'],
-    queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 100),
+    queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
   });
 
   const related = products

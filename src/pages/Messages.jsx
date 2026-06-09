@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Send, Image as ImageIcon, X, Loader2, MessageSquare, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -257,16 +258,8 @@ function ChatUI({ user, conversationId }) {
 
 // ─── Main page ───────────────────────────────────────────────────────────────
 export default function Messages() {
-  const [user, setUser] = useState(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+  const { user, isLoadingAuth } = useAuth();
   const [hasMessages, setHasMessages] = useState(false);
-
-  useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
-      setLoadingUser(false);
-    }).catch(() => setLoadingUser(false));
-  }, []);
 
   const conversationId = user?.email || user?.id || null;
 
@@ -280,7 +273,7 @@ export default function Messages() {
     if (!loadingMessages && messages.length > 0) setHasMessages(true);
   }, [messages, loadingMessages]);
 
-  if (loadingUser || (conversationId && loadingMessages)) {
+  if (isLoadingAuth || (conversationId && loadingMessages)) {
     return (
       <div className="fixed inset-0 bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent animate-spin" />

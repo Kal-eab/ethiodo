@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { User, LogOut, Trash2, ChevronRight, Shield, FileText, RotateCcw, AlertTriangle, Phone, MapPin, ChevronDown, Loader2, Save, Heart, Package, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,7 @@ function FavoritesTab({ user }) {
 
   const { data: products = [], isLoading: loadingProducts } = useQuery({
     queryKey: ['products'],
-    queryFn: () => base44.entities.Product.list('-created_date', 200),
+    queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
   });
 
   const favMap = {};
@@ -315,12 +316,8 @@ const TABS = [
 ];
 
 export default function Profile() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [tab, setTab] = useState('orders');
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   if (!user) {
     return (
