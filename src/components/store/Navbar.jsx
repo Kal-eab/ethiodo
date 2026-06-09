@@ -15,21 +15,24 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
     if (saved) return saved === 'dark';
+    // Default is dark — apply class immediately
     return true;
   });
   const searchRef = useRef(null);
+  const navRef = useRef(null);
   const location = useLocation();
 
   // Close mobile menu on route change
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   useEffect(() => {
+    const root = document.documentElement;
     if (darkMode) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
+      root.classList.remove('light');
+      root.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
+      root.classList.remove('dark');
+      root.classList.add('light');
     }
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
@@ -88,8 +91,21 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
     { label: 'About', path: '/about' },
   ];
 
+  // Keep --navbar-height CSS variable in sync so the category bar sits flush below
+  useEffect(() => {
+    if (!navRef.current) return;
+    const update = () => {
+      document.documentElement.style.setProperty('--navbar-height', navRef.current.offsetHeight + 'px');
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(navRef.current);
+    return () => ro.disconnect();
+  }, [onSearchChange]);
+
   return (
     <nav
+      ref={navRef}
       className="fixed top-0 left-0 right-0 z-50"
       style={{ background: 'linear-gradient(90deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%)', borderBottom: '1px solid rgba(180,255,0,0.12)' }}
     >

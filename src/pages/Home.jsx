@@ -125,12 +125,18 @@ export default function Home() {
       <PullToRefreshIndicator progress={progress} pulling={pulling} />
       <Navbar onSearchChange={setSearchInput} searchValue={searchInput} category={category} onCategoryChange={(c) => { setCategory(c); setPage(1); }} />
 
-      {/* Sticky category bar under navbar */}
-      <div className="fixed top-[104px] left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2">
+      {/* Sticky category bar under navbar — sits flush below navbar regardless of its height */}
+      <div
+        className="fixed left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border px-4 sm:px-6 lg:px-8 py-2"
+        style={{ top: 'var(--navbar-height, 104px)' }}
+      >
         <CategoryFilter active={category} onChange={(c) => { setCategory(c); setPage(1); trackCategoryFilter(c); }} />
       </div>
 
-      <main className={hasSubcats ? 'pt-[186px] pb-4' : 'pt-[148px] pb-4'}>
+      <main
+        className="pb-4"
+        style={{ paddingTop: hasSubcats ? 'calc(var(--navbar-height, 104px) + 82px)' : 'calc(var(--navbar-height, 104px) + 44px)' }}
+      >
 
 
         {productsError && (
