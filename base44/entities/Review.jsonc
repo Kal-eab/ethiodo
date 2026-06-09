@@ -4,8 +4,16 @@
   "rls": {
     "create": true,
     "read": true,
-    "update": false,
-    "delete": false
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
   },
   "properties": {
     "product_id": {

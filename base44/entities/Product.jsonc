@@ -2,10 +2,22 @@
   "name": "Product",
   "type": "object",
   "rls": {
-    "create": false,
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
     "read": true,
-    "update": false,
-    "delete": true
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
   },
   "properties": {
     "name": {
