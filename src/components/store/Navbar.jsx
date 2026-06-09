@@ -4,6 +4,7 @@ import { Heart, Search, Menu, X, LogOut, UserCircle, Sun, Moon, LogIn } from 'lu
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { getAutocompleteSuggestions } from '@/lib/searchProducts';
+import { trackSearch as trackBehaviorSearch } from '@/lib/behaviorTracker';
 import CategoryFilter from '@/components/store/CategoryFilter';
 
 export default function Navbar({ onSearchChange = null, searchValue = '', category = 'all', onCategoryChange = null }) {
@@ -67,6 +68,9 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
     const s = getAutocompleteSuggestions(products, value, 6);
     setSuggestions(s);
     setShowSuggestions(s.length > 0 && value.trim().length > 0);
+    if (value.trim().length > 2) {
+      base44.auth.me().then(u => trackBehaviorSearch(value.trim(), u)).catch(() => {});
+    }
   };
 
   /** @param {string} suggestion */

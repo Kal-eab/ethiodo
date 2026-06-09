@@ -14,6 +14,7 @@ import { useDebounce } from '@/lib/useDebounce';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
 import { trackSearch, trackCategoryFilter } from '@/lib/analytics';
+import { trackSearch as trackBehaviorSearch } from '@/lib/behaviorTracker';
 import { getSubcategories } from '@/lib/categories';
 
 export default function Home() {
@@ -97,7 +98,10 @@ export default function Home() {
   const paginatedFiltered = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   useEffect(() => {
-    if (search.length > 2) trackSearch(search);
+    if (search.length > 2) {
+      trackSearch(search);
+      base44.auth.me().then(u => trackBehaviorSearch(search, u)).catch(() => {});
+    }
   }, [search]);
 
   const isFiltering = search.trim() || category !== 'all';

@@ -1,10 +1,10 @@
 /**
  * Trending score computation with time-decay.
- * trendingScore = (Purchases×5) + (Views×1) + (Wishlists×2)
+ * trendingScore = (Purchases×5) + (Wishlists×2) + (Cart×3) + (Views×1)
  * with time-decay buckets applied.
  */
 
-const WEIGHTS = { purchase: 5, view: 1, wishlist: 2 };
+const WEIGHTS = { purchase: 5, wishlist: 2, cart: 3, view: 1 };
 
 function decayFactor(createdAt) {
   const ageMs = Date.now() - new Date(createdAt).getTime();
@@ -29,44 +29,49 @@ export function computeTrendingScore(events) {
 export function computePersonalScore(product, profile, trendingScore, allProducts) {
   if (!profile) return trendingScore * 1.5;
 
-  // categoryMatch
+  // categoryMatch — purchased > cart > viewed, no double-counting
   const purchasedCats = profile.purchased_categories || {};
-  const viewedCats = profile.viewed_categories || {};
+  const cartCats      = profile.cart_categories || {};
+  const viewedCats    = profile.viewed_categories || {};
+
   const topPurchased = Object.entries(purchasedCats).sort((a, b) => b[1] - a[1])[0]?.[0];
-  const topViewed = Object.entries(viewedCats).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const topCart      = Object.entries(cartCats).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const topViewed    = Object.entries(viewedCats).sort((a, b) => b[1] - a[1])[0]?.[0];
+
   let catScore = 0;
   if (product.category === topPurchased) catScore = 10;
+  else if (product.category === topCart) catScore = 8;
   else if (product.category === topViewed) catScore = 6;
-  else if (purchasedCats[product.category] || viewedCats[product.category]) catScore = 3;
+  else if (purchasedCats[product.category] || cartCats[product.category] || viewedCats[product.category]) catScore = 3;
 
-  // similarityToViewed — tag overlap
-  const viewedIds = new Set(profile.viewed_products || []);
+  // Tag similarity to recently viewed products
+  const viewedIds  = new Set(profile.viewed_products || []);
   const productTags = (product.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
   const viewedTagOverlap = allProducts
     .filter(p => viewedIds.has(p.id))
     .slice(0, 20)
     .reduce((acc, vp) => {
       const vpTags = (vp.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
-      const overlap = productTags.filter(t => vpTags.includes(t)).length;
-      return acc + overlap;
+      return acc + productTags.filter(t => vpTags.includes(t)).length;
     }, 0);
   const similarityScore = Math.min(viewedTagOverlap, 10);
 
   // priceMatch
   const avgSpend = profile.price_avg || 0;
-  let priceScore = 0;
+  let priceScore = 5; // neutral default
   if (avgSpend > 0) {
     const diff = Math.abs(product.price - avgSpend) / avgSpend;
-    if (diff <= 0.3) priceScore = 10;
-    else if (diff <= 0.7) priceScore = 5;
-  } else {
-    priceScore = 5; // neutral if no data
+    priceScore = diff <= 0.3 ? 10 : diff <= 0.7 ? 5 : 0;
   }
 
   // newProductBoost — created within last 7 days
-  const ageMs = Date.now() - new Date(product.created_date).getTime();
-  const ageDays = ageMs / (1000 * 60 * 60 * 24);
+  const ageDays = (Date.now() - new Date(product.created_date).getTime()) / (1000 * 60 * 60 * 24);
   const newBoost = ageDays <= 7 ? 5 : 0;
 
-  return (catScore * 4) + (similarityScore * 3) + (priceScore * 2) + (trendingScore * 1.5) + newBoost;
+  // Search terms boost — +4 if any recent search appears in name/tags
+  const searchTerms = profile.search_terms || [];
+  const productText = `${product.name} ${product.tags || ''}`.toLowerCase();
+  const searchBoost = searchTerms.some(term => productText.includes(term)) ? 4 : 0;
+
+  return (catScore * 4) + (similarityScore * 3) + (priceScore * 2) + (trendingScore * 1.5) + newBoost + searchBoost;
 }

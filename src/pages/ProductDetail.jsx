@@ -11,7 +11,7 @@ import MobileHeader from '@/components/store/MobileHeader';
 import ReviewSection from '@/components/product/ReviewSection';
 import RelatedProducts from '@/components/product/RelatedProducts';
 import Footer from '@/components/store/Footer';
-import { trackView, trackWishlist } from '@/lib/behaviorTracker';
+import { trackView, trackWishlist, trackAddToCart } from '@/lib/behaviorTracker';
 import { trackProductView, trackBeginCheckout, trackAddToFavorites } from '@/lib/analytics';
 
 const fmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -67,6 +67,7 @@ export default function ProductDetail() {
     }
     setSizeError('');
     trackBeginCheckout(product);
+    base44.auth.me().then(u => trackAddToCart(product, u)).catch(() => {});
     // Require login before buying
     const isAuth = await base44.auth.isAuthenticated();
     if (!isAuth) {

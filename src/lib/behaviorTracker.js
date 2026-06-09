@@ -1,7 +1,7 @@
 /**
  * Client-side behavior tracking utility.
- * Logs view/wishlist events, deduplicates per 24h window, and
- * maintains a session-storage profile for guest users.
+ * Logs view/wishlist/purchase/cart/search events and maintains
+ * a per-user profile in the UserBehavior entity.
  */
 
 import { base44 } from '@/api/base44Client';
@@ -25,7 +25,7 @@ function pushGuestRecentlyViewed(productId) {
   sessionStorage.setItem('_rv', JSON.stringify(rv.slice(0, 20)));
 }
 
-/** Dedup key: one view per product per session per 24h */
+/** Dedup key: one view per product per 24h */
 function canTrackView(productId) {
   const key = `_vt_${productId}`;
   const last = parseInt(sessionStorage.getItem(key) || '0', 10);
@@ -47,15 +47,27 @@ function isBotLike(productId) {
   return record.count >= 10 && elapsed < 5 * 60 * 1000;
 }
 
+// ─── Price sample helpers ─────────────────────────────────────────────────────
+
+function buildPriceUpdate(existingSamples, newPrice) {
+  const prices = [...(existingSamples || []), newPrice].slice(-30);
+  if (prices.length === 0) return {};
+  return {
+    price_min: Math.min(...prices),
+    price_max: Math.max(...prices),
+    price_avg: prices.reduce((a, b) => a + b, 0) / prices.length,
+    _price_samples: prices,
+  };
+}
+
 // ─── Track a product view ─────────────────────────────────────────────────────
 
 export async function trackView(product, user) {
   pushGuestRecentlyViewed(product.id);
 
-  if (!canTrackView(product.id)) return; // already counted today
-  if (isBotLike(product.id)) return;     // bot-like pattern
+  if (!canTrackView(product.id)) return;
+  if (isBotLike(product.id)) return;
 
-  // Fire-and-forget event
   base44.entities.ProductEvent.create({
     product_id: product.id,
     event_type: 'view',
@@ -63,21 +75,16 @@ export async function trackView(product, user) {
     session_id: getSessionId(),
   }).catch(() => {});
 
-  // Update user behavior profile
   if (user?.email) {
     updateUserBehavior(user.email, profile => {
       const viewed = [product.id, ...(profile.viewed_products || []).filter(id => id !== product.id)].slice(0, 50);
       const viewedCats = { ...(profile.viewed_categories || {}) };
       viewedCats[product.category] = (viewedCats[product.category] || 0) + 1;
-      const prices = [...(profile._price_samples || []), product.price].slice(-30);
       return {
         viewed_products: viewed,
         viewed_categories: viewedCats,
-        price_min: Math.min(...prices),
-        price_max: Math.max(...prices),
-        price_avg: prices.reduce((a, b) => a + b, 0) / prices.length,
         last_active_at: new Date().toISOString(),
-        _price_samples: prices,
+        ...buildPriceUpdate(profile._price_samples, product.price),
       };
     });
   }
@@ -120,10 +127,105 @@ export async function trackPurchase(product, user) {
   }
 }
 
+// ─── Track a search query ─────────────────────────────────────────────────────
+
+export async function trackSearch(query, user) {
+  if (!query || query.trim().length < 2) return;
+  const q = query.trim().toLowerCase();
+
+  base44.entities.ProductEvent.create({
+    product_id: '_search_',
+    event_type: 'search',
+    user_email: user?.email || null,
+    session_id: getSessionId(),
+    query: q,
+  }).catch(() => {});
+
+  if (user?.email) {
+    updateUserBehavior(user.email, profile => {
+      const terms = [q, ...(profile.search_terms || []).filter(t => t !== q)].slice(0, 20);
+      return { search_terms: terms };
+    });
+  }
+}
+
+// ─── Track add-to-cart ────────────────────────────────────────────────────────
+
+export async function trackAddToCart(product, user) {
+  base44.entities.ProductEvent.create({
+    product_id: product.id,
+    event_type: 'cart',
+    user_email: user?.email || null,
+    session_id: getSessionId(),
+  }).catch(() => {});
+
+  if (user?.email) {
+    updateUserBehavior(user.email, profile => {
+      const cartCats = { ...(profile.cart_categories || {}) };
+      cartCats[product.category] = (cartCats[product.category] || 0) + 1;
+      return {
+        cart_categories: cartCats,
+        last_active_at: new Date().toISOString(),
+        ...buildPriceUpdate(profile._price_samples, product.price),
+      };
+    });
+  }
+}
+
+// ─── Merge guest recently-viewed into user profile on login ──────────────────
+
+export async function mergeGuestProfile(user) {
+  if (!user?.email) return;
+  if (sessionStorage.getItem('_merged')) return; // only once per session
+  sessionStorage.setItem('_merged', '1');
+
+  const guestViewed = getGuestRecentlyViewed();
+  if (!guestViewed.length) return;
+
+  updateUserBehavior(user.email, profile => {
+    const existing = profile.viewed_products || [];
+    const merged = [...new Set([...guestViewed, ...existing])].slice(0, 50);
+    return { viewed_products: merged };
+  });
+
+  sessionStorage.removeItem('_rv');
+}
+
+// ─── Decay stale profile interests (at most once per day) ────────────────────
+
+export async function decayProfile(user) {
+  if (!user?.email) return;
+
+  const existing = await base44.entities.UserBehavior.filter({ user_email: user.email }, null, 1).catch(() => []);
+  const profile = existing[0];
+  if (!profile) return;
+
+  if (profile.last_decayed_at) {
+    const elapsed = Date.now() - new Date(profile.last_decayed_at).getTime();
+    if (elapsed < 24 * 60 * 60 * 1000) return;
+  }
+
+  const decay = (obj) => {
+    const result = {};
+    for (const [k, v] of Object.entries(obj || {})) {
+      const d = v * 0.9;
+      if (d >= 0.5) result[k] = d;
+    }
+    return result;
+  };
+
+  base44.entities.UserBehavior.update(profile.id, {
+    viewed_categories: decay(profile.viewed_categories),
+    purchased_categories: decay(profile.purchased_categories),
+    cart_categories: decay(profile.cart_categories),
+    last_decayed_at: new Date().toISOString(),
+  }).catch(() => {});
+}
+
 // ─── Upsert user behavior profile ────────────────────────────────────────────
 
 async function updateUserBehavior(userEmail, updater) {
-  const existing = await base44.entities.UserBehavior.filter({ user_email: userEmail }, null, 1);
+  const existing = await base44.entities.UserBehavior.filter({ user_email: userEmail }, null, 1).catch(() => []);
   const profile = existing[0] || {};
   const updates = updater(profile);
   if (profile.id) {

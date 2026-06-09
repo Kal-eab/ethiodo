@@ -21,12 +21,23 @@
       "type": "object",
       "description": "Map of category -> view count"
     },
+    "cart_categories": {
+      "type": "object",
+      "description": "Map of category -> add-to-cart count"
+    },
     "search_history": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Last 20 search queries"
+      "description": "Last 20 search queries (legacy)"
+    },
+    "search_terms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Last 20 behavior-tracked search terms (most-recent-first)"
     },
     "price_min": {
       "type": "number"
@@ -39,6 +50,15 @@
     },
     "last_active_at": {
       "type": "string"
+    },
+    "last_decayed_at": {
+      "type": "string",
+      "description": "ISO timestamp of last profile taste decay"
+    },
+    "seeded": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the interest picker onboarding was completed"
     },
     "wishlist_product_ids": {
       "type": "array",
@@ -54,55 +74,5 @@
   },
   "required": [
     "user_email"
-  ],
-  "rls": {
-    "create": {
-      "$or": [
-        {
-          "data.user_email": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "read": {
-      "$or": [
-        {
-          "data.user_email": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "data.user_email": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "delete": {
-      "$or": [
-        {
-          "data.user_email": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    }
-  }
+  ]
 }

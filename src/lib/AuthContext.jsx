@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { mergeGuestProfile, decayProfile } from '@/lib/behaviorTracker';
 
 const AuthContext = createContext();
 
@@ -98,6 +99,9 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+      // Merge guest history + decay stale profile interests (fire-and-forget)
+      mergeGuestProfile(currentUser).catch(() => {});
+      decayProfile(currentUser).catch(() => {});
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);

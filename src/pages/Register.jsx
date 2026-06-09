@@ -9,15 +9,17 @@ import {
 } from 'lucide-react';
 import { REGIONS, REGIONS_CITIES } from '@/lib/ethiopiaRegions';
 import { trackSignUp } from '@/lib/analytics';
+import InterestPicker from '@/components/onboarding/InterestPicker';
 
 const PHONE_REGEX = /^\+251\s?[79]\d{8}$|^0[79]\d{8}$/;
 
+// step: 'profile' → 'interests' → 'complete'
 export default function Register() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [done, setDone] = useState(false);
+  const [step, setStep] = useState('profile');
 
   const [form, setForm] = useState({
     phone: '',
@@ -29,13 +31,8 @@ export default function Register() {
   useEffect(() => {
     base44.auth.me()
       .then(u => {
-        // Already complete — redirect home
-        if (u?.profile_complete) {
-          navigate('/');
-          return;
-        }
+        if (u?.profile_complete) { navigate('/'); return; }
         setUser(u);
-        // Pre-fill if they partially filled before
         if (u) {
           setForm({
             phone: u.phone || '',
@@ -45,10 +42,7 @@ export default function Register() {
           });
         }
       })
-      .catch(() => {
-        // Not logged in — redirect to login, come back here after
-        base44.auth.redirectToLogin(window.location.href);
-      })
+      .catch(() => base44.auth.redirectToLogin(window.location.href))
       .finally(() => setLoadingUser(false));
   }, []);
 
@@ -81,14 +75,14 @@ export default function Register() {
         profile_complete: true,
       });
       trackSignUp();
-      setDone(true);
+      setStep('interests');
     } catch (err) {
       toast.error(err.message || 'Failed to save. Please try again.');
     }
     setSaving(false);
   };
 
-  // ── Loading state ──
+  // ── Loading ──
   if (loadingUser) {
     return (
       <div className="min-h-screen flex items-center justify-center"
@@ -98,7 +92,6 @@ export default function Register() {
     );
   }
 
-  // ── Not logged in fallback (shouldn't normally render, redirectToLogin handles it) ──
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4"
@@ -134,126 +127,141 @@ export default function Register() {
 
       <div className="w-full max-w-md bg-card border border-border shadow-2xl overflow-hidden">
 
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-border"
-          style={{ background: 'linear-gradient(135deg, rgba(180,255,0,0.05) 0%, transparent 100%)' }}>
-          {done ? (
-            <>
-              <h2 className="font-bold text-lg mb-1">You're all set! 🎉</h2>
-              <p className="text-muted-foreground text-xs font-mono">Your delivery info has been saved.</p>
-            </>
-          ) : (
-            <>
-              <h2 className="font-bold text-lg mb-1">Complete Your Profile</h2>
+        {/* ── Interest picker step (replaces full card body) ── */}
+        {step === 'interests' ? (
+          <>
+            <div className="px-6 pt-6 pb-4 border-b border-border"
+              style={{ background: 'linear-gradient(135deg, rgba(180,255,0,0.05) 0%, transparent 100%)' }}>
+              <h2 className="font-bold text-lg mb-1">One more thing ✨</h2>
               <p className="text-muted-foreground text-xs font-mono">
-                Hi {user.full_name?.split(' ')[0] || 'there'}! We need your delivery info before you can order.
-              </p>
-            </>
-          )}
-        </div>
-
-        <div className="px-6 py-5 space-y-4">
-          {done ? (
-            /* ── Success state ── */
-            <div className="flex flex-col items-center py-4 gap-3">
-              <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-primary" />
-              </div>
-              <p className="font-mono text-sm text-muted-foreground text-center">
-                Delivery details saved. You can now place orders!
+                Tell us what you're into so we can show you the right products.
               </p>
             </div>
-          ) : (
-            /* ── Form ── */
-            <>
-              <div>
-                <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">Phone Number *</label>
-                <Input
-                  value={form.phone}
-                  onChange={e => set('phone', e.target.value)}
-                  className="bg-secondary border-border h-11"
-                  placeholder="+251 912 345 678"
-                  type="tel"
-                  autoFocus
-                />
-                <p className="font-mono text-[10px] text-muted-foreground mt-1">
-                  Ethiopian format: +251 9XX XXX XXX or 09XX XXX XXX
-                </p>
-              </div>
+            <InterestPicker user={user} onDone={() => setStep('complete')} />
+          </>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="px-6 pt-6 pb-4 border-b border-border"
+              style={{ background: 'linear-gradient(135deg, rgba(180,255,0,0.05) 0%, transparent 100%)' }}>
+              {step === 'complete' ? (
+                <>
+                  <h2 className="font-bold text-lg mb-1">You're all set! 🎉</h2>
+                  <p className="text-muted-foreground text-xs font-mono">Your delivery info has been saved.</p>
+                </>
+              ) : (
+                <>
+                  <h2 className="font-bold text-lg mb-1">Complete Your Profile</h2>
+                  <p className="text-muted-foreground text-xs font-mono">
+                    Hi {user.full_name?.split(' ')[0] || 'there'}! We need your delivery info before you can order.
+                  </p>
+                </>
+              )}
+            </div>
 
-              <div>
-                <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> Region *</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={form.region}
-                    onChange={e => set('region', e.target.value)}
-                    className="w-full bg-secondary border border-border h-11 px-3 text-sm appearance-none outline-none focus:border-primary/50 transition-colors pr-8"
-                  >
-                    <option value="">Select your region…</option>
-                    {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              {step === 'complete' ? (
+                <div className="flex flex-col items-center py-4 gap-3">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+                    <CheckCircle className="w-8 h-8 text-primary" />
+                  </div>
+                  <p className="font-mono text-sm text-muted-foreground text-center">
+                    Delivery details saved. You can now place orders!
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">Phone Number *</label>
+                    <Input
+                      value={form.phone}
+                      onChange={e => set('phone', e.target.value)}
+                      className="bg-secondary border-border h-11"
+                      placeholder="+251 912 345 678"
+                      type="tel"
+                      autoFocus
+                    />
+                    <p className="font-mono text-[10px] text-muted-foreground mt-1">
+                      Ethiopian format: +251 9XX XXX XXX or 09XX XXX XXX
+                    </p>
+                  </div>
 
-              <div>
-                <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">City / Sub-city *</label>
-                <div className="relative">
-                  <select
-                    value={form.city}
-                    onChange={e => set('city', e.target.value)}
-                    disabled={!form.region}
-                    className="w-full bg-secondary border border-border h-11 px-3 text-sm appearance-none outline-none focus:border-primary/50 transition-colors pr-8 disabled:opacity-50"
-                  >
-                    <option value="">{form.region ? 'Select your city…' : 'Select region first'}</option>
-                    {cities.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                </div>
-              </div>
+                  <div>
+                    <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">
+                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> Region *</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={form.region}
+                        onChange={e => set('region', e.target.value)}
+                        className="w-full bg-secondary border border-border h-11 px-3 text-sm appearance-none outline-none focus:border-primary/50 transition-colors pr-8"
+                      >
+                        <option value="">Select your region…</option>
+                        {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </div>
 
-              <div>
-                <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">
-                  Specific Address / Landmark{' '}
-                  <span className="normal-case opacity-60 text-[10px]">(optional)</span>
-                </label>
-                <Input
-                  value={form.specific_address}
-                  onChange={e => set('specific_address', e.target.value)}
-                  className="bg-secondary border-border h-11"
-                  placeholder="e.g. near Edna Mall, behind Blue Building"
-                />
-                <p className="font-mono text-[10px] text-muted-foreground mt-1">
-                  Helps delivery find you faster
-                </p>
-              </div>
-            </>
-          )}
-        </div>
+                  <div>
+                    <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">City / Sub-city *</label>
+                    <div className="relative">
+                      <select
+                        value={form.city}
+                        onChange={e => set('city', e.target.value)}
+                        disabled={!form.region}
+                        className="w-full bg-secondary border border-border h-11 px-3 text-sm appearance-none outline-none focus:border-primary/50 transition-colors pr-8 disabled:opacity-50"
+                      >
+                        <option value="">{form.region ? 'Select your city…' : 'Select region first'}</option>
+                        {cities.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </div>
 
-        {/* Footer button */}
-        <div className="px-6 pb-6 pt-1">
-          {done ? (
-            <button
-              onClick={() => navigate('/')}
-              className="w-full h-12 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono font-bold text-sm hover:bg-primary/90 transition-colors"
-            >
-              Start Shopping <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={saving}
-              className="w-full h-12 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono font-bold text-sm hover:bg-primary/90 transition-colors disabled:opacity-60"
-            >
-              {saving
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
-                : <><CheckCircle className="w-4 h-4" /> Save & Continue</>}
-            </button>
-          )}
-        </div>
+                  <div>
+                    <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">
+                      Specific Address / Landmark{' '}
+                      <span className="normal-case opacity-60 text-[10px]">(optional)</span>
+                    </label>
+                    <Input
+                      value={form.specific_address}
+                      onChange={e => set('specific_address', e.target.value)}
+                      className="bg-secondary border-border h-11"
+                      placeholder="e.g. near Edna Mall, behind Blue Building"
+                    />
+                    <p className="font-mono text-[10px] text-muted-foreground mt-1">
+                      Helps delivery find you faster
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6 pt-1">
+              {step === 'complete' ? (
+                <button
+                  onClick={() => navigate('/')}
+                  className="w-full h-12 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono font-bold text-sm hover:bg-primary/90 transition-colors"
+                >
+                  Start Shopping <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={saving}
+                  className="w-full h-12 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono font-bold text-sm hover:bg-primary/90 transition-colors disabled:opacity-60"
+                >
+                  {saving
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                    : <><CheckCircle className="w-4 h-4" /> Save & Continue</>}
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
