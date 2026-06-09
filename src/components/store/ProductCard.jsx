@@ -84,7 +84,7 @@ export default function ProductCard({ product, isFavorite, favoriteId, badge = n
               {badge.label}
             </span>
           )}
-          <h3 className="font-medium text-xs truncate leading-tight">{product.name}</h3>
+          <h3 className="font-medium text-sm truncate leading-tight">{product.name}</h3>
           <div className="flex items-center justify-between gap-1 flex-wrap">
             <span className="font-mono font-bold text-primary text-sm">
               {Number(product.price).toLocaleString('en-US', { maximumFractionDigits: 2 })} Birr

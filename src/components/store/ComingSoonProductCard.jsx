@@ -28,7 +28,7 @@ export default function ComingSoonProductCard({ product, isFavorite, onToggleFav
           </div>
         </div>
         <div className="p-2.5 space-y-1">
-          <h3 className="font-medium text-xs truncate leading-tight text-muted-foreground">{product.name}</h3>
+          <h3 className="font-medium text-sm truncate leading-tight text-muted-foreground">{product.name}</h3>
           <span className="font-mono text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 rounded-sm">Coming Soon</span>
         </div>
       </div>
