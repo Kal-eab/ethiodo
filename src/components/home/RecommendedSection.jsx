@@ -3,99 +3,101 @@ import { Sparkles } from 'lucide-react';
 import ProductCard from '@/components/store/ProductCard';
 import { computePersonalScore } from '@/lib/trendingScore';
 
-/** Fisher-Yates shuffle within score tiers (within 10% of each tier's top score) */
-function shuffleWithinTiers(sorted) {
-  const result = [];
-  let i = 0;
-  while (i < sorted.length) {
-    const tierMax = sorted[i]._personalScore;
-    const threshold = tierMax * 0.9;
-    let j = i + 1;
-    while (j < sorted.length && sorted[j]._personalScore >= threshold) j++;
-    const tier = sorted.slice(i, j);
-    for (let k = tier.length - 1; k > 0; k--) {
-      const m = Math.floor(Math.random() * (k + 1));
-      [tier[k], tier[m]] = [tier[m], tier[k]];
+/** Fisher-Yates shuffle within score tiers (~10% band each) */
+function shuffleWithinTiers(scoredProducts) {
+  if (!scoredProducts.length) return scoredProducts;
+  const maxScore = scoredProducts[0]._personalScore;
+  const tierSize = maxScore > 0 ? maxScore * 0.1 : 1;
+
+  const tiers = [];
+  let currentTier = [];
+  let tierFloor = maxScore;
+
+  for (const p of scoredProducts) {
+    if (tierFloor - p._personalScore <= tierSize) {
+      currentTier.push(p);
+    } else {
+      tiers.push(currentTier);
+      currentTier = [p];
+      tierFloor = p._personalScore;
     }
-    result.push(...tier);
-    i = j;
   }
-  return result;
+  if (currentTier.length) tiers.push(currentTier);
+
+  for (const tier of tiers) {
+    for (let i = tier.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [tier[i], tier[j]] = [tier[j], tier[i]];
+    }
+  }
+
+  return tiers.flat();
 }
 
-/** A profile is sparse if the user has almost no behavioral signal and hasn't seeded. */
-function isSparseProfile(profile) {
-  if (!profile) return true;
-  const totals = [
-    ...Object.values(profile.viewed_categories || {}),
-    ...Object.values(profile.purchased_categories || {}),
-    ...Object.values(profile.cart_categories || {}),
-  ];
-  return totals.reduce((a, b) => a + b, 0) < 3 && !profile.seeded;
+/** Check if profile has enough signal for personalized scoring */
+function hasEnoughSignal(profile) {
+  if (!profile) return false;
+  return (
+    Object.keys(profile.viewed_categories || {}).length > 0 ||
+    Object.keys(profile.purchased_categories || {}).length > 0 ||
+    Object.keys(profile.cart_categories || {}).length > 0 ||
+    profile.seeded === true
+  );
 }
 
 export default function RecommendedSection({ products, userProfile, favorites, purchasedProductIds = [] }) {
   if (!products?.length) return null;
 
-  const sparse = isSparseProfile(userProfile);
+  const isPersonalized = hasEnoughSignal(userProfile);
 
   const excluded = new Set(purchasedProductIds);
+  const viewed = userProfile?.viewed_products || [];
   const viewCount = {};
-  (userProfile?.viewed_products || []).forEach(id => { viewCount[id] = (viewCount[id] || 0) + 1; });
+  viewed.forEach(id => { viewCount[id] = (viewCount[id] || 0) + 1; });
 
-  const eligible = products
+  const candidates = products
     .filter(p => !excluded.has(p.id))
     .filter(p => (viewCount[p.id] || 0) < 8);
 
-  if (!eligible.length) return null;
+  // Score products: personalized or trending fallback
+  const scored = candidates
+    .map(p => ({
+      ...p,
+      _personalScore: isPersonalized
+        ? computePersonalScore(p, userProfile, p.trendingScore || 0, products)
+        : (p.trendingScore || 0),
+    }))
+    .sort((a, b) => b._personalScore - a._personalScore);
 
-  let final;
-  let discoveryIds = new Set();
+  // Shuffle within tiers for feed freshness
+  const shuffled = shuffleWithinTiers(scored);
 
-  if (sparse) {
-    // Cold-start: rank by trending score
-    final = [...eligible]
-      .sort((a, b) => (b.trendingScore || 0) - (a.trendingScore || 0))
-      .slice(0, 10);
-  } else {
-    // Discovery slots: trending products outside all known categories
-    const userCats = new Set([
-      ...Object.keys(userProfile.purchased_categories || {}),
-      ...Object.keys(userProfile.viewed_categories || {}),
-      ...Object.keys(userProfile.cart_categories || {}),
-    ]);
-    const discovery = products
-      .filter(p => !userCats.has(p.category) && (p.trendingScore || 0) > 5)
-      .sort((a, b) => (b.trendingScore || 0) - (a.trendingScore || 0))
-      .slice(0, 2);
-    discoveryIds = new Set(discovery.map(p => p.id));
+  // Diversity: if top 10 are all same category, inject variety
+  const top = shuffled.slice(0, 12);
+  const cats = top.map(p => p.category);
+  const dominantCat = cats.length
+    ? cats.sort((a, b) => cats.filter(c => c === b).length - cats.filter(c => c === a).length)[0]
+    : null;
+  const dominantCount = cats.filter(c => c === dominantCat).length;
 
-    // Score every eligible product
-    const scored = eligible
-      .map(p => ({
-        ...p,
-        _personalScore: computePersonalScore(p, userProfile, p.trendingScore || 0, products),
-      }))
-      .sort((a, b) => b._personalScore - a._personalScore);
-
-    // Category diversity: break up a dominant category in the top 12
-    const top = scored.slice(0, 12);
-    const catCounts = {};
-    top.forEach(p => { catCounts[p.category] = (catCounts[p.category] || 0) + 1; });
-    const dominantCat = Object.entries(catCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-    const dominantCount = catCounts[dominantCat] || 0;
-
-    let diversified = top;
-    if (dominantCount >= 8 && scored.length > 12) {
-      const others = scored.slice(12).filter(p => p.category !== dominantCat);
-      diversified = [...top.slice(0, 9), ...others.slice(0, 3)];
-    }
-
-    // Shuffle within score tiers for freshness
-    const resorted = [...diversified].sort((a, b) => b._personalScore - a._personalScore);
-    final = shuffleWithinTiers(resorted).slice(0, 10);
+  let diversified = top;
+  if (dominantCount >= 8 && shuffled.length > 12) {
+    const others = shuffled.slice(12).filter(p => p.category !== dominantCat);
+    diversified = [...top.slice(0, 9), ...others.slice(0, 3)];
   }
 
+  // Reserve 1-2 slots for discovery (trending in unseen categories)
+  const userCats = new Set([
+    ...Object.keys(userProfile?.purchased_categories || {}),
+    ...Object.keys(userProfile?.viewed_categories || {}),
+    ...Object.keys(userProfile?.cart_categories || {}),
+  ]);
+  const discovery = products
+    .filter(p => !userCats.has(p.category) && (p.trendingScore || 0) > 5)
+    .sort((a, b) => (b.trendingScore || 0) - (a.trendingScore || 0))
+    .slice(0, 2);
+
+  const final = diversified.slice(0, 10);
   if (!final.length) return null;
 
   return (
@@ -103,22 +105,24 @@ export default function RecommendedSection({ products, userProfile, favorites, p
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-4 h-4 text-primary" />
         <h2 className="font-mono text-xs text-muted-foreground uppercase tracking-widest">
-          {sparse ? 'Trending Now' : 'Recommended For You'}
+          {isPersonalized ? 'Recommended For You' : 'Trending Now'}
         </h2>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
-        {final.map(p => (
-          <ProductCard
-            key={p.id}
-            product={p}
-            isFavorite={!!favorites[p.id]}
-            favoriteId={favorites[p.id]}
-            badge={sparse ? null : (discoveryIds.has(p.id)
-              ? { label: '✨ You Might Like', color: 'text-accent border-accent/30 bg-accent/10' }
-              : { label: '⭐ Picked For You', color: 'text-primary border-primary/30 bg-primary/10' }
-            )}
-          />
-        ))}
+        {final.map(p => {
+          const isDiscovery = discovery.find(d => d.id === p.id);
+          return (
+            <ProductCard
+              key={p.id}
+              product={p}
+              isFavorite={!!favorites[p.id]}
+              favoriteId={favorites[p.id]}
+              badge={isDiscovery
+                ? { label: '✨ You Might Like', color: 'text-accent border-accent/30 bg-accent/10' }
+                : { label: '⭐ Picked For You', color: 'text-primary border-primary/30 bg-primary/10' }}
+            />
+          );
+        })}
       </div>
     </section>
   );
