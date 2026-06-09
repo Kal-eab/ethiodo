@@ -8,7 +8,7 @@ import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-route
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import MobileTabBar from '@/components/store/MobileTabBar';
+// MobileTabBar removed — unified desktop/mobile layout
 
 import Home from '@/pages/Home';
 import ProductDetail from '@/pages/ProductDetail';
@@ -157,7 +157,6 @@ const AuthenticatedApp = () => {
   return (
     <>
       <AnimatedRoutes />
-      <MobileTabBar />
     </>
   );
 };
