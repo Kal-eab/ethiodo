@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { CheckCircle, ArrowLeft, CreditCard, Smartphone, MapPin, Pencil, X, Minus, Plus, Loader2, Upload, GripVertical, ImageIcon } from 'lucide-react';
+import { CheckCircle, ArrowLeft, CreditCard, Smartphone, MapPin, Pencil, X, Minus, Plus, Loader2, Upload, GripVertical, ImageIcon, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate, Link } from 'react-router-dom';
@@ -33,6 +33,36 @@ const PAYMENT_ACCOUNTS = [
     ],
   },
 ];
+
+// ─── Copyable row ─────────────────────────────────────────────────────────────
+function CopyableRow({ label, value }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <div className="flex items-center justify-between gap-2 text-sm">
+      <span className="text-muted-foreground font-mono text-xs">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="font-semibold select-all">{value}</span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1 px-2 py-1 rounded font-mono text-[10px] transition-all"
+          style={copied
+            ? { background: 'rgba(72,255,72,0.12)', color: 'hsl(157,100%,50%)', border: '1px solid rgba(72,255,72,0.3)' }
+            : { background: 'rgba(180,255,0,0.08)', color: 'hsl(72,100%,50%)', border: '1px solid rgba(180,255,0,0.25)' }
+          }
+        >
+          {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ─── Inline address editor ────────────────────────────────────────────────────
 function AddressEditor({ user, onSave, onCancel }) {
@@ -453,12 +483,9 @@ export default function DirectPayment() {
                     <Icon className="w-4 h-4 text-primary" />
                     <span className="font-semibold text-sm">{acc.label}</span>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {acc.details.map(d => (
-                      <div key={d.key} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground font-mono text-xs">{d.key}</span>
-                        <span className="font-semibold select-all">{d.value}</span>
-                      </div>
+                      <CopyableRow key={d.key} label={d.key} value={d.value} />
                     ))}
                   </div>
                 </div>
