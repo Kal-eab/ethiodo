@@ -6,6 +6,20 @@ import { mergeGuestProfile, decayProfile } from '@/lib/behaviorTracker';
 
 const AuthContext = createContext();
 
+async function requestBrowserNotificationPermission(user) {
+  if (!user || !('Notification' in window)) return;
+  // Already decided — don't ask again
+  if (user.notification_permission) return;
+  if (Notification.permission === 'granted' || Notification.permission === 'denied') {
+    // Save existing state if not yet recorded
+    base44.auth.updateMe({ notification_permission: Notification.permission }).catch(() => {});
+    return;
+  }
+  // Ask
+  const permission = await Notification.requestPermission().catch(() => 'denied');
+  base44.auth.updateMe({ notification_permission: permission }).catch(() => {});
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -102,6 +116,8 @@ export const AuthProvider = ({ children }) => {
       // Merge guest history + decay stale profile interests (fire-and-forget)
       mergeGuestProfile(currentUser).catch(() => {});
       decayProfile(currentUser).catch(() => {});
+      // Request browser notification permission on first login
+      requestBrowserNotificationPermission(currentUser);
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);

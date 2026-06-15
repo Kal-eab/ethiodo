@@ -1,0 +1,51 @@
+{
+  "name": "ProductShare",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string",
+      "description": "Product ID"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User ID (null if anonymous)"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "telegram",
+        "whatsapp",
+        "facebook",
+        "twitter",
+        "copy"
+      ],
+      "description": "Share platform"
+    },
+    "referral_code": {
+      "type": "string",
+      "description": "Referral code used for this share"
+    }
+  },
+  "required": [
+    "product_id",
+    "platform"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Heart, Search, X, LogOut, UserCircle, Sun, Moon, LogIn, Menu } from 'lucide-react';
+import UserNotificationBell from '@/components/store/UserNotificationBell';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -156,6 +157,7 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
               <Link to="/favorites" className="flex items-center justify-center w-8 h-8 rounded-full transition-colors hover:bg-white/8">
                 <Heart className="w-4 h-4 text-white/60 hover:text-white" />
               </Link>
+              <UserNotificationBell />
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className="flex items-center justify-center w-8 h-8 rounded-full transition-all"

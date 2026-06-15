@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Heart, Star, Minus, Plus, ShieldCheck, Truck } from 'lucide-react';
+import { ArrowLeft, Heart, Star, Minus, Plus, ShieldCheck, Truck, Share2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -13,6 +13,9 @@ import RelatedProducts from '@/components/product/RelatedProducts';
 import Footer from '@/components/store/Footer';
 import { trackView, trackWishlist, trackAddToCart } from '@/lib/behaviorTracker';
 import { trackProductView, trackBeginCheckout, trackAddToFavorites } from '@/lib/analytics';
+import LikeButton from '@/components/product/LikeButton';
+import ShareModal from '@/components/product/ShareModal';
+import { useAuth } from '@/lib/AuthContext';
 
 const fmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
 
@@ -26,6 +29,21 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const [sizeError, setSizeError] = useState('');
   const sizeRef = useRef(null);
+  const [showShare, setShowShare] = useState(false);
+  const { user } = useAuth();
+
+  // Track referral click
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if (ref && productId) {
+      base44.entities.ReferralLink.filter({ product_id: productId, owner_user_id: ref })
+        .then(links => {
+          if (links[0]) {
+            base44.entities.ReferralLink.update(links[0].id, { clicks: (links[0].clicks || 0) + 1 }).catch(() => {});
+          }
+        }).catch(() => {});
+    }
+  }, [productId]);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', productId],
@@ -298,6 +316,19 @@ export default function ProductDetail() {
                 </div>
               )}
 
+              {/* Like + Share row */}
+              <div className="flex items-center gap-4 pt-1">
+                <LikeButton product={product} className="text-muted-foreground hover:text-red-400" />
+                <button
+                  onClick={() => setShowShare(true)}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span className="font-mono text-xs">Share</span>
+                  {product.totalShares > 0 && <span className="font-mono text-xs">{product.totalShares}</span>}
+                </button>
+              </div>
+
               {/* Trust signals */}
               <div className="space-y-2 pt-2">
                 {[
@@ -353,19 +384,36 @@ export default function ProductDetail() {
       </main>
       <Footer />
 
+      {/* Share Modal */}
+      {showShare && (
+        <ShareModal
+          product={product}
+          onClose={() => setShowShare(false)}
+          userId={user?.id}
+          userEmail={user?.email}
+        />
+      )}
+
       {/* ── MOBILE ONLY: Sticky bottom purchase bar ── */}
       <div
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border flex items-center"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        {/* Left: Favorites icon */}
+        {/* Left: Favorites + Share icons */}
         <div className="flex items-center border-r border-border flex-shrink-0">
           <button
             onClick={toggleFav}
-            className="flex flex-col items-center justify-center gap-0.5 w-16 h-14 text-muted-foreground hover:text-primary transition-colors"
+            className="flex flex-col items-center justify-center gap-0.5 w-14 h-14 text-muted-foreground hover:text-primary transition-colors"
           >
             <Heart className={`w-5 h-5 ${fav ? 'fill-primary text-primary' : ''}`} />
             <span className="font-mono text-[9px] uppercase leading-none">{fav ? 'Saved' : 'Save'}</span>
+          </button>
+          <button
+            onClick={() => setShowShare(true)}
+            className="flex flex-col items-center justify-center gap-0.5 w-14 h-14 border-l border-border text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Share2 className="w-5 h-5" />
+            <span className="font-mono text-[9px] uppercase leading-none">Share</span>
           </button>
         </div>
 

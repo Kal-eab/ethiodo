@@ -1,0 +1,87 @@
+{
+  "name": "UserNotification",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Target user ID"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Target user email"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "new_product",
+        "price_drop",
+        "back_in_stock",
+        "product_updated"
+      ],
+      "description": "Notification type"
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "product_name": {
+      "type": "string"
+    },
+    "product_image": {
+      "type": "string"
+    },
+    "product_price": {
+      "type": "number"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_browser_notified": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "user_id",
+    "type",
+    "title"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

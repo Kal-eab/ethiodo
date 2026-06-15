@@ -1,0 +1,34 @@
+{
+  "name": "ProductLike",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string",
+      "description": "Product ID"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User ID"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "User email for dedup"
+    }
+  },
+  "required": [
+    "product_id",
+    "user_id"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": true,
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

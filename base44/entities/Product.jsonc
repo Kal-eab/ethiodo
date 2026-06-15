@@ -85,6 +85,11 @@
       "default": 0,
       "description": "Computed trending score with time decay"
     },
+    "popularityScore": {
+      "type": "number",
+      "default": 0,
+      "description": "Likes\u00d73 + Shares\u00d75 + Views\u00d71 + Orders\u00d710"
+    },
     "totalPurchases": {
       "type": "number",
       "default": 0
@@ -94,6 +99,14 @@
       "default": 0
     },
     "totalWishlists": {
+      "type": "number",
+      "default": 0
+    },
+    "totalLikes": {
+      "type": "number",
+      "default": 0
+    },
+    "totalShares": {
       "type": "number",
       "default": 0
     },
