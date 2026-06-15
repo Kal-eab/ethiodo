@@ -317,15 +317,15 @@ export default function ProductDetail() {
               )}
 
               {/* Like + Share row */}
-              <div className="flex items-center gap-4 pt-1">
+              <div className="flex items-center gap-3 pt-1">
                 <LikeButton product={product} className="text-muted-foreground hover:text-red-400" />
                 <button
                   onClick={() => setShowShare(true)}
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 border border-border hover:border-primary hover:text-primary text-muted-foreground transition-colors font-mono text-xs"
                 >
                   <Share2 className="w-4 h-4" />
-                  <span className="font-mono text-xs">Share</span>
-                  {product.totalShares > 0 && <span className="font-mono text-xs">{product.totalShares}</span>}
+                  SHARE
+                  {product.totalShares > 0 && <span className="opacity-60">{product.totalShares}</span>}
                 </button>
               </div>
 
