@@ -159,10 +159,13 @@ export function getTopLevelCategories() {
   return _tree.map(c => c.value);
 }
 
-/** React hook: returns the current tree and triggers re-render on changes */
+/** React hook: returns the current tree and triggers re-render on changes. Re-fetches from backend on mount. */
 export function useCategoryTree() {
   const [tree, setTree] = useState(_tree);
-  useEffect(() => onTreeChange(t => setTree([...t])), []);
+  useEffect(() => {
+    loadFromBackend();
+    return onTreeChange(t => setTree([...t]));
+  }, []);
   return tree;
 }
 

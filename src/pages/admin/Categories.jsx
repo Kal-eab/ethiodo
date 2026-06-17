@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, ChevronRight, FolderPlus, Upload, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { base44 } from '@/api/base44Client';
 import { useCategoryTree, publishCategoryTree } from '@/lib/categories';
 
 /**
@@ -74,6 +75,28 @@ export default function AdminCategories() {
   const [newSub, setNewSub] = useState({});
   const [expanded, setExpanded] = useState({});
   const [saving, setSaving] = useState(false);
+  const [seeded, setSeeded] = useState(false);
+
+  // Auto-seed: if the backend has no CategoryConfig row, push the device's localStorage tree
+  useEffect(() => {
+    if (seeded) return;
+    (async () => {
+      try {
+        const rows = await base44.entities.CategoryConfig.list('-updated_date', 1);
+        if (rows.length === 0) {
+          let deviceTree;
+          try {
+            const saved = localStorage.getItem('ethiodo_categories');
+            deviceTree = saved ? JSON.parse(saved) : null;
+          } catch { deviceTree = null; }
+          if (!deviceTree || !deviceTree.length) deviceTree = DEFAULT_TREE;
+          await publishCategoryTree(deviceTree);
+          toast.success('Auto-seeded categories from this device to the cloud.');
+        }
+      } catch { /* backend may be unreachable — admin can manually publish */ }
+      setSeeded(true);
+    })();
+  }, [seeded]);
 
   const save = async (nextTree) => {
     setLocalTree(nextTree);
