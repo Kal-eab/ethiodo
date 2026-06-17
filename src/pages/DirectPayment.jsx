@@ -310,7 +310,7 @@ export default function DirectPayment() {
       product_id: product.id,
       product_name: product.name,
       total_amount: total,
-    });
+    }, product);
     setSubmitting(false);
     setDone(true);
   };

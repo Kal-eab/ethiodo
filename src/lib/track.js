@@ -22,10 +22,6 @@ export const track = {
     ga.trackProductView(product);
     resolveUser().then(u => bt.trackView(product, u));
   },
-  addToCart(product) {
-    ga.trackBeginCheckout(product);
-    resolveUser().then(u => bt.trackAddToCart(product, u));
-  },
   wishlist(productId, product) {
     ga.trackAddToFavorites(product);
     resolveUser().then(u => bt.trackWishlist(productId, u));
@@ -34,10 +30,10 @@ export const track = {
     ga.trackBeginCheckout(product);
     resolveUser().then(u => bt.trackAddToCart(product, u));
   },
-  purchase(order) {
+  purchase(order, product) {
     ga.trackPurchase(order);
     resolveUser().then(u => {
-      if (u) bt.trackPurchase({ id: order.product_id, category: '' }, u);
+      if (u && product) bt.trackPurchase(product, u);
     });
   },
   search(query) {
