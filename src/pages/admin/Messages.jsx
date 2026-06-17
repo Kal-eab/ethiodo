@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Send, Image as ImageIcon, X, Loader2, MessageSquare, Search } from 'lucide-react';
+import { Send, Image as ImageIcon, X, Loader2, MessageSquare, Search, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 
@@ -200,7 +200,7 @@ export default function AdminMessages() {
       {/* Main panel */}
       <div className="flex-1 bg-card border border-border overflow-hidden flex min-h-0">
         {/* Sidebar: conversation list */}
-        <div className="w-72 flex-shrink-0 border-r border-border flex flex-col min-h-0">
+        <div className={`${selectedConv ? 'hidden md:flex' : 'flex'} w-full md:w-72 flex-shrink-0 border-r border-border flex-col min-h-0`}>
           {/* Search */}
           <div className="p-3 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-2 bg-secondary border border-border px-3 py-2">
@@ -229,7 +229,7 @@ export default function AdminMessages() {
         </div>
 
         {/* Chat window */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+        <div className={`${selectedConv ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-w-0 min-h-0`}>
           {!selectedConv ? (
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
               <MessageSquare className="w-14 h-14 mb-3 opacity-20" />
@@ -239,6 +239,12 @@ export default function AdminMessages() {
             <>
               {/* Chat header */}
               <div className="px-4 py-3 border-b border-border flex items-center gap-3 flex-shrink-0 bg-secondary/20">
+                <button
+                  onClick={() => setSelectedConvId(null)}
+                  className="md:hidden flex items-center justify-center w-8 h-8 rounded-full hover:bg-secondary transition-colors flex-shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+                </button>
                 <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-bold text-primary">
                   {(selectedConv.user_name || '?')[0].toUpperCase()}
                 </div>
