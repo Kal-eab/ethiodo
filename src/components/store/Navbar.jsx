@@ -6,7 +6,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { getAutocompleteSuggestions } from '@/lib/searchProducts';
-import { trackSearch as trackBehaviorSearch } from '@/lib/behaviorTracker';
+import { track } from '@/lib/track';
 
 export default function Navbar({ onSearchChange = null, searchValue = '', category = 'all', onCategoryChange = null }) {
   const { user } = useAuth();
@@ -64,7 +64,7 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
     setSuggestions(s);
     setShowSuggestions(s.length > 0 && value.trim().length > 0);
     if (value.trim().length > 2) {
-      base44.auth.me().then(u => trackBehaviorSearch(value.trim(), u)).catch(() => {});
+      track.search(value.trim());
     }
   };
 

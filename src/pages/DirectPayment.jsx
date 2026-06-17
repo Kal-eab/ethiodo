@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
 import MobileHeader from '@/components/store/MobileHeader';
 import { REGIONS, REGIONS_CITIES } from '@/lib/ethiopiaRegions';
-import { trackPurchase } from '@/lib/analytics';
+import { track } from '@/lib/track';
 
 function getParams() {
   const p = new URLSearchParams(window.location.search);
@@ -305,7 +305,7 @@ export default function DirectPayment() {
       is_read: false,
     });
 
-    trackPurchase({
+    track.purchase({
       id: Date.now().toString(),
       product_id: product.id,
       product_name: product.name,

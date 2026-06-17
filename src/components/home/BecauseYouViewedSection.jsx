@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye } from 'lucide-react';
 import ProductCard from '@/components/store/ProductCard';
+import { parseTags, tagOverlapScore } from '@/lib/utils';
 
 export default function BecauseYouViewedSection({ products, viewedProductIds, favorites }) {
   if (!viewedProductIds?.length || !products?.length) return null;
@@ -10,13 +11,12 @@ export default function BecauseYouViewedSection({ products, viewedProductIds, fa
   const lastViewed = products.find(p => p.id === lastViewedId);
   if (!lastViewed) return null;
 
-  const lastTags = (lastViewed.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
+  const lastTags = parseTags(lastViewed.tags);
 
   const related = products
     .filter(p => p.id !== lastViewedId)
     .map(p => {
-      const pTags = (p.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
-      const tagOverlap = lastTags.filter(t => pTags.includes(t)).length;
+      const tagOverlap = tagOverlapScore(lastTags, parseTags(p.tags));
       const sameCategory = p.category === lastViewed.category ? 1 : 0;
       const priceSimilar = Math.abs(p.price - lastViewed.price) / (lastViewed.price || 1) < 0.5 ? 1 : 0;
       const score = tagOverlap * 2 + sameCategory + priceSimilar;

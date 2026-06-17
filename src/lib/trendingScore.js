@@ -4,7 +4,14 @@
  * with time-decay buckets applied.
  */
 
+import { parseTags, tagOverlapScore } from '@/lib/utils';
+
 const WEIGHTS = { purchase: 5, view: 1, wishlist: 2, cart: 3 };
+
+/** Return the key with the highest value in an object, or undefined */
+function topKey(obj) {
+  return Object.entries(obj).sort((a, b) => b[1] - a[1])[0]?.[0];
+}
 
 function decayFactor(createdAt) {
   const ageMs = Date.now() - new Date(createdAt).getTime();
@@ -34,9 +41,9 @@ export function computePersonalScore(product, profile, trendingScore, allProduct
   const cartCats = profile.cart_categories || {};
   const viewedCats = profile.viewed_categories || {};
 
-  const topPurchased = Object.entries(purchasedCats).sort((a, b) => b[1] - a[1])[0]?.[0];
-  const topCart = Object.entries(cartCats).sort((a, b) => b[1] - a[1])[0]?.[0];
-  const topViewed = Object.entries(viewedCats).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const topPurchased = topKey(purchasedCats);
+  const topCart = topKey(cartCats);
+  const topViewed = topKey(viewedCats);
 
   let catScore = 0;
   if (product.category === topPurchased) catScore = 10;
@@ -46,15 +53,11 @@ export function computePersonalScore(product, profile, trendingScore, allProduct
 
   // similarityToViewed — tag overlap with recently viewed products
   const viewedIds = new Set(profile.viewed_products || []);
-  const productTags = (product.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
+  const productTags = parseTags(product.tags);
   const viewedTagOverlap = allProducts
     .filter(p => viewedIds.has(p.id))
     .slice(0, 20)
-    .reduce((acc, vp) => {
-      const vpTags = (vp.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
-      const overlap = productTags.filter(t => vpTags.includes(t)).length;
-      return acc + overlap;
-    }, 0);
+    .reduce((acc, vp) => acc + tagOverlapScore(productTags, parseTags(vp.tags)), 0);
   const similarityScore = Math.min(viewedTagOverlap, 10);
 
   // searchTermBoost — recent search terms matching product name or tags

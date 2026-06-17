@@ -11,8 +11,7 @@ import MobileHeader from '@/components/store/MobileHeader';
 import ReviewSection from '@/components/product/ReviewSection';
 import RelatedProducts from '@/components/product/RelatedProducts';
 import Footer from '@/components/store/Footer';
-import { trackView, trackWishlist, trackAddToCart } from '@/lib/behaviorTracker';
-import { trackProductView, trackBeginCheckout, trackAddToFavorites } from '@/lib/analytics';
+import { track } from '@/lib/track';
 import LikeButton from '@/components/product/LikeButton';
 import ShareModal from '@/components/product/ShareModal';
 import { useAuth } from '@/lib/AuthContext';
@@ -67,8 +66,7 @@ export default function ProductDetail() {
   // Track view when product loads
   useEffect(() => {
     if (!product) return;
-    base44.auth.me().then(u => trackView(product, u)).catch(() => trackView(product, null));
-    trackProductView(product);
+    track.view(product);
   }, [product?.id]);
 
   const fav = favorites.find(f => f.product_id === productId);
@@ -84,8 +82,7 @@ export default function ProductDetail() {
       return;
     }
     setSizeError('');
-    trackBeginCheckout(product);
-    base44.auth.me().then(u => trackAddToCart(product, u)).catch(() => {});
+    track.beginCheckout(product);
     // Require login before buying
     const isAuth = await base44.auth.isAuthenticated();
     if (!isAuth) {
@@ -101,9 +98,7 @@ export default function ProductDetail() {
       await base44.entities.Favorite.delete(fav.id);
     } else {
       await base44.entities.Favorite.create({ product_id: productId });
-      trackAddToFavorites(product);
-      // track wishlist event
-      base44.auth.me().then(u => trackWishlist(productId, u)).catch(() => {});
+      track.wishlist(productId, product);
     }
     queryClient.invalidateQueries({ queryKey: ['favorites'] });
   };

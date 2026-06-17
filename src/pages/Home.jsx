@@ -13,8 +13,8 @@ import { searchProducts } from '@/lib/searchProducts';
 import { useDebounce } from '@/lib/useDebounce';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
-import { trackSearch, trackCategoryFilter } from '@/lib/analytics';
-import { trackSearch as trackBehaviorSearch } from '@/lib/behaviorTracker';
+import { track } from '@/lib/track';
+import { trackCategoryFilter } from '@/lib/analytics';
 import { getSubcategories, getCategoryTreeDynamic as getCategoryTreeFromLib } from '@/lib/categories';
 
 export default function Home() {
@@ -99,8 +99,7 @@ export default function Home() {
 
   useEffect(() => {
     if (search.length > 2) {
-      trackSearch(search);
-      base44.auth.me().then(u => trackBehaviorSearch(search, u)).catch(() => {});
+      track.search(search);
     }
   }, [search]);
 

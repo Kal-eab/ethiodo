@@ -3,6 +3,8 @@
  * Supports: multi-keyword, partial match, case-insensitive, fuzzy, ranked results.
  */
 
+import { parseTags } from '@/lib/utils';
+
 // Simple Levenshtein distance for fuzzy matching
 function levenshtein(a, b) {
   const matrix = [];
@@ -111,7 +113,7 @@ export function getAutocompleteSuggestions(products, query, limit = 6) {
     const name = product.name || '';
     if (name.toLowerCase().includes(q)) suggestions.add(name);
 
-    const tags = (product.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+    const tags = parseTags(product.tags);
     for (const tag of tags) {
       if (tag.toLowerCase().includes(q)) suggestions.add(tag);
     }

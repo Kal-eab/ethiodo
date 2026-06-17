@@ -35,6 +35,18 @@ function canTrackView(productId) {
   return true;
 }
 
+// ─── Shared event logger ──────────────────────────────────────────────────────
+
+function logEvent(eventType, productId, user, extra = {}) {
+  base44.entities.ProductEvent.create({
+    product_id: productId,
+    event_type: eventType,
+    user_email: user?.email || null,
+    session_id: getSessionId(),
+    ...extra,
+  }).catch(() => {});
+}
+
 // ─── Bot detection ────────────────────────────────────────────────────────────
 
 function isBotLike(productId) {
@@ -68,12 +80,7 @@ export async function trackView(product, user) {
   if (!canTrackView(product.id)) return;
   if (isBotLike(product.id)) return;
 
-  base44.entities.ProductEvent.create({
-    product_id: product.id,
-    event_type: 'view',
-    user_email: user?.email || null,
-    session_id: getSessionId(),
-  }).catch(() => {});
+  logEvent('view', product.id, user);
 
   if (user?.email) {
     updateUserBehavior(user.email, profile => {
@@ -93,12 +100,7 @@ export async function trackView(product, user) {
 // ─── Track a wishlist save ────────────────────────────────────────────────────
 
 export async function trackWishlist(productId, user) {
-  base44.entities.ProductEvent.create({
-    product_id: productId,
-    event_type: 'wishlist',
-    user_email: user?.email || null,
-    session_id: getSessionId(),
-  }).catch(() => {});
+  logEvent('wishlist', productId, user);
 
   if (user?.email) {
     updateUserBehavior(user.email, profile => {
@@ -111,12 +113,7 @@ export async function trackWishlist(productId, user) {
 // ─── Track a purchase ─────────────────────────────────────────────────────────
 
 export async function trackPurchase(product, user) {
-  base44.entities.ProductEvent.create({
-    product_id: product.id,
-    event_type: 'purchase',
-    user_email: user?.email || null,
-    session_id: getSessionId(),
-  }).catch(() => {});
+  logEvent('purchase', product.id, user);
 
   if (user?.email) {
     updateUserBehavior(user.email, profile => {
@@ -133,13 +130,7 @@ export async function trackSearch(query, user) {
   if (!query || !query.trim()) return;
   const q = query.trim().toLowerCase();
 
-  base44.entities.ProductEvent.create({
-    product_id: 'search',
-    event_type: 'search',
-    user_email: user?.email || null,
-    session_id: getSessionId(),
-    query: q,
-  }).catch(() => {});
+  logEvent('search', 'search', user, { query: q });
 
   if (user?.email) {
     updateUserBehavior(user.email, profile => {
@@ -154,12 +145,7 @@ export async function trackSearch(query, user) {
 export async function trackAddToCart(product, user) {
   if (!product?.id) return;
 
-  base44.entities.ProductEvent.create({
-    product_id: product.id,
-    event_type: 'cart',
-    user_email: user?.email || null,
-    session_id: getSessionId(),
-  }).catch(() => {});
+  logEvent('cart', product.id, user);
 
   if (user?.email) {
     updateUserBehavior(user.email, profile => {
