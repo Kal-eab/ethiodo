@@ -39,6 +39,7 @@ export default function MobileTabBar() {
   if (location.pathname.startsWith('/admin')) return null;
   if (location.pathname.startsWith('/product/')) return null;
   if (location.pathname.startsWith('/payment')) return null;
+  if (location.pathname.startsWith('/messages')) return null;
 
   return (
     <nav
