@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, MessageSquare, ArrowLeft, Menu, X, Mail, Star, Sparkles, DollarSign, Users, BarChart2, FolderTree } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, MessageSquare, ArrowLeft, Menu, X, Mail, Star, Sparkles, DollarSign, Users, BarChart2, FolderTree, UserPlus } from 'lucide-react';
 import NotificationBell from '@/components/admin/NotificationBell';
 
 const navItems = [
@@ -17,6 +17,7 @@ const navItems = [
   { path: '/admin/revenue', label: 'Revenue', icon: DollarSign },
   { path: '/admin/customers', label: 'Customers', icon: Users },
   { path: '/admin/conversion-rates', label: 'Conversion Rates', icon: BarChart2 },
+  { path: '/admin/creators', label: 'Creators', icon: UserPlus },
 ];
 
 export default function AdminLayout() {

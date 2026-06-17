@@ -96,6 +96,31 @@ export default function AdminOrders() {
     queryFn: () => base44.entities.Order.list('-created_date', 200),
   });
 
+  const { data: referrals = [] } = useQuery({
+    queryKey: ['all-referrals'],
+    queryFn: () => base44.entities.CustomerReferral.list('-date_created', 1000),
+  });
+
+  const { data: links = [] } = useQuery({
+    queryKey: ['creator-product-links'],
+    queryFn: () => base44.entities.CreatorProductLink.list('-date_created', 500),
+  });
+
+  const { data: creators = [] } = useQuery({
+    queryKey: ['creators'],
+    queryFn: () => base44.entities.Creator.list('-date_added', 200),
+  });
+
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => base44.entities.Product.filter({}, '-created_date', 500),
+  });
+
+  const referralMap = Object.fromEntries(referrals.map(r => [r.id, r]));
+  const linkMap = Object.fromEntries(links.map(l => [l.id, l]));
+  const creatorMap = Object.fromEntries(creators.map(c => [c.id, c]));
+  const productMap = Object.fromEntries(products.map(p => [p.id, p]));
+
   const handleDelete = async (orderId) => {
     if (!window.confirm('Delete this fake order?')) return;
     await base44.entities.Order.delete(orderId);
@@ -296,6 +321,23 @@ export default function AdminOrders() {
                   <span className="text-primary font-bold">${order.total?.toFixed(2)}</span>
                   <span>{order.created_date ? format(new Date(order.created_date), 'MMM d, HH:mm') : '—'}</span>
                 </div>
+              </div>
+
+              {/* Referral Match badge */}
+              <div className="hidden sm:block flex-shrink-0">
+                {(() => {
+                  if (!order.matched_referral_id) return null;
+                  const ref = referralMap[order.matched_referral_id];
+                  if (!ref) return null;
+                  const link = linkMap[ref.creator_product_link_id];
+                  const creator = link ? creatorMap[link.creator_id] : null;
+                  const product = productMap[ref.product_id];
+                  return (
+                    <span className="font-mono text-[10px] whitespace-nowrap px-2 py-1 border border-purple-400/30 bg-purple-400/5 text-purple-400">
+                      {creator?.name || 'Creator'} · {product?.name || 'Product'}
+                    </span>
+                  );
+                })()}
               </div>
 
               {/* Quick action buttons */}

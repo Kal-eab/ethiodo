@@ -12,6 +12,37 @@ export default function AdminCustomers() {
     queryFn: () => base44.entities.User.list('-created_date', 500),
   });
 
+  const { data: referrals = [] } = useQuery({
+    queryKey: ['all-referrals'],
+    queryFn: () => base44.entities.CustomerReferral.list('-date_created', 1000),
+  });
+
+  const { data: links = [] } = useQuery({
+    queryKey: ['creator-product-links'],
+    queryFn: () => base44.entities.CreatorProductLink.list('-date_created', 500),
+  });
+
+  const { data: creators = [] } = useQuery({
+    queryKey: ['creators'],
+    queryFn: () => base44.entities.Creator.list('-date_added', 200),
+  });
+
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => base44.entities.Product.filter({}, '-created_date', 500),
+  });
+
+  const creatorMap = Object.fromEntries(creators.map(c => [c.id, c]));
+  const productMap = Object.fromEntries(products.map(p => [p.id, p]));
+  const linkMap = Object.fromEntries(links.map(l => [l.id, l]));
+
+  // Group referrals by customer_email
+  const referralsByEmail = {};
+  referrals.forEach(r => {
+    if (!referralsByEmail[r.customer_email]) referralsByEmail[r.customer_email] = [];
+    referralsByEmail[r.customer_email].push(r);
+  });
+
   const filtered = users.filter(u => {
     const q = search.toLowerCase();
     return (
@@ -50,6 +81,8 @@ export default function AdminCustomers() {
               <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Email</th>
               <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden md:table-cell">Phone</th>
               <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Role</th>
+              <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden xl:table-cell">Referred Product</th>
+              <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden xl:table-cell">Referred By</th>
               <th className="text-left p-4 font-mono text-xs text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Joined</th>
             </tr>
           </thead>
@@ -61,18 +94,22 @@ export default function AdminCustomers() {
                   <td className="p-4 hidden sm:table-cell"><div className="h-4 bg-secondary animate-pulse w-52" /></td>
                   <td className="p-4 hidden md:table-cell"><div className="h-4 bg-secondary animate-pulse w-16" /></td>
                   <td className="p-4 hidden lg:table-cell"><div className="h-4 bg-secondary animate-pulse w-24" /></td>
+                  <td className="p-4 hidden xl:table-cell"><div className="h-4 bg-secondary animate-pulse w-24" /></td>
+                  <td className="p-4 hidden xl:table-cell"><div className="h-4 bg-secondary animate-pulse w-24" /></td>
                   <td className="p-4 hidden lg:table-cell"><div className="h-4 bg-secondary animate-pulse w-24" /></td>
                 </tr>
               ))
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-12 text-center">
+                <td colSpan={7} className="p-12 text-center">
                   <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-30" />
                   <p className="font-mono text-xs text-muted-foreground uppercase">No users found</p>
                 </td>
               </tr>
             ) : (
-              filtered.map(user => (
+              filtered.map(user => {
+                const userRefs = referralsByEmail[user.email] || [];
+                return (
                 <tr key={user.id} className="hover:bg-secondary/30 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
@@ -103,13 +140,42 @@ export default function AdminCustomers() {
                       {user.role || 'user'}
                     </span>
                   </td>
+                  <td className="p-4 hidden xl:table-cell">
+                    {userRefs.length === 0 ? (
+                      <span className="font-mono text-xs text-muted-foreground">—</span>
+                    ) : (
+                      <div className="space-y-0.5">
+                        {userRefs.map((r, i) => {
+                          const product = productMap[r.product_id];
+                          return (
+                            <p key={i} className="text-xs truncate max-w-[140px]">{product?.name || r.product_id?.slice(-8) || '—'}</p>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-4 hidden xl:table-cell">
+                    {userRefs.length === 0 ? (
+                      <span className="font-mono text-xs text-muted-foreground">—</span>
+                    ) : (
+                      <div className="space-y-0.5">
+                        {userRefs.map((r, i) => {
+                          const link = linkMap[r.creator_product_link_id];
+                          const creator = link ? creatorMap[link.creator_id] : null;
+                          return (
+                            <p key={i} className="text-xs truncate max-w-[140px]">{creator?.name || '—'}</p>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </td>
                   <td className="p-4 hidden lg:table-cell">
                     <p className="font-mono text-xs text-muted-foreground">
                       {user.created_date ? format(new Date(user.created_date), 'MMM d, yyyy') : '—'}
                     </p>
                   </td>
                 </tr>
-              ))
+              );})
             )}
           </tbody>
         </table>
