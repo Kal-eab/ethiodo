@@ -88,6 +88,7 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
   useEffect(() => {
     if (!navRef.current) return;
     const update = () => {
+      if (!navRef.current) return;
       document.documentElement.style.setProperty('--navbar-height', navRef.current.offsetHeight + 'px');
     };
     update();
