@@ -10,6 +10,7 @@ import {
 import { REGIONS, REGIONS_CITIES } from '@/lib/ethiopiaRegions';
 import { trackSignUp } from '@/lib/analytics';
 import InterestPicker from '@/components/register/InterestPicker';
+import { resolveCreatorRef } from '@/lib/referral';
 
 const PHONE_REGEX = /^\+251\s?[79]\d{8}$|^0[79]\d{8}$/;
 
@@ -80,6 +81,19 @@ export default function Register() {
         profile_complete: true,
       });
       trackSignUp();
+
+      // Attach creator referral from localStorage if present
+      const storedRef = resolveCreatorRef();
+      if (storedRef) {
+        base44.entities.CustomerReferral.create({
+          customer_email: user.email,
+          product_id: storedRef.product_id,
+          creator_product_link_id: storedRef.link_id,
+          status: 'pending',
+        }).catch(() => {});
+        localStorage.removeItem('ethiodo_creator_ref');
+      }
+
       setStep('interests');
     } catch (err) {
       toast.error(err.message || 'Failed to save. Please try again.');

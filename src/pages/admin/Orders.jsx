@@ -168,6 +168,26 @@ export default function AdminOrders() {
     }
 
     await base44.entities.Order.update(orderId, updates);
+
+    // ── Creator referral: confirm & increment counts on order confirmation ──
+    if (newStatus === 'confirmed' && order.matched_referral_id) {
+      try {
+        const referral = await base44.entities.CustomerReferral.filter({ id: order.matched_referral_id });
+        if (referral[0] && referral[0].status !== 'confirmed') {
+          await base44.entities.CustomerReferral.update(order.matched_referral_id, { status: 'confirmed' });
+          const linkId = referral[0].creator_product_link_id;
+          const links = await base44.entities.CreatorProductLink.filter({ id: linkId });
+          if (links[0]) {
+            const link = links[0];
+            await base44.entities.CreatorProductLink.update(linkId, {
+              confirmed_order_count: (link.confirmed_order_count || 0) + 1,
+              total_confirmed_sales: (link.total_confirmed_sales || 0) + (order.total || 0),
+            });
+          }
+        }
+      } catch {} // silently ignore referral count failures
+    }
+
     // Send message notification to customer
     await sendStatusMessage({ ...order, ...updates }, newStatus, shippedPhotoUrl);
     queryClient.invalidateQueries({ queryKey: ['admin-orders'] });

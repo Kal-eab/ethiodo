@@ -279,6 +279,18 @@ export default function DirectPayment() {
       shipping.city, shipping.region, shipping.specific_address
     ].filter(Boolean).join(', ');
 
+    // Look up CustomerReferral for any item in this order
+    let matchedReferralId = null;
+    try {
+      const itemProductIds = [product.id];
+      const referrals = await base44.entities.CustomerReferral.filter({
+        customer_email: user.email,
+        status: 'pending',
+      });
+      const match = referrals.find(r => itemProductIds.includes(r.product_id));
+      if (match) matchedReferralId = match.id;
+    } catch {} // ignore lookup failures — order proceeds without referral
+
     await base44.entities.Order.create({
       items: [{
         product_id: product.id,
@@ -296,6 +308,7 @@ export default function DirectPayment() {
       customer_name: user.full_name,
       shipping_address: shippingAddress,
       phone: shipping.phone,
+      ...(matchedReferralId ? { matched_referral_id: matchedReferralId } : {}),
     });
 
     await base44.entities.Notification.create({

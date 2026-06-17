@@ -31,7 +31,7 @@ export default function ProductDetail() {
   const [showShare, setShowShare] = useState(false);
   const { user } = useAuth();
 
-  // Track referral click
+  // Track referral click (existing ReferralLink by owner_user_id)
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get('ref');
     if (ref && productId) {
@@ -43,6 +43,36 @@ export default function ProductDetail() {
         }).catch(() => {});
     }
   }, [productId]);
+
+  // Creator referral: look up CreatorProductLink by ?ref= code, store in localStorage
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if (!ref || !productId) return;
+    base44.entities.CreatorProductLink.filter({ code: ref, product_id: productId })
+      .then(links => {
+        if (!links[0]) return;
+        const link = links[0];
+        const payload = { code: ref, product_id: productId, link_id: link.id, expires: Date.now() + 30 * 86400000 };
+        localStorage.setItem('ethiodo_creator_ref', JSON.stringify(payload));
+
+        // For logged-in users, create/update CustomerReferral immediately
+        const email = user?.email;
+        if (!email) return;
+        return base44.entities.CustomerReferral.filter({ customer_email: email, product_id: productId })
+          .then(existing => {
+            if (existing.length > 0 && existing[0].status === 'pending') {
+              return base44.entities.CustomerReferral.update(existing[0].id, { creator_product_link_id: link.id });
+            } else {
+              return base44.entities.CustomerReferral.create({
+                customer_email: email,
+                product_id: productId,
+                creator_product_link_id: link.id,
+                status: 'pending',
+              });
+            }
+          });
+      }).catch(() => {});
+  }, [productId, user?.email]);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', productId],
