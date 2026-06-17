@@ -15,7 +15,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
 import { track } from '@/lib/track';
 import { trackCategoryFilter } from '@/lib/analytics';
-import { getSubcategories, getCategoryTreeDynamic as getCategoryTreeFromLib } from '@/lib/categories';
+import { getSubcategories, getCategoryTreeDynamic, useCategoryTree } from '@/lib/categories';
 
 export default function Home() {
   const [searchInput, setSearchInput] = useState('');
@@ -25,6 +25,9 @@ export default function Home() {
   const ITEMS_PER_PAGE = 20;
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  // Subscribe to backend category tree changes so the filter re-renders
+  useCategoryTree();
 
   const { data: products = [], isLoading, error: productsError } = useQuery({
     queryKey: ['products'],
@@ -107,10 +110,12 @@ export default function Home() {
 
   // Does the selected category have subcategories? (affects category bar height)
   const hasSubcats = (() => {
-    const tree = getCategoryTreeFromLib();
+    const tree = getCategoryTreeDynamic();
     const topCat = tree.find(c => c.value === category || c.subcategories.some(s => s.value === category));
     return topCat ? topCat.subcategories.length > 0 : false;
   })();
+
+
 
   return (
     <div className="min-h-screen bg-background">

@@ -1,13 +1,14 @@
 /**
  * Central category configuration.
- * Top-level categories and their subcategories.
- * Reads from localStorage first (admin-managed), falls back to hardcoded defaults.
+ * Source of truth: CategoryConfig entity (single-row backend store).
+ * Falls back to localStorage cache, then hardcoded defaults.
  */
+import { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
 
 const DEFAULT_TREE = [
   {
-    value: 'electronics',
-    label: 'Electronics',
+    value: 'electronics', label: 'Electronics',
     subcategories: [
       { value: 'electronics_phones', label: 'Phones' },
       { value: 'electronics_laptops', label: 'Laptops' },
@@ -17,8 +18,7 @@ const DEFAULT_TREE = [
     ],
   },
   {
-    value: 'clothing',
-    label: 'Clothing',
+    value: 'clothing', label: 'Clothing',
     subcategories: [
       { value: 'clothing_dress', label: 'Dress' },
       { value: 'clothing_tshirt', label: 'T-Shirt' },
@@ -31,8 +31,7 @@ const DEFAULT_TREE = [
     ],
   },
   {
-    value: 'shoes',
-    label: 'Shoes',
+    value: 'shoes', label: 'Shoes',
     subcategories: [
       { value: 'shoes_mens', label: "Men's" },
       { value: 'shoes_womens', label: "Women's" },
@@ -41,52 +40,103 @@ const DEFAULT_TREE = [
     ],
   },
   {
-    value: 'sports',
-    label: 'Sports',
+    value: 'sports', label: 'Sports',
     subcategories: [
       { value: 'sports_fitness', label: 'Fitness' },
       { value: 'sports_outdoor', label: 'Outdoor' },
     ],
   },
   {
-    value: 'accessories',
-    label: 'Accessories',
+    value: 'accessories', label: 'Accessories',
     subcategories: [],
   },
   {
-    value: 'phones',
-    label: 'Phones',
+    value: 'phones', label: 'Phones',
     subcategories: [],
   },
 ];
 
-/** Get CATEGORY_TREE from localStorage (admin-managed) or use defaults */
-function getCategoryTree() {
+// ─── In-memory tree (live, reactive) ────────────────────────────────────────
+let _initialized = false;
+let _tree = loadFromCache();
+
+function loadFromCache() {
   try {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('ethiodo_categories');
       if (saved) return JSON.parse(saved);
     }
-  } catch {
-    // Fall through to defaults
-  }
-  return DEFAULT_TREE;
+  } catch { /* fall through */ }
+  return [...DEFAULT_TREE];
 }
 
-export const CATEGORY_TREE = getCategoryTree();
+function saveToCache(tree) {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ethiodo_categories', JSON.stringify(tree));
+    }
+  } catch { /* ignore */ }
+}
 
-/** Flat list of all top-level category values */
-export const TOP_LEVEL_CATEGORIES = CATEGORY_TREE.map(c => c.value);
+function computeDerived(tree) {
+  const topLevel = tree.map(c => c.value);
+  const all = [...topLevel, ...tree.flatMap(c => c.subcategories.map(s => s.value))];
+  return { topLevel, all };
+}
 
-/** Get subcategories for a given top-level category value */
+/** Rebuild derived exports from the current tree */
+function rebuildExports(tree) {
+  const { topLevel, all } = computeDerived(tree);
+  CATEGORY_TREE = tree;
+  TOP_LEVEL_CATEGORIES = topLevel;
+  ALL_CATEGORY_VALUES = all;
+  _tree = tree;
+}
+
+// ─── Reactive exports (export let = live bindings) ──────────────────────────
+export let CATEGORY_TREE = _tree;
+export let TOP_LEVEL_CATEGORIES = computeDerived(_tree).topLevel;
+export let ALL_CATEGORY_VALUES = computeDerived(_tree).all;
+
+// ─── Subscriber system (for useCategoryTree hook) ───────────────────────────
+const listeners = new Set();
+export function onTreeChange(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+function notify() { listeners.forEach(fn => fn(_tree)); }
+
+// ─── Backend fetch (async, called once on module init) ──────────────────────
+async function loadFromBackend() {
+  try {
+    const rows = await base44.entities.CategoryConfig.list('-updated_date', 1);
+    if (rows.length > 0 && rows[0].tree) {
+      const backendTree = rows[0].tree;
+      rebuildExports(backendTree);
+      saveToCache(backendTree);
+      notify();
+    }
+  } catch { /* offline / unauthenticated — use cache */ }
+}
+
+if (!_initialized) {
+  _initialized = true;
+  loadFromBackend();
+}
+
+// ─── Public API ─────────────────────────────────────────────────────────────
+
+/** Returns current in-memory tree synchronously */
+export function getCategoryTreeDynamic() {
+  return _tree;
+}
+
+/** Get subcategories for a top-level category value */
 export function getSubcategories(categoryValue) {
-  const cat = CATEGORY_TREE.find(c => c.value === categoryValue);
+  const cat = _tree.find(c => c.value === categoryValue);
   return cat?.subcategories || [];
 }
 
-/** Get the parent category value for a subcategory value */
+/** Get parent category value for a subcategory value */
 export function getParentCategory(value) {
-  for (const cat of CATEGORY_TREE) {
+  for (const cat of _tree) {
     if (cat.subcategories.some(s => s.value === value)) {
       return cat.value;
     }
@@ -94,16 +144,9 @@ export function getParentCategory(value) {
   return null;
 }
 
-/** All category values (top-level + subcategories) as a flat array for entity enum */
-export const ALL_CATEGORY_VALUES = [
-  ...TOP_LEVEL_CATEGORIES,
-  ...CATEGORY_TREE.flatMap(c => c.subcategories.map(s => s.value)),
-];
-
-/** Get label for any category value */
+/** Get display label for any category value */
 export function getCategoryLabel(value) {
-  const tree = getCategoryTree();
-  for (const cat of tree) {
+  for (const cat of _tree) {
     if (cat.value === value) return cat.label;
     const sub = cat.subcategories.find(s => s.value === value);
     if (sub) return sub.label;
@@ -111,12 +154,27 @@ export function getCategoryLabel(value) {
   return value;
 }
 
-/** Get all top-level categories dynamically */
+/** Get all top-level category values synchronously */
 export function getTopLevelCategories() {
-  return getCategoryTree().map(c => c.value);
+  return _tree.map(c => c.value);
 }
 
-/** Get category tree dynamically (always reads from localStorage) */
-export function getCategoryTreeDynamic() {
-  return getCategoryTree();
+/** React hook: returns the current tree and triggers re-render on changes */
+export function useCategoryTree() {
+  const [tree, setTree] = useState(_tree);
+  useEffect(() => onTreeChange(t => setTree([...t])), []);
+  return tree;
+}
+
+/** Admin: save tree to backend and local cache */
+export async function publishCategoryTree(treeData) {
+  const rows = await base44.entities.CategoryConfig.list('-updated_date', 1);
+  if (rows.length > 0) {
+    await base44.entities.CategoryConfig.update(rows[0].id, { tree: treeData });
+  } else {
+    await base44.entities.CategoryConfig.create({ tree: treeData });
+  }
+  rebuildExports(treeData);
+  saveToCache(treeData);
+  notify();
 }

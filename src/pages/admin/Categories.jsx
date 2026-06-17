@@ -1,19 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ChevronRight, FolderPlus, Save } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Trash2, ChevronRight, FolderPlus, Upload, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { useCategoryTree, publishCategoryTree } from '@/lib/categories';
 
 /**
- * Admin category manager — reads/writes lib/categories.js via localStorage override.
- * Changes persist in the browser and are reflected live in CategoryFilter & ProductForm.
- *
- * NOTE: Because lib/categories.js is a static file, this page lets admins visually
- * manage a JSON copy stored in localStorage ('ethiodo_categories'). The app reads
- * from localStorage on startup when it exists, falling back to the static file.
+ * Admin category manager — reads/writes the CategoryConfig backend row.
+ * Changes sync across all devices immediately.
  */
-
-const STORAGE_KEY = 'ethiodo_categories';
 
 const DEFAULT_TREE = [
   {
@@ -70,26 +65,30 @@ function slugify(label) {
 }
 
 export default function AdminCategories() {
-  const [tree, setTree] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_TREE;
-    } catch {
-      return DEFAULT_TREE;
-    }
-  });
+  const backendTree = useCategoryTree();
+  // Local editing state derives from the live backend tree
+  const [localTree, setLocalTree] = useState(null);
+  const tree = localTree || backendTree;
 
   const [newParentLabel, setNewParentLabel] = useState('');
-  const [newSub, setNewSub] = useState({}); // { parentValue: label }
+  const [newSub, setNewSub] = useState({});
   const [expanded, setExpanded] = useState({});
+  const [saving, setSaving] = useState(false);
 
-  const save = (nextTree) => {
-    setTree(nextTree);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTree));
-    toast.success('Categories saved! Refresh the store to see changes.');
+  const save = async (nextTree) => {
+    setLocalTree(nextTree);
+    setSaving(true);
+    try {
+      await publishCategoryTree(nextTree);
+      setLocalTree(null);
+      toast.success('Categories saved — synced to all devices.');
+    } catch (e) {
+      toast.error('Failed to save: ' + (e?.message || 'Unknown error'));
+    }
+    setSaving(false);
   };
 
-  const addParent = () => {
+  const addParent = async () => {
     const label = newParentLabel.trim();
     if (!label) return;
     const value = slugify(label);
@@ -97,16 +96,16 @@ export default function AdminCategories() {
       toast.error('A category with that name already exists.');
       return;
     }
-    save([...tree, { value, label, subcategories: [] }]);
+    await save([...tree, { value, label, subcategories: [] }]);
     setNewParentLabel('');
   };
 
-  const deleteParent = (value) => {
+  const deleteParent = async (value) => {
     if (!window.confirm('Delete this category and all its subcategories?')) return;
-    save(tree.filter(c => c.value !== value));
+    await save(tree.filter(c => c.value !== value));
   };
 
-  const addSubcategory = (parentValue) => {
+  const addSubcategory = async (parentValue) => {
     const label = (newSub[parentValue] || '').trim();
     if (!label) return;
     const subValue = `${parentValue}_${slugify(label)}`;
@@ -118,15 +117,27 @@ export default function AdminCategories() {
       }
       return { ...c, subcategories: [...c.subcategories, { value: subValue, label }] };
     });
-    save(next);
+    await save(next);
     setNewSub(s => ({ ...s, [parentValue]: '' }));
   };
 
-  const deleteSubcategory = (parentValue, subValue) => {
-    save(tree.map(c => {
+  const deleteSubcategory = async (parentValue, subValue) => {
+    await save(tree.map(c => {
       if (c.value !== parentValue) return c;
       return { ...c, subcategories: c.subcategories.filter(s => s.value !== subValue) };
     }));
+  };
+
+  const handlePublishLocalDesktop = async () => {
+    try {
+      const saved = localStorage.getItem('ethiodo_categories');
+      if (!saved) { toast.error('No categories found on this device.'); return; }
+      const deviceTree = JSON.parse(saved);
+      await save(deviceTree);
+      toast.success('Published this device\'s categories to all devices!');
+    } catch {
+      toast.error('Failed to publish from this device.');
+    }
   };
 
   const toggleExpand = (value) => setExpanded(e => ({ ...e, [value]: !e[value] }));
@@ -136,9 +147,19 @@ export default function AdminCategories() {
       <div>
         <h1 className="text-2xl font-bold">Categories</h1>
         <p className="font-mono text-xs text-muted-foreground mt-1">
-          Add or remove categories and subcategories. Changes apply immediately to the store filter and product form.
+          Manage categories synced across all devices. Changes apply immediately to the store filter and product form.
         </p>
       </div>
+
+      {/* Publish from desktop button */}
+      <button
+        onClick={handlePublishLocalDesktop}
+        disabled={saving}
+        className="flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/30 text-accent font-mono text-xs uppercase hover:bg-accent/20 transition-colors disabled:opacity-40"
+      >
+        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+        Publish this device's categories to all devices
+      </button>
 
       {/* Category list */}
       <div className="space-y-3">
@@ -156,7 +177,8 @@ export default function AdminCategories() {
               <span className="font-mono text-[10px] text-muted-foreground">{cat.subcategories.length} sub</span>
               <button
                 onClick={() => deleteParent(cat.value)}
-                className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                disabled={saving}
+                className="text-muted-foreground hover:text-destructive transition-colors p-1 disabled:opacity-30"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -175,7 +197,8 @@ export default function AdminCategories() {
                     <span className="font-mono text-[10px] text-muted-foreground">{sub.value}</span>
                     <button
                       onClick={() => deleteSubcategory(cat.value, sub.value)}
-                      className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                      disabled={saving}
+                      className="text-muted-foreground hover:text-destructive transition-colors p-1 disabled:opacity-30"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -194,7 +217,7 @@ export default function AdminCategories() {
                   <Button
                     size="sm"
                     onClick={() => addSubcategory(cat.value)}
-                    disabled={!(newSub[cat.value] || '').trim()}
+                    disabled={!(newSub[cat.value] || '').trim() || saving}
                     className="bg-primary text-primary-foreground font-mono"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1" /> Add
@@ -221,10 +244,11 @@ export default function AdminCategories() {
           />
           <Button
             onClick={addParent}
-            disabled={!newParentLabel.trim()}
+            disabled={!newParentLabel.trim() || saving}
             className="bg-primary text-primary-foreground font-mono"
           >
-            <Plus className="w-4 h-4 mr-1" /> Add Category
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+            Add Category
           </Button>
         </div>
       </div>
