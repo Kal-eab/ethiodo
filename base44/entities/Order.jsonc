@@ -60,6 +60,10 @@
     "phone": {
       "type": "string"
     },
+    "matched_referral_id": {
+      "type": "string",
+      "description": "Reference to CustomerReferral, set at checkout"
+    },
     "confirmed_date": {
       "type": "string",
       "description": "ISO timestamp when order was confirmed"

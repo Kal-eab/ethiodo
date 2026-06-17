@@ -1,0 +1,54 @@
+{
+  "name": "CustomerReferral",
+  "type": "object",
+  "properties": {
+    "customer_email": {
+      "type": "string",
+      "description": "Customer email matching the order"
+    },
+    "product_id": {
+      "type": "string",
+      "description": "Reference to Product"
+    },
+    "creator_product_link_id": {
+      "type": "string",
+      "description": "Reference to CreatorProductLink"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed"
+      ],
+      "default": "pending",
+      "description": "Referral status"
+    },
+    "date_created": {
+      "type": "string",
+      "description": "ISO datetime of when the referral was created"
+    }
+  },
+  "required": [
+    "customer_email",
+    "product_id",
+    "creator_product_link_id"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

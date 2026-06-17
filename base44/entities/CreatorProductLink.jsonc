@@ -1,0 +1,59 @@
+{
+  "name": "CreatorProductLink",
+  "type": "object",
+  "properties": {
+    "creator_id": {
+      "type": "string",
+      "description": "Reference to Creator"
+    },
+    "product_id": {
+      "type": "string",
+      "description": "Reference to Product"
+    },
+    "code": {
+      "type": "string",
+      "description": "Unique 6-character referral code, editable"
+    },
+    "share_url": {
+      "type": "string",
+      "description": "Full share URL: https://ethiodo.com/product/{product_id}?ref={code}"
+    },
+    "confirmed_order_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of confirmed orders attributed"
+    },
+    "total_confirmed_sales": {
+      "type": "number",
+      "default": 0,
+      "description": "Total sales value of confirmed orders"
+    },
+    "date_created": {
+      "type": "string",
+      "description": "ISO datetime of when the link was created"
+    }
+  },
+  "required": [
+    "creator_id",
+    "product_id",
+    "code"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": true,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

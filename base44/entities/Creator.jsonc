@@ -1,0 +1,49 @@
+{
+  "name": "Creator",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Creator name"
+    },
+    "handle": {
+      "type": "string",
+      "description": "Social handle, e.g. Instagram @abg_vizuals"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active",
+      "description": "Current status"
+    },
+    "date_added": {
+      "type": "string",
+      "description": "ISO datetime of when the creator was added"
+    }
+  },
+  "required": [
+    "name",
+    "handle"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": true,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
