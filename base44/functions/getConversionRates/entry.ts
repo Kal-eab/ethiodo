@@ -16,6 +16,11 @@ Deno.serve(async (req) => {
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
     const propsData = await propsRes.json();
+
+    if (!propsRes.ok) {
+      return Response.json({ error: `GA4 Admin API error (${propsRes.status}): ${propsData.error?.message || 'unknown error'}` }, { status: propsRes.status });
+    }
+
     const properties = propsData.properties || [];
 
     if (properties.length === 0) {

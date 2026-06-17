@@ -52,7 +52,7 @@ export default function ConversionRates() {
       const res = await base44.functions.invoke('getConversionRates', {});
       setData(res.data);
     } catch (e) {
-      setError(e.message || 'Failed to load data');
+      setError(e.response?.data?.error || e.message || 'Failed to load data');
     }
     setLoading(false);
   };
