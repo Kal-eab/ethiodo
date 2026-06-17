@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Package, Clock, CheckCircle, Truck, ShoppingBag, Heart, ArrowRight, AlertCircle } from 'lucide-react';
+import { Package, CheckCircle, Truck, ShoppingBag, Heart, ArrowRight, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import Navbar from '@/components/store/Navbar';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Heart, Star, Minus, Plus, ShieldCheck, Truck, Share2 } from 'lucide-react';
+import { ArrowLeft, Heart, Star, ShieldCheck, Truck, Share2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';

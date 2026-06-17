@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, Cell, Legend,
+  CartesianGrid, Cell,
 } from 'recharts';
 import { TrendingUp, ShoppingCart, Eye, DollarSign, RefreshCw, AlertCircle } from 'lucide-react';
 

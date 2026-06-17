@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Send, Image as ImageIcon, X, Loader2, MessageSquare, ArrowLeft } from 'lucide-react';
+import { Send, Image as ImageIcon, X, Loader2, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import Navbar from '@/components/store/Navbar';

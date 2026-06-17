@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Copy, Check, Send } from 'lucide-react';
+import { X, Copy, Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 const PLATFORMS = [

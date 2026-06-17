@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Truck, HeartHandshake, Star, Users, Package } from 'lucide-react';
+import { ShieldCheck, Truck, HeartHandshake, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/store/Navbar';
 import MobileHeader from '@/components/store/MobileHeader';

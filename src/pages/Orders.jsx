@@ -6,7 +6,6 @@ import { useAuth } from '@/lib/AuthContext';
 import { Package, Star, Upload, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import Navbar from '@/components/store/Navbar';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';

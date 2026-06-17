@@ -18,7 +18,7 @@ function AddCreatorModal({ onClose, onCreated }) {
     if (!name.trim()) { toast.error('Name is required'); return; }
     if (!handle.trim()) { toast.error('Handle is required'); return; }
     setSaving(true);
-    await base44.entities.Creator.create({ name: name.trim(), handle: handle.trim(), status: 'active' });
+    await base44.entities.Creator.create({ name: name.trim(), handle: handle.trim(), status: 'active', date_added: new Date().toISOString() });
     toast.success('Creator added');
     setSaving(false);
     onCreated();
@@ -73,6 +73,7 @@ function AddLinkModal({ creators, products, onClose, onCreated }) {
       share_url: shareUrl,
       confirmed_order_count: 0,
       total_confirmed_sales: 0,
+      date_created: new Date().toISOString(),
     });
     toast.success('Product link created');
     setSaving(false);

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format, getDate } from 'date-fns';
-import { DollarSign, Package, ChevronRight, ChevronDown, ArrowLeft } from 'lucide-react';
+import { DollarSign, Package, ChevronRight, ArrowLeft } from 'lucide-react';
 
 const fmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
 

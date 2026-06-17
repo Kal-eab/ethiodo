@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { User, LogOut, Trash2, ChevronRight, Shield, FileText, RotateCcw, AlertTriangle, Phone, MapPin, ChevronDown, Loader2, Save, Heart, Package, Settings } from 'lucide-react';
+import { User, LogOut, Trash2, ChevronRight, Shield, FileText, RotateCcw, AlertTriangle, MapPin, ChevronDown, Loader2, Save, Heart, Package, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Link } from 'react-router-dom';
