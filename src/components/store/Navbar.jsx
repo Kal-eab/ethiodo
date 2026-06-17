@@ -175,12 +175,10 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
                     <UserCircle className="w-3.5 h-3.5" />
                     {user.full_name?.split(' ')[0] || 'Profile'}
                   </Link>
-                  <Link to="/profile" className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <UserCircle className="w-4 h-4 text-white/60" />
-                  </Link>
+
                   <button
                     onClick={() => base44.auth.logout('/')}
-                    className="flex items-center justify-center w-8 h-8 rounded-full transition-all"
+                    className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full transition-all"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
                   >
                     <LogOut className="w-3.5 h-3.5 text-white/50" />
