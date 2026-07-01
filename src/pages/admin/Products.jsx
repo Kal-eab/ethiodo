@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Plus, Pencil, Trash2, Upload, X, Loader2, FileText, CheckCircle2 } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -154,11 +155,17 @@ function ProductForm({ product, onClose, onSave }) {
   const handleUploadImages = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
+    // Reset input so the same file can be selected again
+    e.target.value = '';
     setUploading(true);
     try {
       const urls = [];
       for (const file of files) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        // Compress large images before upload to prevent failures
+        const compressed = file.size > 500 * 1024
+          ? await imageCompression(file, { maxSizeMB: 1, maxWidthOrHeight: 1200, useWebWorker: true })
+          : file;
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
         urls.push(file_url);
       }
       setForm(f => ({ ...f, images: [...f.images, ...urls] }));
