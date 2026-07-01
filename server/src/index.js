@@ -17,8 +17,8 @@ const { recalcPopularity, recalcTrending } = require('./functions');
 const app = express();
 const server = http.createServer(app);
 
-const corsOrigin = process.env.CORS_ORIGIN || '*';
-app.use(cors({ origin: corsOrigin, credentials: true }));
+const corsOrigins = (process.env.CORS_ORIGIN || '*').split(',').map((o) => o.trim());
+app.use(cors({ origin: corsOrigins.includes('*') ? '*' : corsOrigins, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
 app.use(attachUser);
 app.use('/uploads', express.static(UPLOAD_DIR));
@@ -37,7 +37,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 
-initRealtime(server, corsOrigin);
+initRealtime(server, corsOrigins.includes('*') ? '*' : corsOrigins);
 
 // Replaces the Base44 scheduled functions for recalcPopularity / recalcTrending.
 cron.schedule('0 * * * *', () => {
