@@ -20,7 +20,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        value: https://ethiodo-frontend.onrender.com
+        value: https://ethiodo.com,https://www.ethiodo.com,https://ethiodo-frontend.onrender.com
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: ANTHROPIC_MODEL
