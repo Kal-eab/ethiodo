@@ -15,6 +15,7 @@ const agentsRouter = require('./routes/agents');
 const { recalcPopularity, recalcTrending } = require('./functions');
 
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 const corsOrigins = (process.env.CORS_ORIGIN || '*').split(',').map((o) => o.trim());
