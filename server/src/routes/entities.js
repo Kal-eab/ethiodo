@@ -27,9 +27,10 @@ function orderByFromSort(sort) {
 
 function whereFromConditions(conditions) {
   if (!conditions || Object.keys(conditions).length === 0) return {};
-  const AND = Object.entries(conditions).map(([key, value]) => ({
-    data: { path: [key], equals: value },
-  }));
+  const AND = Object.entries(conditions).map(([key, value]) => {
+    if (key === 'id') return { id: value };
+    return { data: { path: [key], equals: value } };
+  });
   return { AND };
 }
 
