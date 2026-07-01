@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String   @id @default(cuid())
+  email                  String   @unique
+  passwordHash           String
+  fullName               String?
+  role                   String   @default("user")
+  phone                  String?
+  region                 String?
+  city                   String?
+  specificAddress        String?
+  profileComplete        Boolean  @default(false)
+  notificationPermission String?
+  isVerified             Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+// Generic JSON-backed entities — mirrors the flexible schema Base44 used.
+// `data` holds all entity-specific fields; RLS is enforced in application code
+// (see server/src/entityConfig.js) rather than at the database layer.
+model CartItem {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CategoryConfig {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ContactRequest {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Creator {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CreatorProductLink {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CustomerReferral {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Favorite {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Notification {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Order {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ProductEvent {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ProductLike {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ProductShare {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ReferralLink {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Review {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model UserBehavior {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model UserNotification {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// AI review-insights chat conversations (server/src/routes/agents.js)
+model AgentConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  agentName String
+  messages  Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

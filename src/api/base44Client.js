@@ -1,14 +1,113 @@
-import { createClient } from '@base44/sdk';
-import { appParams } from '@/lib/app-params';
+// Drop-in replacement for the Base44-hosted SDK. Keeps the same `base44.*`
+// call shape (auth.*, entities.X.*, functions.invoke, integrations.Core.UploadFile,
+// agents.*) so the rest of the app didn't need to change file-by-file — only
+// the transport underneath changed, from Base44's platform to our own
+// Express/Postgres API (see /server).
+import { request, setToken, getToken, connectSocket, disconnectSocket, getSocket } from '@/lib/apiClient';
 
-const { appId, token, functionsVersion, appBaseUrl } = appParams;
+const ENTITY_NAMES = [
+  'CartItem',
+  'CategoryConfig',
+  'ContactRequest',
+  'Creator',
+  'CreatorProductLink',
+  'CustomerReferral',
+  'Favorite',
+  'Message',
+  'Notification',
+  'Order',
+  'Product',
+  'ProductEvent',
+  'ProductLike',
+  'ProductShare',
+  'ReferralLink',
+  'Review',
+  'UserBehavior',
+  'UserNotification',
+];
 
-//Create a client with authentication required
-export const base44 = createClient({
-  appId,
-  token,
-  functionsVersion,
-  serverUrl: '',
-  requiresAuth: false,
-  appBaseUrl
-});
+function makeEntityApi(name) {
+  return {
+    list: (sort, limit) => request(`/api/entities/${name}/query`, { method: 'POST', body: { sort, limit } }),
+    filter: (where, sort, limit) =>
+      request(`/api/entities/${name}/query`, { method: 'POST', body: { where, sort, limit } }),
+    create: (data) => request(`/api/entities/${name}`, { method: 'POST', body: data }),
+    update: (id, data) => request(`/api/entities/${name}/${id}`, { method: 'PUT', body: data }),
+    delete: (id) => request(`/api/entities/${name}/${id}`, { method: 'DELETE' }),
+    subscribe: (callback) => {
+      const socket = connectSocket();
+      const eventName = `entity:${name}`;
+      socket.on(eventName, callback);
+      return () => socket.off(eventName, callback);
+    },
+  };
+}
+
+const entities = {
+  User: {
+    list: (sort, limit) => request(`/api/users${limit ? `?limit=${limit}` : ''}`),
+  },
+};
+for (const name of ENTITY_NAMES) entities[name] = makeEntityApi(name);
+
+export const base44 = {
+  auth: {
+    isAuthenticated: () => !!getToken(),
+    me: () => request('/api/auth/me'),
+    updateMe: (patch) => request('/api/auth/me', { method: 'PATCH', body: patch }),
+    logout: () => {
+      setToken(null);
+      disconnectSocket();
+    },
+    redirectToLogin: (returnUrl) => {
+      const target = returnUrl || window.location.href;
+      window.location.href = `/login?redirect=${encodeURIComponent(target)}`;
+    },
+    // Not part of the Base44 SDK surface, but needed by the new Login/Register pages.
+    login: async (email, password) => {
+      const { token, user } = await request('/api/auth/login', { method: 'POST', body: { email, password } });
+      setToken(token);
+      return user;
+    },
+    register: async (email, password, full_name) => {
+      const { token, user } = await request('/api/auth/register', {
+        method: 'POST',
+        body: { email, password, full_name },
+      });
+      setToken(token);
+      return user;
+    },
+  },
+  entities,
+  functions: {
+    invoke: (name, params) => request(`/api/functions/${name}`, { method: 'POST', body: params || {} }),
+  },
+  integrations: {
+    Core: {
+      UploadFile: async ({ file }) => {
+        const form = new FormData();
+        form.append('file', file);
+        return request('/api/upload', { method: 'POST', body: form, isForm: true });
+      },
+    },
+  },
+  agents: {
+    createConversation: ({ agent_name }) =>
+      request(`/api/agents/${agent_name.replace(/_/g, '-')}/conversations`, { method: 'POST' }),
+    addMessage: (conversation, { role, content }) =>
+      request(`/api/agents/review-insights/conversations/${conversation.id}/messages`, {
+        method: 'POST',
+        body: { role, content },
+      }),
+    subscribeToConversation: (conversationId, callback) => {
+      const socket = connectSocket();
+      const handler = (event) => {
+        if (event?.data?.id === conversationId) callback({ messages: event.data.messages });
+      };
+      socket.on('entity:AgentConversation', handler);
+      return () => socket.off('entity:AgentConversation', handler);
+    },
+  },
+};
+
+export { getSocket };

@@ -37,6 +37,7 @@ import Terms from '@/pages/legal/Terms';
 import Profile from '@/pages/Profile';
 import Dashboard from '@/pages/Dashboard';
 import Register from '@/pages/Register';
+import Login from '@/pages/Login';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -58,6 +59,7 @@ const AnimatedRoutes = () => {
       <Route path="/profile" element={<Profile />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/refund" element={<RefundPolicy />} />
       <Route path="/legal/terms" element={<Terms />} />
