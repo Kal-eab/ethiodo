@@ -11,6 +11,7 @@ import Navbar from '@/components/store/Navbar';
 import MobileHeader from '@/components/store/MobileHeader';
 import { REGIONS, REGIONS_CITIES } from '@/lib/ethiopiaRegions';
 import { track } from '@/lib/track';
+import { playNotificationSound } from '@/lib/notificationSound';
 
 function getParams() {
   const p = new URLSearchParams(window.location.search);
@@ -325,6 +326,7 @@ export default function DirectPayment() {
       total_amount: total,
     }, product);
     setSubmitting(false);
+    playNotificationSound();
     setDone(true);
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
@@ -141,6 +141,31 @@ export default function Orders() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('pending');
   const queryClient = useQueryClient();
+  // Tracks the last known status per order/review id so a subscribe event
+  // that touches unrelated fields (e.g. reviewed_item_ids, featured) doesn't
+  // re-trigger a notification for a status that hasn't actually changed.
+  const lastOrderStatusRef = useRef({});
+  const lastReviewStatusRef = useRef({});
+
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ['my-orders', user?.email],
+    queryFn: () => base44.entities.Order.filter({ created_by: user.email }, '-created_date', 100),
+    enabled: !!user?.email,
+  });
+
+  const { data: myReviews = [] } = useQuery({
+    queryKey: ['my-reviews', user?.email],
+    queryFn: () => base44.entities.Review.filter({ reviewer_email: user.email }, '-created_date', 100),
+    enabled: !!user?.email,
+  });
+
+  useEffect(() => {
+    orders.forEach(o => { lastOrderStatusRef.current[o.id] = o.status; });
+  }, [orders]);
+
+  useEffect(() => {
+    myReviews.forEach(r => { lastReviewStatusRef.current[r.id] = r.status; });
+  }, [myReviews]);
 
   // Request notification permission and subscribe to order status changes
   useEffect(() => {
@@ -152,10 +177,16 @@ export default function Orders() {
     }
 
     // Subscribe to order updates
-    const unsubscribe = base44.entities.Order.subscribe((event) => {
+    const unsubscribeOrders = base44.entities.Order.subscribe((event) => {
       if (event.type !== 'update') return;
       const order = event.data;
       if (!order || order.customer_email !== user.email) return;
+
+      // Skip updates that don't actually change the status (e.g. an order
+      // update fired because a review on it was submitted/deleted).
+      const prevStatus = lastOrderStatusRef.current[order.id];
+      lastOrderStatusRef.current[order.id] = order.status;
+      if (prevStatus === order.status) return;
 
       const statusLabels = {
         confirmed: 'Your order has been confirmed! ✅',
@@ -180,14 +211,34 @@ export default function Orders() {
       }
     });
 
-    return () => unsubscribe();
-  }, [user, queryClient]);
+    // Subscribe to review moderation — notify the reviewer once their
+    // review is approved by an admin.
+    const unsubscribeReviews = base44.entities.Review.subscribe((event) => {
+      if (event.type !== 'update') return;
+      const review = event.data;
+      if (!review || review.reviewer_email !== user.email) return;
 
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['my-orders', user?.email],
-    queryFn: () => base44.entities.Order.filter({ created_by: user.email }, '-created_date', 100),
-    enabled: !!user?.email,
-  });
+      const prevStatus = lastReviewStatusRef.current[review.id];
+      lastReviewStatusRef.current[review.id] = review.status;
+      if (review.status !== 'approved' || prevStatus === 'approved') return;
+
+      queryClient.invalidateQueries({ queryKey: ['my-reviews', user.email] });
+
+      playNotificationSound();
+
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Ethiodo Review Update', {
+          body: 'Your review has been accepted by the admin! 🎉',
+          icon: 'https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/9143c5b71_Gemini_Generated_Image_gon5mugon5mugon5.png',
+        });
+      }
+    });
+
+    return () => {
+      unsubscribeOrders();
+      unsubscribeReviews();
+    };
+  }, [user, queryClient]);
 
   const refresh = useCallback(() =>
     queryClient.invalidateQueries({ queryKey: ['my-orders', user?.email] }),

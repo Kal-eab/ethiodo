@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
+import { playNotificationSound } from '@/lib/notificationSound';
 
 export default function Checkout() {
   const { user } = useAuth();
@@ -96,6 +97,7 @@ export default function Checkout() {
     }
     queryClient.invalidateQueries({ queryKey: ['cart'] });
     setSubmitting(false);
+    playNotificationSound();
     toast.success('Order placed successfully!');
     navigate('/orders');
   };

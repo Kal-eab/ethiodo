@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Check, X, Star, CheckCircle, Trash2, Pin } from 'lucide-react';
+import { Check, X, Star, CheckCircle, Trash2, Pin, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { createPageUrl } from '@/utils';
 
 function StarDisplay({ value }) {
   return (
@@ -28,8 +30,30 @@ export default function AdminReviews() {
       : base44.entities.Review.filter({ status: filter }, '-created_date', 200),
   });
 
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => base44.entities.Product.filter({}, '-created_date', 500),
+  });
+  const productMap = Object.fromEntries(products.map(p => [p.id, p]));
+
   const update = async (id, data, msg) => {
     await base44.entities.Review.update(id, data);
+
+    if (data.status === 'approved') {
+      const review = reviews.find(r => r.id === id);
+      if (review?.created_by_id) {
+        const product = productMap[review.product_id];
+        await base44.entities.UserNotification.create({
+          user_id: review.created_by_id,
+          title: 'Your review was approved! 🎉',
+          body: product ? `Your review for "${product.name}" is now live.` : 'Your review is now live.',
+          product_id: review.product_id,
+          product_image: product?.images?.[0] || null,
+          is_read: false,
+        }).catch(() => {});
+      }
+    }
+
     queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
     toast.success(msg);
   };
@@ -71,8 +95,25 @@ export default function AdminReviews() {
         </div>
       ) : (
         <div className="space-y-4">
-          {reviews.map(review => (
+          {reviews.map(review => {
+            const product = productMap[review.product_id];
+            return (
             <div key={review.id} className="bg-card border border-border p-5 space-y-3">
+              <Link
+                to={product ? createPageUrl(`product/${product.id}`) : '#'}
+                className="flex items-center gap-2 pb-3 border-b border-border w-fit max-w-full hover:opacity-80"
+              >
+                <div className="w-8 h-8 bg-secondary border border-border flex items-center justify-center overflow-hidden shrink-0">
+                  {product?.images?.[0] ? (
+                    <img src={product.images[0]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <Package className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
+                <span className="font-mono text-xs text-muted-foreground truncate">
+                  {product ? product.name : `Unknown product (${review.product_id})`}
+                </span>
+              </Link>
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 bg-secondary border border-border flex items-center justify-center text-sm font-bold">
@@ -137,7 +178,7 @@ export default function AdminReviews() {
                 </Button>
               </div>
             </div>
-          ))}
+          );})}
         </div>
       )}
     </div>
