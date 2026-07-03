@@ -133,6 +133,22 @@ router.delete('/:entity/:id', async (req, res) => {
     recomputeProductRating(existing.data.product_id).catch((err) => console.error('recomputeProductRating failed:', err));
   }
 
+  // Deleting a post-delivery review must free up the order item again —
+  // otherwise the buyer stays permanently stuck on "✓ Reviewed" with no
+  // review to show for it (see routes/reviews.js for reviewed_item_ids).
+  if (entity === 'Review' && existing.data.order_id && existing.data.order_item_id) {
+    prisma.order.findUnique({ where: { id: existing.data.order_id } }).then((order) => {
+      if (!order) return;
+      const reviewedIds = (order.data.reviewed_item_ids || []).filter((id) => id !== existing.data.order_item_id);
+      return prisma.order.update({
+        where: { id: order.id },
+        data: { data: { ...order.data, reviewed_item_ids: reviewedIds } },
+      });
+    }).then((updatedOrder) => {
+      if (updatedOrder) emitEntityEvent('Order', 'update', serialize(updatedOrder));
+    }).catch((err) => console.error('Failed to unlock order item after review delete:', err));
+  }
+
   res.status(204).end();
 });
 
