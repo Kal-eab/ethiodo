@@ -12,6 +12,7 @@ const usersRouter = require('./routes/users');
 const { router: entitiesRouter } = require('./routes/entities');
 const functionsRouter = require('./routes/functions');
 const agentsRouter = require('./routes/agents');
+const reviewsRouter = require('./routes/reviews');
 const { recalcPopularity, recalcTrending } = require('./functions');
 
 const app = express();
@@ -31,6 +32,7 @@ app.use('/api/entities', entitiesRouter);
 app.use('/api/functions', functionsRouter);
 app.use('/api/agents', agentsRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/reviews', reviewsRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);

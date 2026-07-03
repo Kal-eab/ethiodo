@@ -21,7 +21,9 @@ router.post('/', requireAuth, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const ext = path.extname(req.file.originalname).slice(0, 10);
-  const key = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
+  const folder = (req.body.folder || '').replace(/[^a-zA-Z0-9/_-]/g, '').replace(/^\/+|\/+$/g, '');
+  const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
+  const key = folder ? `${folder}/${filename}` : filename;
 
   await s3.send(new PutObjectCommand({
     Bucket: BUCKET,

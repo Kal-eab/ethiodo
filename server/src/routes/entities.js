@@ -2,7 +2,7 @@ const express = require('express');
 const { prisma } = require('../db');
 const { entityNames, canCreate, checkRecord, readWhereClause } = require('../entityConfig');
 const { emitEntityEvent } = require('../realtime');
-const { notifyNewProduct } = require('../functions');
+const { notifyNewProduct, recomputeProductRating } = require('../functions');
 
 const router = express.Router();
 
@@ -108,6 +108,14 @@ router.put('/:entity/:id', async (req, res) => {
     notifyNewProduct(serialized).catch((err) => console.error('notifyNewProduct failed:', err));
   }
 
+  // Keep the product's denormalized rating in sync whenever a review is
+  // approved/unapproved by an admin (see routes/reviews.js for creation).
+  if (entity === 'Review' && existing.data.status !== record.data.status) {
+    if (existing.data.status === 'approved' || record.data.status === 'approved') {
+      recomputeProductRating(record.data.product_id).catch((err) => console.error('recomputeProductRating failed:', err));
+    }
+  }
+
   res.json(serialized);
 });
 
@@ -120,6 +128,11 @@ router.delete('/:entity/:id', async (req, res) => {
   }
   await model.delete({ where: { id: req.params.id } });
   emitEntityEvent(entity, 'delete', serialize(existing));
+
+  if (entity === 'Review' && existing.data.status === 'approved') {
+    recomputeProductRating(existing.data.product_id).catch((err) => console.error('recomputeProductRating failed:', err));
+  }
+
   res.status(204).end();
 });
 

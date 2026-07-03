@@ -146,6 +146,27 @@ async function notifyNewProduct(product) {
   return { notified: users.length };
 }
 
+// Recomputes a product's denormalized rating summary from its approved
+// reviews. Called whenever a Review's moderation status changes to/from
+// 'approved' (see the Review hooks in routes/entities.js).
+async function recomputeProductRating(productId) {
+  if (!productId) return;
+  const reviews = await prisma.review.findMany({
+    where: { data: { path: ['product_id'], equals: productId } },
+  });
+  const approved = reviews.filter((r) => r.data.status === 'approved');
+  const reviewCount = approved.length;
+  const averageRating = reviewCount
+    ? Math.round((approved.reduce((sum, r) => sum + (r.data.rating || 0), 0) / reviewCount) * 10) / 10
+    : 0;
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+  if (!product) return;
+  return prisma.product.update({
+    where: { id: productId },
+    data: { data: { ...product.data, averageRating, reviewCount } },
+  });
+}
+
 // Replaces base44/functions/getConversionRates — requires your own Google
 // Analytics 4 OAuth credentials. See MIGRATION.md for setup.
 async function getConversionRates() {
@@ -288,4 +309,11 @@ async function getSlackChannels() {
   return { channels: allChannels.map((c) => ({ id: c.id, name: c.name })) };
 }
 
-module.exports = { recalcPopularity, recalcTrending, notifyNewProduct, getConversionRates, getSlackChannels };
+module.exports = {
+  recalcPopularity,
+  recalcTrending,
+  notifyNewProduct,
+  recomputeProductRating,
+  getConversionRates,
+  getSlackChannels,
+};

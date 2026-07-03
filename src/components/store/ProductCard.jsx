@@ -93,10 +93,13 @@ export default function ProductCard({ product, isFavorite, favoriteId, badge = n
               {product.stock > 0 && product.stock <= 5 && (
                 <span className="font-mono text-[9px] text-orange-400">Only {product.stock} left</span>
               )}
-              {product.rating > 0 && (
+              {(product.reviewCount > 0 || product.rating > 0) && (
                 <div className="flex items-center gap-0.5 text-muted-foreground">
                   <Star className="w-2.5 h-2.5 fill-primary text-primary" />
-                  <span className="font-mono text-[10px]">{product.rating?.toFixed(1)}</span>
+                  <span className="font-mono text-[10px]">
+                    {(product.reviewCount > 0 ? product.averageRating : product.rating)?.toFixed(1)}
+                    {product.reviewCount > 0 && ` (${product.reviewCount})`}
+                  </span>
                 </div>
               )}
             </div>

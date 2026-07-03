@@ -84,12 +84,19 @@ export const base44 = {
   },
   integrations: {
     Core: {
-      UploadFile: async ({ file }) => {
+      UploadFile: async ({ file, folder }) => {
         const form = new FormData();
         form.append('file', file);
+        if (folder) form.append('folder', folder);
         return request('/api/upload', { method: 'POST', body: form, isForm: true });
       },
     },
+  },
+  reviews: {
+    // Dedicated post-delivery review endpoint (server/src/routes/reviews.js) —
+    // enforces one-review-per-order-item, delivered-only, buyer-only rules
+    // that don't fit the generic entities CRUD/RLS model.
+    submit: (payload) => request('/api/reviews', { method: 'POST', body: payload }),
   },
   agents: {
     createConversation: ({ agent_name }) =>

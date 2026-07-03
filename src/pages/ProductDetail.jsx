@@ -281,14 +281,17 @@ export default function ProductDetail() {
               <div>
                 <span className="font-mono text-xs text-muted-foreground uppercase tracking-[0.2em]">{product.category}</span>
                 <h1 className="text-2xl sm:text-3xl font-bold mt-2">{product.name}</h1>
-                {product.rating > 0 && (
+                {(product.reviewCount > 0 || product.rating > 0) && (
                   <div className="flex items-center gap-2 mt-3">
                     <div className="flex gap-0.5">
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className={`w-4 h-4 ${i < Math.round(product.rating) ? 'fill-primary text-primary' : 'text-border'}`} />
+                        <Star key={i} className={`w-4 h-4 ${i < Math.round(product.reviewCount > 0 ? product.averageRating : product.rating) ? 'fill-primary text-primary' : 'text-border'}`} />
                       ))}
                     </div>
-                    <span className="font-mono text-sm text-muted-foreground">{product.rating?.toFixed(1)}</span>
+                    <span className="font-mono text-sm text-muted-foreground">
+                      {(product.reviewCount > 0 ? product.averageRating : product.rating)?.toFixed(1)}
+                      {product.reviewCount > 0 && ` (${product.reviewCount})`}
+                    </span>
                   </div>
                 )}
               </div>

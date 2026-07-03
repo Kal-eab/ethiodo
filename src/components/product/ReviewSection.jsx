@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -8,8 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { maskName } from '@/lib/maskName';
 
-function StarRating({ value, onChange, size = 'md' }) {
+export function StarRating({ value, onChange, size = 'md' }) {
   const [hover, setHover] = useState(0);
   const sz = size === 'lg' ? 'w-8 h-8' : 'w-5 h-5';
   return (
@@ -31,16 +33,18 @@ function StarRating({ value, onChange, size = 'md' }) {
 }
 
 function ReviewCard({ review }) {
+  const [lightbox, setLightbox] = useState(null);
+  const displayName = maskName(review.reviewer_name);
   return (
     <div className="bg-card border border-border p-5 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
-            {(review.reviewer_name || 'A')[0].toUpperCase()}
+            {displayName[0].toUpperCase()}
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-medium text-sm">{review.reviewer_name || 'Anonymous'}</p>
+              <p className="font-medium text-sm">{displayName}</p>
               {review.verified_buyer && (
                 <span className="inline-flex items-center gap-1 font-mono text-[10px] text-accent border border-accent/30 px-1.5 py-0.5 bg-accent/5">
                   <CheckCircle className="w-3 h-3" /> Verified Buyer
@@ -65,9 +69,9 @@ function ReviewCard({ review }) {
       {review.photos?.length > 0 && (
         <div className="flex gap-2 flex-wrap">
           {review.photos.map((url, i) => (
-            <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-              <img src={url} alt={`review-photo-${i}`} className="h-20 w-20 object-cover border border-border hover:opacity-80 transition-opacity" />
-            </a>
+            <button key={i} type="button" onClick={() => setLightbox(url)} className="h-20 w-20 border border-border overflow-hidden">
+              <img src={url} alt={`review-photo-${i}`} className="h-full w-full object-cover hover:opacity-80 transition-opacity" />
+            </button>
           ))}
         </div>
       )}
@@ -78,6 +82,16 @@ function ReviewCard({ review }) {
             <video key={i} src={url} controls className="h-32 w-auto border border-border rounded" />
           ))}
         </div>
+      )}
+
+      {lightbox && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
+          <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 text-white/80 hover:text-white">
+            <X className="w-6 h-6" />
+          </button>
+          <img src={lightbox} alt="" className="max-w-full max-h-full object-contain" onClick={(e) => e.stopPropagation()} />
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -119,38 +133,42 @@ function ReviewForm({ productId, orderId, onClose }) {
     e.preventDefault();
     if (!form.body.trim()) return;
     setSubmitting(true);
+    try {
+      const uploadedPhotos = [];
+      for (const file of photos) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file, folder: 'reviews' });
+        uploadedPhotos.push(file_url);
+      }
 
-    const uploadedPhotos = [];
-    for (const file of photos) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      uploadedPhotos.push(file_url);
+      const uploadedVideos = [];
+      for (const file of videos) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file, folder: 'reviews' });
+        uploadedVideos.push(file_url);
+      }
+
+      await base44.entities.Review.create({
+        product_id: productId,
+        order_id: orderId || '',
+        rating: form.rating,
+        title: form.title.trim(),
+        body: form.body.trim(),
+        photos: uploadedPhotos,
+        videos: uploadedVideos,
+        reviewer_name: user?.full_name || user?.email || 'Anonymous',
+        reviewer_email: user?.email || '',
+        verified_buyer: !!orderId,
+        status: 'pending',
+        featured: false,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
+      toast.success('Review submitted! It will appear after moderation.');
+      onClose();
+    } catch (err) {
+      toast.error(err.data?.error || err.message || 'Failed to submit review');
+    } finally {
+      setSubmitting(false);
     }
-
-    const uploadedVideos = [];
-    for (const file of videos) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      uploadedVideos.push(file_url);
-    }
-
-    await base44.entities.Review.create({
-      product_id: productId,
-      order_id: orderId || '',
-      rating: form.rating,
-      title: form.title.trim(),
-      body: form.body.trim(),
-      photos: uploadedPhotos,
-      videos: uploadedVideos,
-      reviewer_name: user?.full_name || user?.email || 'Anonymous',
-      reviewer_email: user?.email || '',
-      verified_buyer: !!orderId,
-      status: 'pending',
-      featured: false,
-    });
-
-    queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
-    toast.success('Review submitted! It will appear after moderation.');
-    setSubmitting(false);
-    onClose();
   };
 
   return (
@@ -261,7 +279,7 @@ export default function ReviewSection({ productId, userOrders = [] }) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold">Customer Reviews</h2>
+          <h2 className="text-xl font-bold">Customer Reviews {reviews.length > 0 && `(${reviews.length})`}</h2>
           {reviews.length > 0 && (
             <div className="flex items-center gap-3 mt-2">
               <StarRating value={Math.round(avgRating)} />
