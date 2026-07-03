@@ -29,6 +29,7 @@ function whereFromConditions(conditions) {
   if (!conditions || Object.keys(conditions).length === 0) return {};
   const AND = Object.entries(conditions).map(([key, value]) => {
     if (key === 'id') return { id: value };
+    if (key === 'created_by') return { createdByEmail: value };
     return { data: { path: [key], equals: value } };
   });
   return { AND };
