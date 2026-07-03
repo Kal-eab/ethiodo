@@ -8,6 +8,7 @@ import Navbar from '@/components/store/Navbar';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
 import ReviewSubmitModal from '@/components/product/ReviewSubmitModal';
+import { playNotificationSound } from '@/lib/notificationSound';
 
 const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'reviewed'];
 
@@ -167,20 +168,8 @@ export default function Orders() {
       // Refresh orders list
       queryClient.invalidateQueries({ queryKey: ['my-orders', user.email] });
 
-      // Play a subtle notification sound using Web Audio API
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.4);
-      } catch (_) {}
+      // Play a subtle notification sound
+      playNotificationSound();
 
       // Browser notification
       if ('Notification' in window && Notification.permission === 'granted') {

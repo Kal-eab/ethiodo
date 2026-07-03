@@ -1,14 +1,9 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useAuth } from '@/lib/AuthContext';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, CheckCircle, Upload, X, Loader2, Image as ImageIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
+import { Star, CheckCircle, X } from 'lucide-react';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
 import { maskName } from '@/lib/maskName';
 
 export function StarRating({ value, onChange, size = 'md' }) {
@@ -97,160 +92,14 @@ function ReviewCard({ review }) {
   );
 }
 
-function ReviewForm({ productId, orderId, onClose }) {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const [form, setForm] = useState({ rating: 5, title: '', body: '' });
-  const [photos, setPhotos] = useState([]);
-  const [photoPreviews, setPhotoPreviews] = useState([]);
-  const [videos, setVideos] = useState([]);
-  const [videoPreviews, setVideoPreviews] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
-
-  const handlePhotoAdd = (e) => {
-    const files = Array.from(e.target.files);
-    setPhotos(p => [...p, ...files]);
-    setPhotoPreviews(p => [...p, ...files.map(f => URL.createObjectURL(f))]);
-  };
-
-  const removePhoto = (i) => {
-    setPhotos(p => p.filter((_, idx) => idx !== i));
-    setPhotoPreviews(p => p.filter((_, idx) => idx !== i));
-  };
-
-  const handleVideoAdd = (e) => {
-    const files = Array.from(e.target.files);
-    setVideos(v => [...v, ...files]);
-    setVideoPreviews(v => [...v, ...files.map(f => URL.createObjectURL(f))]);
-  };
-
-  const removeVideo = (i) => {
-    setVideos(v => v.filter((_, idx) => idx !== i));
-    setVideoPreviews(v => v.filter((_, idx) => idx !== i));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.body.trim()) return;
-    setSubmitting(true);
-    try {
-      const uploadedPhotos = [];
-      for (const file of photos) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file, folder: 'reviews' });
-        uploadedPhotos.push(file_url);
-      }
-
-      const uploadedVideos = [];
-      for (const file of videos) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file, folder: 'reviews' });
-        uploadedVideos.push(file_url);
-      }
-
-      await base44.entities.Review.create({
-        product_id: productId,
-        order_id: orderId || '',
-        rating: form.rating,
-        title: form.title.trim(),
-        body: form.body.trim(),
-        photos: uploadedPhotos,
-        videos: uploadedVideos,
-        reviewer_name: user?.full_name || user?.email || 'Anonymous',
-        reviewer_email: user?.email || '',
-        verified_buyer: !!orderId,
-        status: 'pending',
-        featured: false,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
-      toast.success('Review submitted! It will appear after moderation.');
-      onClose();
-    } catch (err) {
-      toast.error(err.data?.error || err.message || 'Failed to submit review');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="bg-card border border-border p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <h3 className="font-bold text-lg">Write a Review</h3>
-        <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div>
-        <label className="font-mono text-xs text-muted-foreground uppercase block mb-2">Your Rating</label>
-        <StarRating value={form.rating} onChange={r => setForm({ ...form, rating: r })} size="lg" />
-      </div>
-
-      <div>
-        <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">Review Title (optional)</label>
-        <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Sum up your experience..." className="bg-secondary border-border h-11" />
-      </div>
-
-      <div>
-        <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">Your Review *</label>
-        <Textarea value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} placeholder="Tell others what you think..." rows={4} required className="bg-secondary border-border resize-none" />
-      </div>
-
-      {/* Photos */}
-      <div>
-        <label className="font-mono text-xs text-muted-foreground uppercase block mb-2">Add Photos (optional)</label>
-        <div className="flex gap-2 flex-wrap mb-2">
-          {photoPreviews.map((url, i) => (
-            <div key={i} className="relative">
-              <img src={url} alt="" className="w-16 h-16 object-cover border border-border" />
-              <button type="button" onClick={() => removePhoto(i)} className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5"><X className="w-3 h-3" /></button>
-            </div>
-          ))}
-          <label className="w-16 h-16 border border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-            <input type="file" accept="image/*" multiple onChange={handlePhotoAdd} className="hidden" />
-            <ImageIcon className="w-4 h-4 text-muted-foreground" />
-          </label>
-        </div>
-      </div>
-
-      {/* Videos */}
-      <div>
-        <label className="font-mono text-xs text-muted-foreground uppercase block mb-2">Add Videos (optional)</label>
-        <div className="flex gap-2 flex-wrap mb-2">
-          {videoPreviews.map((url, i) => (
-            <div key={i} className="relative">
-              <video src={url} className="w-20 h-16 object-cover border border-border" />
-              <button type="button" onClick={() => removeVideo(i)} className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5"><X className="w-3 h-3" /></button>
-            </div>
-          ))}
-          <label className="w-20 h-16 border border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-            <input type="file" accept="video/*" multiple onChange={handleVideoAdd} className="hidden" />
-            <Upload className="w-4 h-4 text-muted-foreground" />
-          </label>
-        </div>
-        <p className="font-mono text-[10px] text-muted-foreground">Short videos only (up to 50MB)</p>
-      </div>
-
-      <Button type="submit" disabled={submitting || !form.body.trim()} className="w-full h-11 bg-primary text-primary-foreground font-mono hover:bg-primary/90">
-        {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Uploading & Submitting...</> : 'Submit Review'}
-      </Button>
-      {orderId && <p className="text-center font-mono text-[10px] text-accent">✓ You'll receive a Verified Buyer badge</p>}
-    </form>
-  );
-}
-
 const SORT_OPTIONS = [
   { value: 'latest', label: 'Latest' },
   { value: 'highest', label: 'Highest Rated' },
   { value: 'media', label: 'With Photos/Videos' },
 ];
 
-export default function ReviewSection({ productId, userOrders = [] }) {
-  const [showForm, setShowForm] = useState(false);
+export default function ReviewSection({ productId }) {
   const [sort, setSort] = useState('latest');
-
-  const verifiedOrderId = userOrders.find(o =>
-    o.items?.some(i => i.product_id === productId) && o.status === 'delivered'
-  )?.id;
 
   const { data: reviews = [] } = useQuery({
     queryKey: ['reviews', productId],
@@ -277,26 +126,16 @@ export default function ReviewSection({ productId, userOrders = [] }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold">Customer Reviews {reviews.length > 0 && `(${reviews.length})`}</h2>
-          {reviews.length > 0 && (
-            <div className="flex items-center gap-3 mt-2">
-              <StarRating value={Math.round(avgRating)} />
-              <span className="font-mono text-sm text-muted-foreground">{avgRating.toFixed(1)} / 5 • {reviews.length} review{reviews.length !== 1 ? 's' : ''}</span>
-              {withMedia > 0 && <span className="font-mono text-xs text-muted-foreground">• {withMedia} with media</span>}
-            </div>
-          )}
-        </div>
-        {!showForm && (
-          <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 font-mono text-sm">
-            Write a Review
-          </Button>
+      <div>
+        <h2 className="text-xl font-bold">Customer Reviews {reviews.length > 0 && `(${reviews.length})`}</h2>
+        {reviews.length > 0 && (
+          <div className="flex items-center gap-3 mt-2">
+            <StarRating value={Math.round(avgRating)} />
+            <span className="font-mono text-sm text-muted-foreground">{avgRating.toFixed(1)} / 5 • {reviews.length} review{reviews.length !== 1 ? 's' : ''}</span>
+            {withMedia > 0 && <span className="font-mono text-xs text-muted-foreground">• {withMedia} with media</span>}
+          </div>
         )}
       </div>
-
-      {/* Review form */}
-      {showForm && <ReviewForm productId={productId} orderId={verifiedOrderId} onClose={() => setShowForm(false)} />}
 
       {/* Sort */}
       {reviews.length > 1 && (

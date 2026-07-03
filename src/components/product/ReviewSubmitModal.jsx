@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Star, Upload, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { StarRating } from './ReviewSection';
+import { playNotificationSound } from '@/lib/notificationSound';
 
 const MIN_CHARS = 10;
 const MAX_PHOTOS = 4;
@@ -60,6 +61,7 @@ export default function ReviewSubmitModal({ item, order, onClose, onSubmitted })
 
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       queryClient.invalidateQueries({ queryKey: ['reviews', item.product_id] });
+      playNotificationSound();
       toast.success('Review submitted! It will appear after moderation.');
       onSubmitted?.();
     } catch (err) {

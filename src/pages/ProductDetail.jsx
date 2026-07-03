@@ -88,11 +88,6 @@ export default function ProductDetail() {
     queryFn: () => base44.entities.Favorite.list(),
   });
 
-  const { data: userOrders = [] } = useQuery({
-    queryKey: ['orders'],
-    queryFn: () => base44.entities.Order.list('-created_date', 50),
-  });
-
   // Track view when product loads
   useEffect(() => {
     if (!product) return;
@@ -405,7 +400,7 @@ export default function ProductDetail() {
 
           {/* Reviews & Related */}
           <div className="mt-16 space-y-16">
-            <ReviewSection productId={productId} userOrders={userOrders} />
+            <ReviewSection productId={productId} />
             <RelatedProducts product={product} favorites={favMap} />
           </div>
         </div>
