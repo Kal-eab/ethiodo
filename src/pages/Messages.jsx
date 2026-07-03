@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Send, Image as ImageIcon, X, Loader2, MessageSquare } from 'lucide-react';
+import { Send, Image as ImageIcon, X, Loader2, MessageSquare, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import Navbar from '@/components/store/Navbar';
@@ -191,6 +192,9 @@ function ChatUI({ user, conversationId }) {
     <div className="bg-background flex flex-col" style={{ minHeight: '100dvh' }}>
       {/* Chat header */}
       <div className="flex-shrink-0 border-b border-border px-4 py-3 flex items-center gap-3 bg-card/50 backdrop-blur-sm" style={{ paddingTop: 'var(--navbar-height, 56px)' }}>
+        <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
         <div className="w-9 h-9 bg-primary/10 border border-primary/30 rounded-full flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
           S
         </div>
