@@ -2,33 +2,35 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
+const { PutObjectCommand } = require('@aws-sdk/client-s3');
 const { requireAuth } = require('../auth');
+const { s3, BUCKET, PUBLIC_URL } = require('../lib/s3');
 
 const router = express.Router();
 
-const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads');
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).slice(0, 10);
-    cb(null, `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
 });
 
 // Mirrors base44.integrations.Core.UploadFile({ file }) -> { file_url }.
-// Swap this handler for an S3-compatible client (see MIGRATION.md) once you
-// outgrow local disk storage on Render.
-router.post('/', requireAuth, upload.single('file'), (req, res) => {
+// Stores files in an S3-compatible bucket (Cloudflare R2 / AWS S3 / Backblaze
+// B2) instead of local disk, since Render's free/standard web services have
+// an ephemeral filesystem that gets wiped on every deploy or restart.
+router.post('/', requireAuth, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  const publicBaseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
-  const file_url = `${publicBaseUrl}/uploads/${req.file.filename}`;
-  res.status(201).json({ file_url });
+
+  const ext = path.extname(req.file.originalname).slice(0, 10);
+  const key = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
+
+  await s3.send(new PutObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
+    Body: req.file.buffer,
+    ContentType: req.file.mimetype,
+  }));
+
+  res.status(201).json({ file_url: `${PUBLIC_URL}/${key}` });
 });
 
-module.exports = { router, UPLOAD_DIR };
+module.exports = { router };

@@ -6,7 +6,7 @@ const cron = require('node-cron');
 
 const { attachUser } = require('./auth');
 const { initRealtime } = require('./realtime');
-const { UPLOAD_DIR, router: uploadRouter } = require('./routes/upload');
+const { router: uploadRouter } = require('./routes/upload');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const { router: entitiesRouter } = require('./routes/entities');
@@ -22,7 +22,6 @@ const corsOrigins = (process.env.CORS_ORIGIN || '*').split(',').map((o) => o.tri
 app.use(cors({ origin: corsOrigins.includes('*') ? '*' : corsOrigins, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
 app.use(attachUser);
-app.use('/uploads', express.static(UPLOAD_DIR));
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
