@@ -159,6 +159,41 @@ export function getTopLevelCategories() {
   return _tree.map(c => c.value);
 }
 
+/**
+ * The set of category values that count as a match when filtering by `categoryValue`.
+ * - `'all'` / empty → `null` (means "match everything").
+ * - A top-level category → itself + all of its subcategory values.
+ * - A subcategory → itself only.
+ * Values are lowercased so callers can compare case-insensitively.
+ * @param {string} categoryValue
+ * @returns {Set<string> | null}
+ */
+export function getMatchingCategoryValues(categoryValue) {
+  if (!categoryValue || categoryValue === 'all') return null;
+  const target = String(categoryValue).toLowerCase();
+  const values = new Set([target]);
+  const cat = _tree.find(c => c.value.toLowerCase() === target);
+  if (cat) {
+    for (const s of cat.subcategories) values.add(s.value.toLowerCase());
+  }
+  return values;
+}
+
+/**
+ * Canonical "does this product belong to the selected category filter?" check.
+ * Centralizes the parent→subcategory nesting + case-insensitive rules used by
+ * the store filter, related products, etc. Prefer precomputing the match set with
+ * getMatchingCategoryValues() when filtering many products in a loop.
+ * @param {{ category?: string } | null | undefined} product
+ * @param {string} categoryValue
+ */
+export function productMatchesCategory(product, categoryValue) {
+  const match = getMatchingCategoryValues(categoryValue);
+  if (!match) return true;              // 'all' → everything matches
+  if (!product) return false;
+  return match.has(String(product.category || '').toLowerCase());
+}
+
 /** React hook: returns the current tree and triggers re-render on changes. Re-fetches from backend on mount. */
 export function useCategoryTree() {
   const [tree, setTree] = useState(_tree);

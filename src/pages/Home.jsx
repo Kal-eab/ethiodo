@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -15,7 +15,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
 import { track } from '@/lib/track';
 import { trackCategoryFilter } from '@/lib/analytics';
-import { getSubcategories, getCategoryTreeDynamic, useCategoryTree } from '@/lib/categories';
+import { getCategoryTreeDynamic, getMatchingCategoryValues, useCategoryTree } from '@/lib/categories';
 
 export default function Home() {
   const [searchInput, setSearchInput] = useState('');
@@ -27,7 +27,7 @@ export default function Home() {
   const navigate = useNavigate();
 
   // Subscribe to backend category tree changes so the filter re-renders
-  useCategoryTree();
+  const categoryTree = useCategoryTree();
 
   const { data: products = [], isLoading, error: productsError } = useQuery({
     queryKey: ['products'],
@@ -83,16 +83,20 @@ export default function Home() {
 
   const allSearchable = [...products, ...draftProducts];
   const searchResults = searchProducts(allSearchable, search);
-  
+
+  // Precompute the set of category values that satisfy the active filter once per
+  // (category, tree) change instead of recomputing for every product in the loop.
+  // `null` means "match everything" (the 'all' filter). Recomputed when the backend
+  // category tree updates so newly added categories filter correctly.
+  const matchSet = useMemo(
+    () => getMatchingCategoryValues(category),
+    [category, categoryTree]
+  );
+
   /** @param {any} p */
   const categoryMatches = (p) => {
-    if (!p) return false;
-    if (category === 'all') return true;
-    const pCat = (p.category || '').toLowerCase();
-    const targetCat = category.toLowerCase();
-    if (pCat === targetCat) return true;
-    const subs = getSubcategories(category);
-    return subs.some(s => s.value && s.value.toLowerCase() === pCat);
+    if (!matchSet) return true;
+    return !!p && matchSet.has(String(p.category || '').toLowerCase());
   };
 
   const filtered = searchResults.filter(categoryMatches);

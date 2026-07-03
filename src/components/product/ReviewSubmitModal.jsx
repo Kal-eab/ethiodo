@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
-import { Star, Upload, X, Loader2 } from 'lucide-react';
+import { Star, Upload, X, Loader2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { StarRating } from './ReviewSection';
 import { playNotificationSound } from '@/lib/notificationSound';
+import { useAuth } from '@/lib/AuthContext';
 
 const MIN_CHARS = 10;
 const MAX_PHOTOS = 4;
@@ -15,12 +16,14 @@ const MAX_PHOTOS = 4;
 // which enforces delivered-only / buyer-only / one-per-item rules server-side.
 export default function ReviewSubmitModal({ item, order, onClose, onSubmitted }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [rating, setRating] = useState(5);
   const [body, setBody] = useState('');
   const [photos, setPhotos] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const bodyValid = body.trim().length >= MIN_CHARS;
   const photosValid = photos.length >= 1;
@@ -59,22 +62,38 @@ export default function ReviewSubmitModal({ item, order, onClose, onSubmitted })
         photos: urls,
       });
 
-      if (order.customer_email) {
-        await base44.entities.Message.create({
-          conversation_id: order.customer_email,
-          user_email: order.customer_email,
-          user_name: order.customer_name || order.customer_email,
-          content: `Thank you for your review! We're happy to serve you — see you next time! 🎉`,
-          sender: 'admin',
-          is_read: false,
-        });
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+      // The review is in — celebrate immediately. Anything after this point is
+      // best-effort and must NOT be able to suppress the thank-you screen.
+      // NB: do NOT refetch ['my-orders'] here — once the order becomes fully
+      // reviewed it drops out of the "delivered" tab, which unmounts this very
+      // modal (and its thank-you screen). The refetch runs on dismiss instead,
+      // via onSubmitted → onReviewed in Orders.jsx.
       queryClient.invalidateQueries({ queryKey: ['reviews', item.product_id] });
       playNotificationSound();
-      toast.success('Review submitted! It will appear after moderation.');
-      onSubmitted?.();
+      setSubmitted(true);
+
+      // Drop a thank-you into the buyer's support chat. The Messages page keys
+      // the chat on the logged-in user's email (conversation_id === user.email)
+      // and the Message read RLS requires user_email === user.email — so we use
+      // the authenticated user's email, NOT order.customer_email (free-text
+      // contact) or order.created_by (may be blank on imported orders).
+      const buyerEmail = user?.email || order.created_by || order.customer_email;
+      if (buyerEmail) {
+        try {
+          await base44.entities.Message.create({
+            conversation_id: buyerEmail,
+            user_email: buyerEmail,
+            user_name: user?.full_name || order.customer_name || buyerEmail,
+            content: `Thank you so much for your review! 💚 It means the world to us. We're truly happy to serve you — see you next time! 🎉`,
+            sender: 'admin',
+            is_read: false,
+          });
+          queryClient.invalidateQueries({ queryKey: ['my-messages', buyerEmail] });
+          queryClient.invalidateQueries({ queryKey: ['my-messages-check', buyerEmail] });
+        } catch (msgErr) {
+          console.error('Failed to send review thank-you message:', msgErr);
+        }
+      }
     } catch (err) {
       toast.error(err.data?.error || err.message || 'Failed to submit review');
     } finally {
@@ -82,6 +101,82 @@ export default function ReviewSubmitModal({ item, order, onClose, onSubmitted })
       setSubmitting(false);
     }
   };
+
+  const CONFETTI = ['bg-primary', 'bg-accent', 'bg-primary', 'bg-accent', 'bg-primary', 'bg-accent'];
+
+  if (submitted) {
+    const thankYou = (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => onSubmitted?.()}>
+        <div
+          className="relative bg-card border border-border w-full max-w-md overflow-hidden animate-thankyou-pop"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Confetti */}
+          <div className="pointer-events-none absolute inset-x-0 top-16 flex justify-center gap-3">
+            {CONFETTI.map((c, i) => (
+              <span
+                key={i}
+                className={`w-2 h-3 ${c} animate-thankyou-confetti`}
+                style={{ animationDelay: `${0.15 + i * 0.06}s` }}
+              />
+            ))}
+          </div>
+
+          <div className="px-8 py-10 flex flex-col items-center text-center">
+            {/* Animated check badge */}
+            <div className="relative mb-6">
+              <span className="absolute inset-0 rounded-full border-2 border-primary animate-thankyou-ring" />
+              <span className="absolute inset-0 rounded-full border-2 border-primary animate-thankyou-ring" style={{ animationDelay: '0.25s' }} />
+              <div className="relative w-20 h-20 rounded-full bg-primary flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="none" className="w-11 h-11">
+                  <path
+                    d="M4 12.5l5 5L20 6.5"
+                    stroke="hsl(var(--primary-foreground))"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="animate-thankyou-check"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            <div className="flex gap-1 mb-4 animate-thankyou-rise" style={{ animationDelay: '0.35s' }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className="w-5 h-5 fill-primary text-primary" />
+              ))}
+            </div>
+
+            <h2 className="text-2xl font-black mb-3 animate-thankyou-rise" style={{ animationDelay: '0.4s' }}>
+              Thank You 💚
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs animate-thankyou-rise" style={{ animationDelay: '0.5s' }}>
+              Your words mean the world to us. From our whole team — thank you for
+              trusting us and taking the time to share your experience.
+              <span className="block mt-2 text-foreground font-medium">
+                We're truly happy to serve you, and we can't wait to see you again. 🎉
+              </span>
+            </p>
+
+            <p className="font-mono text-[10px] text-muted-foreground uppercase mt-6 animate-thankyou-rise" style={{ animationDelay: '0.6s' }}>
+              Your review will appear after moderation
+            </p>
+
+            <button
+              type="button"
+              onClick={() => onSubmitted?.()}
+              className="mt-6 w-full h-11 bg-primary text-primary-foreground font-mono font-bold uppercase hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors animate-thankyou-rise"
+              style={{ animationDelay: '0.7s' }}
+            >
+              <Check className="w-4 h-4" />
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+    return createPortal(thankYou, document.body);
+  }
 
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4" onClick={onClose}>

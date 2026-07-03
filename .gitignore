@@ -29,3 +29,6 @@ dist-ssr
 
 .env
 .vite
+
+# Files exceeding GitHub 100MB limit — keep locally, not in git
+Products photo/shoes/IMG_4213.MOV

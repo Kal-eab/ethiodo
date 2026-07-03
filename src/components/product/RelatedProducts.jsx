@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import ProductCard from '@/components/store/ProductCard';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getParentCategory, getMatchingCategoryValues } from '@/lib/categories';
 
 export default function RelatedProducts({ product, favorites = {} }) {
   const { data: products = [] } = useQuery({
@@ -11,8 +12,12 @@ export default function RelatedProducts({ product, favorites = {} }) {
     queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
   });
 
+  // Related = other products in the same top-level group (a subcategory falls back to
+  // its parent so siblings show too). Case-insensitive, shared with the store filter.
+  const group = getParentCategory(product.category) || product.category;
+  const matchSet = getMatchingCategoryValues(group);
   const related = products
-    .filter(p => p.id !== product.id && p.category === product.category)
+    .filter(p => p.id !== product.id && (!matchSet || matchSet.has(String(p.category || '').toLowerCase())))
     .slice(0, 4);
 
   if (related.length === 0) return null;
