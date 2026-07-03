@@ -82,17 +82,25 @@ In the Render dashboard: **New → Blueprint**, point it at this repo, and Rende
 will provision all three from `render.yaml`. Fill in the `sync: false` secrets
 (`ANTHROPIC_API_KEY`, Google/Slack keys) in the dashboard after the first deploy.
 
-### 8. File uploads on Render — important limitation
-The upload endpoint (`server/src/routes/upload.js`) currently stores files on
-local disk. **Render's free/standard web services have an ephemeral
-filesystem** — uploaded product images, payment proofs, and review photos will
-be wiped on every deploy or restart. Before going to production, either:
-- Attach a [Render Disk](https://render.com/docs/disks) to the API service (persists across deploys, but not across region failover), or
-- Swap `upload.js` for an S3-compatible client (Cloudflare R2, AWS S3, Backblaze B2) — the route's public interface (`POST /api/upload` → `{ file_url }`) doesn't need to change, only the implementation inside the handler.
+### 8. File uploads — Cloudflare R2
+The upload endpoint (`server/src/routes/upload.js`) stores files in a
+Cloudflare R2 bucket instead of local disk, since Render's free/standard web
+services have an ephemeral filesystem — anything saved to local disk (product
+images, payment proofs, review photos) gets wiped on every deploy or restart.
+
+To set it up:
+1. In the Cloudflare dashboard, go to **R2** and create a bucket.
+2. Under the bucket's **Settings**, enable public access via the bucket's
+   `r2.dev` URL (or attach a custom domain) — copy that URL into
+   `R2_PUBLIC_URL`.
+3. Create an R2 API token (Account Home → R2 → Manage API Tokens) scoped to
+   that bucket, and fill in `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+   `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` in `server/.env` (and as
+   `sync: false` secrets in the Render dashboard for production).
 
 ## What's already fully working after these steps
 - Auth (register/login/me/update), all product/order/cart/favorite/review/message/notification CRUD with the same RLS rules Base44 enforced
-- File uploads (subject to the disk caveat above)
+- File uploads (Cloudflare R2, see setup above)
 - Realtime notification/order-status bells (Socket.io)
 - Scheduled trending/popularity score recalculation (node-cron, replacing Base44's scheduled functions)
 - "New product published" notifications (replicated as an in-process hook instead of a platform automation)

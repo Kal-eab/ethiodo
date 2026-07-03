@@ -96,14 +96,27 @@ function RecentOrderCard({ order }) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-secondary/20">
         <div className="flex items-center gap-3">
           {firstImg && (
-            <img src={firstImg} alt="" className="w-9 h-9 object-cover border border-border flex-shrink-0" />
+            <Link to={`/product/${visibleItems[0]?.product_id}`} className="flex-shrink-0">
+              <img src={firstImg} alt="" className="w-9 h-9 object-cover border border-border hover:opacity-80 transition-opacity" />
+            </Link>
           )}
           <div>
             <p className="font-mono text-[10px] text-muted-foreground">
               ORDER #{order.id?.slice(-8).toUpperCase()}
             </p>
             <p className="text-sm font-semibold truncate max-w-[180px]">
-              {visibleItems.map(i => i.product_name).join(', ')}
+              {visibleItems.map((i, idx) => (
+                <React.Fragment key={i.product_id || idx}>
+                  {idx > 0 && ', '}
+                  <Link
+                    to={`/product/${i.product_id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="hover:text-primary hover:underline"
+                  >
+                    {i.product_name}
+                  </Link>
+                </React.Fragment>
+              ))}
             </p>
           </div>
         </div>

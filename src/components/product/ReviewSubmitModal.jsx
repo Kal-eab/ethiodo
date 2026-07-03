@@ -59,6 +59,17 @@ export default function ReviewSubmitModal({ item, order, onClose, onSubmitted })
         photos: urls,
       });
 
+      if (order.customer_email) {
+        await base44.entities.Message.create({
+          conversation_id: order.customer_email,
+          user_email: order.customer_email,
+          user_name: order.customer_name || order.customer_email,
+          content: `Thank you for your review! We're happy to serve you — see you next time! 🎉`,
+          sender: 'admin',
+          is_read: false,
+        });
+      }
+
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       queryClient.invalidateQueries({ queryKey: ['reviews', item.product_id] });
       playNotificationSound();

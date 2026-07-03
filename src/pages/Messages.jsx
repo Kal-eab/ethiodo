@@ -189,7 +189,7 @@ function ChatUI({ user, conversationId }) {
   };
 
   return (
-    <div className="bg-background flex flex-col" style={{ minHeight: '100dvh' }}>
+    <div className="bg-background flex flex-col fixed inset-0 overflow-hidden">
       {/* Chat header */}
       <div className="flex-shrink-0 border-b border-border px-4 py-3 flex items-center gap-3 bg-card/50 backdrop-blur-sm" style={{ paddingTop: 'var(--navbar-height, 56px)' }}>
         <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
