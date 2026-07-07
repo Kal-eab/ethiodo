@@ -28,7 +28,7 @@ export default function AdminCustomers() {
   });
 
   const { data: products = [] } = useQuery({
-    queryKey: ['products'],
+    queryKey: ['products', 'admin'],
     queryFn: () => base44.entities.Product.filter({}, '-created_date', 500),
   });
 

@@ -19,7 +19,11 @@ router.post('/:name', requireAdmin, async (req, res) => {
     const data = await handler();
     res.json(data);
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    const status = err.status || 500;
+    // Preserve intentional 4xx/5xx-with-status messages (e.g. "GA not
+    // configured"), but never leak a raw uncaught 500's internals.
+    const message = err.status ? err.message : 'Internal server error';
+    res.status(status).json({ error: message });
   }
 });
 

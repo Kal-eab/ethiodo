@@ -29,7 +29,7 @@ function FavoritesTab({ user }) {
   });
 
   const { data: products = [], isLoading: loadingProducts } = useQuery({
-    queryKey: ['products'],
+    queryKey: ['products', 'published'],
     queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
   });
 

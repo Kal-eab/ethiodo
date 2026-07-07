@@ -11,10 +11,14 @@ export default function NotificationBell() {
   const ref = useRef(null);
   const queryClient = useQueryClient();
 
+  // The websocket subscription below already invalidates this query the
+  // moment a notification is created — the interval is only a fallback for
+  // dropped socket connections, so 60s is plenty (10s doubled server load
+  // per connected admin for no freshness gain).
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => base44.entities.Notification.list('-created_date', 50),
-    refetchInterval: 10000,
+    refetchInterval: 60000,
   });
 
   const unread = notifications.filter(n => !n.is_read).length;

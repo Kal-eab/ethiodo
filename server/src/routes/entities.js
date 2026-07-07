@@ -1,10 +1,22 @@
 const express = require('express');
 const { prisma } = require('../db');
-const { entityNames, canCreate, checkRecord, readWhereClause } = require('../entityConfig');
+const { entityNames, canCreate, checkRecord, readWhereClause, sanitizeWrite } = require('../entityConfig');
 const { emitEntityEvent } = require('../realtime');
 const { notifyNewProduct, recomputeProductRating } = require('../functions');
 
 const router = express.Router();
+
+// Every list endpoint is backed by an unbounded findMany unless the caller
+// supplies `limit` — without a hard ceiling a single request (or a hostile
+// client) can pull an entire multi-million-row table into memory.
+const DEFAULT_LIMIT = 100;
+const MAX_LIMIT = 1000;
+
+function clampLimit(limit) {
+  const n = Number(limit);
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_LIMIT;
+  return Math.min(n, MAX_LIMIT);
+}
 
 function serialize(record) {
   return {
@@ -59,7 +71,7 @@ router.post('/:entity/query', async (req, res) => {
   const records = await model.findMany({
     where: combined,
     orderBy: orderByFromSort(sort),
-    take: limit || undefined,
+    take: clampLimit(limit),
   });
   res.json(records.map(serialize));
 });
@@ -79,7 +91,7 @@ router.post('/:entity', async (req, res) => {
   if (!canCreate(entity, req.user)) return res.status(403).json({ error: 'Forbidden' });
   const record = await model.create({
     data: {
-      data: req.body || {},
+      data: sanitizeWrite(entity, req.body || {}, req.user, 'create'),
       createdById: req.user?.id || null,
       createdByEmail: req.user?.email || null,
     },
@@ -96,9 +108,10 @@ router.put('/:entity/:id', async (req, res) => {
   if (!checkRecord(entity, 'update', existing, req.user)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
+  const patch = sanitizeWrite(entity, req.body || {}, req.user, 'update');
   const record = await model.update({
     where: { id: req.params.id },
-    data: { data: { ...existing.data, ...req.body } },
+    data: { data: { ...existing.data, ...patch } },
   });
   const serialized = serialize(record);
   emitEntityEvent(entity, 'update', serialized);

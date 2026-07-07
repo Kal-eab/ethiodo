@@ -31,7 +31,7 @@ export default function AdminReviews() {
   });
 
   const { data: products = [] } = useQuery({
-    queryKey: ['products'],
+    queryKey: ['products', 'admin'],
     queryFn: () => base44.entities.Product.filter({}, '-created_date', 500),
   });
   const productMap = Object.fromEntries(products.map(p => [p.id, p]));

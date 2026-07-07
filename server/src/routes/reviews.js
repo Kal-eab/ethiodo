@@ -98,7 +98,7 @@ router.post('/', requireAuth, async (req, res) => {
     res.status(201).json({ review: serializedReview, order: serializedOrder });
   } catch (err) {
     console.error('POST /api/reviews failed:', err);
-    res.status(500).json({ error: err.message || 'Failed to submit review' });
+    res.status(500).json({ error: 'Failed to submit review' });
   }
 });
 

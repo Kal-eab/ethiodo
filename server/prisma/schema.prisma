@@ -34,6 +34,10 @@ model CartItem {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model CategoryConfig {
@@ -43,6 +47,10 @@ model CategoryConfig {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model ContactRequest {
@@ -52,6 +60,10 @@ model ContactRequest {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model Creator {
@@ -61,6 +73,10 @@ model Creator {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model CreatorProductLink {
@@ -70,6 +86,10 @@ model CreatorProductLink {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model CustomerReferral {
@@ -79,6 +99,26 @@ model CustomerReferral {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
+}
+
+// One per shipped order — assigns a local courier (User.role === 'delivery')
+// to collect a package from the carrier who brought it from China, replacing
+// the manual Telegram hand-off message (see src/entityConfig.js for RLS).
+model DeliveryAssignment {
+  id             String   @id @default(cuid())
+  data           Json
+  createdById    String?
+  createdByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model Favorite {
@@ -88,6 +128,10 @@ model Favorite {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model Message {
@@ -97,6 +141,10 @@ model Message {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model Notification {
@@ -106,6 +154,10 @@ model Notification {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model Order {
@@ -115,6 +167,10 @@ model Order {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model Product {
@@ -124,6 +180,10 @@ model Product {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model ProductEvent {
@@ -133,6 +193,10 @@ model ProductEvent {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model ProductLike {
@@ -142,6 +206,10 @@ model ProductLike {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model ProductShare {
@@ -151,6 +219,10 @@ model ProductShare {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model ReferralLink {
@@ -160,6 +232,10 @@ model ReferralLink {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model Review {
@@ -169,6 +245,10 @@ model Review {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model UserBehavior {
@@ -178,6 +258,10 @@ model UserBehavior {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 model UserNotification {
@@ -187,6 +271,10 @@ model UserNotification {
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([createdByEmail])
+  @@index([createdAt])
 }
 
 // AI review-insights chat conversations (server/src/routes/agents.js)

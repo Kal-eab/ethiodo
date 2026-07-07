@@ -30,7 +30,7 @@ export default function Home() {
   const categoryTree = useCategoryTree();
 
   const { data: products = [], isLoading, error: productsError } = useQuery({
-    queryKey: ['products'],
+    queryKey: ['products', 'published'],
     // @ts-ignore
     queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
     retry: false,
@@ -81,8 +81,13 @@ export default function Home() {
 
   const { pulling, progress } = usePullToRefresh(handleRefresh);
 
-  const allSearchable = [...products, ...draftProducts];
-  const searchResults = searchProducts(allSearchable, search);
+  // The fuzzy search (Levenshtein scoring in searchProducts) is the most
+  // expensive computation on this page — memoize it so pagination clicks and
+  // favorite toggles don't re-run it over the whole catalog.
+  const searchResults = useMemo(
+    () => searchProducts([...products, ...draftProducts], search),
+    [products, draftProducts, search]
+  );
 
   // Precompute the set of category values that satisfy the active filter once per
   // (category, tree) change instead of recomputing for every product in the loop.
@@ -93,16 +98,30 @@ export default function Home() {
     [category, categoryTree]
   );
 
-  /** @param {any} p */
-  const categoryMatches = (p) => {
-    if (!matchSet) return true;
-    return !!p && matchSet.has(String(p.category || '').toLowerCase());
-  };
+  const { filtered, draftFiltered } = useMemo(() => {
+    /** @param {any} p */
+    const categoryMatches = (p) => {
+      if (!matchSet) return true;
+      return !!p && matchSet.has(String(p.category || '').toLowerCase());
+    };
+    return {
+      filtered: searchResults.filter(categoryMatches),
+      draftFiltered: draftProducts.filter(categoryMatches),
+    };
+  }, [searchResults, draftProducts, matchSet]);
 
-  const filtered = searchResults.filter(categoryMatches);
-  const draftFiltered = draftProducts.filter(categoryMatches);
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginatedFiltered = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const paginatedFiltered = useMemo(
+    () => filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE),
+    [filtered, page]
+  );
+
+  // Map lookup instead of favorites.find() per product per render (O(n×m)).
+  const favByProductId = useMemo(() => {
+    const m = new Map();
+    for (const f of favorites) m.set(f.product_id, f);
+    return m;
+  }, [favorites]);
 
   useEffect(() => {
     if (search.length > 2) {
@@ -187,7 +206,7 @@ export default function Home() {
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
                   {paginatedFiltered.map(product => {
-                    const fav = favorites.find(f => f.product_id === product.id);
+                    const fav = favByProductId.get(product.id);
                     if (product.coming_soon) {
                       return (
                         <ComingSoonProductCard
@@ -229,13 +248,13 @@ export default function Home() {
           </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
               {products.map(product => {
-                const fav = favorites.find(f => f.product_id === product.id);
+                const fav = favByProductId.get(product.id);
                 return (
                   <ProductCard key={product.id} product={product} isFavorite={!!fav} favoriteId={fav?.id} />
                 );
               })}
               {draftFiltered.map(product => {
-                const fav = favorites.find(f => f.product_id === product.id);
+                const fav = favByProductId.get(product.id);
                 return (
                   <ComingSoonProductCard
                     key={product.id}

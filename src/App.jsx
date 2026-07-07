@@ -10,34 +10,46 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import MobileTabBar from '@/components/store/MobileTabBar';
 
+// Hot storefront paths stay eagerly bundled — everything else is code-split so
+// anonymous shoppers don't download the admin dashboard, checkout flow, and
+// legal pages just to view the product grid.
 import Home from '@/pages/Home';
 import ProductDetail from '@/pages/ProductDetail';
-import DirectPayment from '@/pages/DirectPayment';
-import Orders from '@/pages/Orders';
-import Favorites from '@/pages/Favorites';
-import AdminLayout from '@/components/admin/AdminLayout';
-import AdminDashboard from '@/pages/admin/Dashboard';
-import AdminProducts from '@/pages/admin/Products';
-import AdminOrders from '@/pages/admin/Orders.jsx';
-import AdminRequests from '@/pages/admin/Requests';
-import AdminMessages from '@/pages/admin/Messages';
-import AdminReviews from '@/pages/admin/Reviews';
-import ReviewInsights from '@/pages/admin/ReviewInsights';
-import Revenue from '@/pages/admin/Revenue';
-import ConversionRates from '@/pages/admin/ConversionRates';
-import AdminCustomers from '@/pages/admin/Customers';
-import AdminCategories from '@/pages/admin/Categories';
-import AdminCreators from '@/pages/admin/Creators';
-import Messages from '@/pages/Messages';
-import About from '@/pages/About';
-import ContactPage from '@/pages/ContactPage';
-import PrivacyPolicy from '@/pages/legal/PrivacyPolicy';
-import RefundPolicy from '@/pages/legal/RefundPolicy';
-import Terms from '@/pages/legal/Terms';
-import Profile from '@/pages/Profile';
-import Dashboard from '@/pages/Dashboard';
-import Register from '@/pages/Register';
-import Login from '@/pages/Login';
+
+const DirectPayment = React.lazy(() => import('@/pages/DirectPayment'));
+const Orders = React.lazy(() => import('@/pages/Orders'));
+const Favorites = React.lazy(() => import('@/pages/Favorites'));
+const AdminLayout = React.lazy(() => import('@/components/admin/AdminLayout'));
+const AdminDashboard = React.lazy(() => import('@/pages/admin/Dashboard'));
+const AdminProducts = React.lazy(() => import('@/pages/admin/Products'));
+const AdminOrders = React.lazy(() => import('@/pages/admin/Orders.jsx'));
+const AdminRequests = React.lazy(() => import('@/pages/admin/Requests'));
+const AdminMessages = React.lazy(() => import('@/pages/admin/Messages'));
+const AdminReviews = React.lazy(() => import('@/pages/admin/Reviews'));
+const ReviewInsights = React.lazy(() => import('@/pages/admin/ReviewInsights'));
+const Revenue = React.lazy(() => import('@/pages/admin/Revenue'));
+const ConversionRates = React.lazy(() => import('@/pages/admin/ConversionRates'));
+const AdminCustomers = React.lazy(() => import('@/pages/admin/Customers'));
+const AdminCategories = React.lazy(() => import('@/pages/admin/Categories'));
+const AdminCreators = React.lazy(() => import('@/pages/admin/Creators'));
+const AdminDeliveries = React.lazy(() => import('@/pages/admin/Deliveries'));
+const Deliveries = React.lazy(() => import('@/pages/Deliveries'));
+const Messages = React.lazy(() => import('@/pages/Messages'));
+const About = React.lazy(() => import('@/pages/About'));
+const ContactPage = React.lazy(() => import('@/pages/ContactPage'));
+const PrivacyPolicy = React.lazy(() => import('@/pages/legal/PrivacyPolicy'));
+const RefundPolicy = React.lazy(() => import('@/pages/legal/RefundPolicy'));
+const Terms = React.lazy(() => import('@/pages/legal/Terms'));
+const Profile = React.lazy(() => import('@/pages/Profile'));
+const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
+const Register = React.lazy(() => import('@/pages/Register'));
+const Login = React.lazy(() => import('@/pages/Login'));
+
+const RouteFallback = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+  </div>
+);
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -47,11 +59,13 @@ const AnimatedRoutes = () => {
   }, [location.pathname]);
 
   return (
+    <React.Suspense fallback={<RouteFallback />}>
     <Routes location={location}>
       <Route path="/" element={<Home />} />
       <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/payment" element={<DirectPayment />} />
       <Route path="/orders" element={<Orders />} />
+      <Route path="/deliveries" element={<Deliveries />} />
       <Route path="/favorites" element={<Favorites />} />
       <Route path="/messages" element={<Messages />} />
       <Route path="/about" element={<About />} />
@@ -76,9 +90,11 @@ const AnimatedRoutes = () => {
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="categories" element={<AdminCategories />} />
         <Route path="creators" element={<AdminCreators />} />
+        <Route path="deliveries" element={<AdminDeliveries />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </React.Suspense>
   );
 };
 

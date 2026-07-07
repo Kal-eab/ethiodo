@@ -15,7 +15,7 @@ export default function Cart() {
   });
 
   const { data: products = [] } = useQuery({
-    queryKey: ['products'],
+    queryKey: ['products', 'published'],
     queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
   });
 

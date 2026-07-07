@@ -19,6 +19,14 @@ const rules = {
     update: 'admin',
     delete: 'admin',
   },
+  // Only admin assigns deliveries; the assigned courier (or admin) can read/
+  // update their own assignment (e.g. mark received + attach proof photo).
+  DeliveryAssignment: {
+    create: 'admin',
+    read: { field: 'delivery_user_id', matchUserField: 'id' },
+    update: { field: 'delivery_user_id', matchUserField: 'id' },
+    delete: 'admin',
+  },
   Favorite: { create: 'owner', read: 'owner', update: 'owner', delete: 'owner' },
   Message: {
     create: { field: 'user_email', matchUserField: 'email' },
@@ -49,6 +57,43 @@ const rules = {
 };
 
 const entityNames = Object.keys(rules);
+
+// Fields that only an admin may write. The generic entity CRUD route lets the
+// client send an arbitrary `data` blob, so without this a non-admin could set
+// server-authoritative fields directly — e.g. POST /api/entities/Review with
+// { status: 'approved', verified_buyer: true } to inject a fake "verified"
+// approved review (bypassing the purchase-verification in routes/reviews.js),
+// or create an Order that is already marked paid/delivered. Admins keep full
+// control; these are only stripped for non-admin writers.
+const ADMIN_ONLY_FIELDS = {
+  Review: ['status', 'verified_buyer', 'featured'],
+  Order: [
+    'money_received',
+    'money_received_date',
+    'profit_recorded',
+    'confirmed_date',
+    'shipped_date',
+    'delivered_date',
+    'reviewed_item_ids',
+  ],
+};
+
+// Values forced onto a non-admin *create* regardless of what the client sends,
+// so new records always start in a safe, unprivileged state.
+const FORCED_CREATE_DEFAULTS = {
+  Review: { status: 'pending', verified_buyer: false, featured: false },
+  Order: { status: 'pending' },
+};
+
+// Strips admin-only fields (and, on create, forces safe defaults) from a
+// client-supplied data blob when the writer is not an admin.
+function sanitizeWrite(entity, data, user, action) {
+  if (isAdmin(user)) return data;
+  const out = { ...(data || {}) };
+  for (const field of ADMIN_ONLY_FIELDS[entity] || []) delete out[field];
+  if (action === 'create') Object.assign(out, FORCED_CREATE_DEFAULTS[entity] || {});
+  return out;
+}
 
 function isAdmin(user) {
   return !!user && user.role === 'admin';
@@ -96,4 +141,4 @@ function readWhereClause(entity, user) {
   return { id: '__none__' };
 }
 
-module.exports = { rules, entityNames, isAdmin, canCreate, checkRecord, readWhereClause };
+module.exports = { rules, entityNames, isAdmin, canCreate, checkRecord, readWhereClause, sanitizeWrite };

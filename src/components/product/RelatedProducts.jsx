@@ -8,7 +8,7 @@ import { getParentCategory, getMatchingCategoryValues } from '@/lib/categories';
 
 export default function RelatedProducts({ product, favorites = {} }) {
   const { data: products = [] } = useQuery({
-    queryKey: ['products'],
+    queryKey: ['products', 'published'],
     queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200),
   });
 

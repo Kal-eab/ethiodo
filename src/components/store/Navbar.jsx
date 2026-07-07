@@ -53,9 +53,13 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Same key + queryFn as the Home grid so both components share a single
+  // cache entry and network request instead of colliding on the old bare
+  // ['products'] key with different limits.
   const { data: products = [] } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 100).catch(() => []),
+    queryKey: ['products', 'published'],
+    queryFn: () => base44.entities.Product.filter({ published: true }, '-created_date', 200).catch(() => []),
+    staleTime: 5 * 60 * 1000,
   });
 
   const handleSearchInput = (value) => {
@@ -74,6 +78,7 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
   };
 
   const isAdmin = user?.role === 'admin';
+  const isDelivery = user?.role === 'delivery';
 
   const navLinks = [
     { label: 'Shop', path: '/' },
@@ -204,6 +209,15 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
                   Admin
                 </Link>
               )}
+              {isDelivery && (
+                <Link
+                  to="/deliveries"
+                  className="flex items-center px-2 sm:px-2.5 py-1.5 rounded-full text-xs font-medium transition-all"
+                  style={{ background: 'rgba(157,255,0,0.1)', border: '1px solid rgba(157,255,0,0.3)', color: 'hsl(157,100%,50%)' }}
+                >
+                  Deliveries
+                </Link>
+              )}
             </div>
           </div>
 
@@ -296,6 +310,16 @@ export default function Navbar({ onSearchChange = null, searchValue = '', catego
                 style={{ color: 'hsl(157,100%,50%)' }}
               >
                 Admin Panel
+              </Link>
+            )}
+            {isDelivery && (
+              <Link
+                to="/deliveries"
+                onClick={() => setMobileOpen(false)}
+                className="px-3 py-2.5 rounded-lg text-sm font-medium"
+                style={{ color: 'hsl(157,100%,50%)' }}
+              >
+                My Deliveries
               </Link>
             )}
             <div className="border-t mt-2 pt-2" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>

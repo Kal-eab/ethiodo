@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { connectSocket, getToken } from '@/lib/apiClient';
 import { mergeGuestProfile, decayProfile } from '@/lib/behaviorTracker';
@@ -57,34 +57,35 @@ export const AuthProvider = ({ children }) => {
     checkUserAuth();
   }, [checkUserAuth]);
 
-  const logout = (shouldRedirect = true) => {
+  const logout = useCallback((shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
     base44.auth.logout();
     if (shouldRedirect) window.location.href = '/login';
-  };
+  }, []);
 
-  const navigateToLogin = () => {
+  const navigateToLogin = useCallback(() => {
     base44.auth.redirectToLogin(window.location.href);
-  };
+  }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated,
-        isLoadingAuth,
-        isLoadingPublicSettings: false,
-        authError,
-        authChecked,
-        logout,
-        navigateToLogin,
-        checkUserAuth,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // This provider wraps the whole app, so a fresh value object every render
+  // would re-render every useAuth() consumer on each auth-state tick.
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated,
+      isLoadingAuth,
+      isLoadingPublicSettings: false,
+      authError,
+      authChecked,
+      logout,
+      navigateToLogin,
+      checkUserAuth,
+    }),
+    [user, isAuthenticated, isLoadingAuth, authError, authChecked, logout, navigateToLogin, checkUserAuth]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

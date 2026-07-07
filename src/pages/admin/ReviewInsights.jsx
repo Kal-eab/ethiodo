@@ -57,9 +57,12 @@ export default function ReviewInsights() {
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState(true);
   const bottomRef = useRef(null);
+  const unsubRef = useRef(null);
 
   useEffect(() => {
     initConversation();
+    return () => { if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; } };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -68,27 +71,40 @@ export default function ReviewInsights() {
 
   const initConversation = async () => {
     setStarting(true);
-    const conv = await base44.agents.createConversation({
-      agent_name: 'review_insights',
-      metadata: { name: 'Review Insights Session' },
-    });
-    setConversation(conv);
-    setMessages([]);
-    setStarting(false);
-
-    // Subscribe to updates
-    base44.agents.subscribeToConversation(conv.id, (data) => {
-      setMessages(data.messages || []);
-    });
+    // Tear down any prior subscription before opening a new one — otherwise a
+    // "New Session" reset leaks a socket handler that keeps overwriting state.
+    if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
+    try {
+      const conv = await base44.agents.createConversation({ agent_name: 'review_insights' });
+      setConversation(conv);
+      setMessages([]);
+      unsubRef.current = base44.agents.subscribeToConversation(conv.id, (data) => {
+        if (data?.messages) setMessages(data.messages);
+      });
+    } catch (err) {
+      setConversation(null);
+      setMessages([{ role: 'assistant', content: `⚠️ Couldn't start a session: ${err?.data?.error || err?.message || 'unknown error'}` }]);
+    } finally {
+      setStarting(false);
+    }
   };
 
   const sendMessage = async (text) => {
     const msg = text || input.trim();
     if (!msg || loading || !conversation) return;
     setInput('');
+    // Optimistically render the user's message; the awaited response (or the
+    // websocket) then supplies the assistant reply.
+    setMessages((prev) => [...prev, { role: 'user', content: msg }]);
     setLoading(true);
-    await base44.agents.addMessage(conversation, { role: 'user', content: msg });
-    setLoading(false);
+    try {
+      const res = await base44.agents.addMessage(conversation, { role: 'user', content: msg });
+      if (res?.messages) setMessages(res.messages);
+    } catch (err) {
+      setMessages((prev) => [...prev, { role: 'assistant', content: `⚠️ ${err?.data?.error || err?.message || 'The AI failed to respond. Please try again.'}` }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleReset = async () => {

@@ -1,13 +1,16 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
 
-export default function ComingSoonProductCard({ product, isFavorite, onToggleFavorite, onNavigate }) {
+// Memoized for the same reason as ProductCard — rendered inside the Home grid.
+const ComingSoonProductCard = React.memo(
+  /** @param {{ product: any, isFavorite?: boolean, onToggleFavorite: (e: any, product: any) => void, onNavigate: (path: string) => void }} props */
+  function ComingSoonProductCard({ product, isFavorite, onToggleFavorite, onNavigate }) {
   return (
     <div className="block group cursor-pointer" onClick={() => onNavigate(`/product/${product.id}`)}>
       <div className="bg-card border border-border/60 rounded-xl overflow-hidden transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-[0_4px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(180,255,0,0.06)] group-hover:-translate-y-1">
         <div className="relative aspect-[4/3] bg-black/40 flex items-center justify-center overflow-hidden">
           {product.images?.[0]
-            ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" />
+            ? <img src={product.images[0]} alt={product.name} loading="lazy" className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" />
             : <div className="w-full h-full bg-black/40" />
           }
           <div className="absolute inset-0 flex flex-col items-end justify-start p-2 gap-1">
@@ -34,4 +37,6 @@ export default function ComingSoonProductCard({ product, isFavorite, onToggleFav
       </div>
     </div>
   );
-}
+});
+
+export default ComingSoonProductCard;

@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 
-export default function ProductCard({ product, isFavorite, favoriteId, badge = null }) {
+// Memoized — rendered in grids of up to 200; without memo every keystroke in
+// the Home search box re-renders every card even though its props are unchanged.
+const ProductCard = React.memo(
+  /** @param {{ product: any, isFavorite?: boolean, favoriteId?: any, badge?: { label: string, color: string } | null }} props */
+  function ProductCard({ product, isFavorite, favoriteId, badge = null }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const image = product.images?.[0] || '/placeholder.png';
@@ -108,4 +112,6 @@ export default function ProductCard({ product, isFavorite, favoriteId, badge = n
       </div>
     </Link>
   );
-}
+});
+
+export default ProductCard;

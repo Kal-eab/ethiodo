@@ -13,7 +13,7 @@ export default function Favorites() {
   });
 
   const { data: products = [] } = useQuery({
-    queryKey: ['products'],
+    queryKey: ['products', 'all'],
     queryFn: () => base44.entities.Product.list('-created_date', 200),
   });
 

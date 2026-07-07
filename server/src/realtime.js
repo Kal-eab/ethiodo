@@ -14,7 +14,7 @@ function initRealtime(httpServer, corsOrigin) {
     try {
       const token = socket.handshake.auth?.token;
       if (!token) return;
-      const payload = jwt.verify(token, JWT_SECRET);
+      const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
       const user = await prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user) return;
       socket.join(`user:${user.id}`);

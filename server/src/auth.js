@@ -5,9 +5,15 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
 }
+// A forgeable token secret is a full account-takeover primitive (an attacker
+// who guesses it can mint an admin token). Refuse to boot with the placeholder
+// value or anything too short to be safe.
+if (JWT_SECRET === 'change-me' || JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be a strong random string of at least 32 characters');
+}
 
 function signToken(userId) {
-  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: '30d' });
+  return jwt.sign({ sub: userId }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
 }
 
 function serializeUser(user) {
@@ -36,7 +42,9 @@ async function attachUser(req, res, next) {
     const header = req.headers.authorization || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     if (!token) return next();
-    const payload = jwt.verify(token, JWT_SECRET);
+    // Pin the algorithm — never let the token header dictate it (blocks
+    // alg-confusion / "alg: none" style attacks).
+    const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
     const user = await prisma.user.findUnique({ where: { id: payload.sub } });
     if (user) req.user = user;
     next();

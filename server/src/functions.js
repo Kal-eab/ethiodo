@@ -2,6 +2,20 @@ const { prisma } = require('./db');
 
 const WEIGHTS = { purchase: 5, view: 1, wishlist: 2 };
 
+// Runs `fn` over `items` with at most `concurrency` in flight at once, instead
+// of one `await` per row — cuts wall-clock time on the popularity/trending
+// crons roughly `concurrency`-fold without opening one connection per row.
+async function runBatched(items, concurrency, fn) {
+  let cursor = 0;
+  async function worker() {
+    while (cursor < items.length) {
+      const item = items[cursor++];
+      await fn(item);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
+}
+
 function decayFactor(createdAt) {
   const ageDays = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
   if (ageDays <= 1) return 1.0;
@@ -25,7 +39,7 @@ async function recalcPopularity() {
   for (const s of shares) sharesMap[s.data.product_id] = (sharesMap[s.data.product_id] || 0) + 1;
 
   let updated = 0;
-  for (const p of products) {
+  await runBatched(products, 20, async (p) => {
     const l = likesMap[p.id] || 0;
     const s = sharesMap[p.id] || 0;
     const v = p.data.totalViews || 0;
@@ -44,7 +58,7 @@ async function recalcPopularity() {
       },
     });
     updated++;
-  }
+  });
   return { updated };
 }
 
@@ -88,7 +102,7 @@ async function recalcTrending() {
 
   const products = await prisma.product.findMany({ take: 1000 });
   let updated = 0;
-  for (const product of products) {
+  await runBatched(products, 20, async (product) => {
     const s = scores[product.id];
     if (s) {
       await prisma.product.update({ where: { id: product.id }, data: { data: { ...product.data, ...s } } });
@@ -108,7 +122,7 @@ async function recalcTrending() {
         },
       });
     }
-  }
+  });
   return { success: true, updated, totalProducts: products.length };
 }
 
@@ -118,32 +132,49 @@ async function recalcTrending() {
 async function notifyNewProduct(product) {
   if (!product || !product.published) return { skipped: true, reason: 'not published' };
 
-  const users = await prisma.user.findMany();
-  if (users.length === 0) return { notified: 0 };
+  const PAGE_SIZE = 1000;
+  let notified = 0;
+  let cursor;
 
-  await prisma.$transaction(
-    users.map((u) =>
-      prisma.userNotification.create({
+  // Page through users with keyset pagination (instead of loading the whole
+  // table into memory) and bulk-insert each page with a single `createMany`
+  // instead of one `create` per user inside a single all-or-nothing
+  // transaction — at "millions of users" scale the old approach would try to
+  // build a multi-million-statement transaction in one round trip.
+  for (;;) {
+    const page = await prisma.user.findMany({
+      select: { id: true, email: true },
+      take: PAGE_SIZE,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      orderBy: { id: 'asc' },
+    });
+    if (page.length === 0) break;
+
+    await prisma.userNotification.createMany({
+      data: page.map((u) => ({
+        createdById: null,
+        createdByEmail: null,
         data: {
-          createdById: null,
-          createdByEmail: null,
-          data: {
-            user_id: u.id,
-            user_email: u.email,
-            type: 'new_product',
-            title: 'New Product Available!',
-            body: `${product.name} is now available for ${Number(product.price).toLocaleString()} Birr`,
-            product_id: product.id,
-            product_name: product.name,
-            product_image: product.images?.[0] || '',
-            product_price: product.price,
-            is_read: false,
-          },
+          user_id: u.id,
+          user_email: u.email,
+          type: 'new_product',
+          title: 'New Product Available!',
+          body: `${product.name} is now available for ${Number(product.price).toLocaleString()} Birr`,
+          product_id: product.id,
+          product_name: product.name,
+          product_image: product.images?.[0] || '',
+          product_price: product.price,
+          is_read: false,
         },
-      })
-    )
-  );
-  return { notified: users.length };
+      })),
+    });
+
+    notified += page.length;
+    cursor = page[page.length - 1].id;
+    if (page.length < PAGE_SIZE) break;
+  }
+
+  return { notified };
 }
 
 // Recomputes a product's denormalized rating summary from its approved

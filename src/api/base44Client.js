@@ -12,6 +12,7 @@ const ENTITY_NAMES = [
   'Creator',
   'CreatorProductLink',
   'CustomerReferral',
+  'DeliveryAssignment',
   'Favorite',
   'Message',
   'Notification',
@@ -46,6 +47,8 @@ function makeEntityApi(name) {
 const entities = {
   User: {
     list: (sort, limit) => request(`/api/users${limit ? `?limit=${limit}` : ''}`),
+    // Admin-only: promote/demote a user's role (e.g. to 'delivery').
+    update: (id, data) => request(`/api/users/${id}`, { method: 'PATCH', body: data }),
   },
 };
 for (const name of ENTITY_NAMES) entities[name] = makeEntityApi(name);

@@ -4,7 +4,6 @@ import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Heart, Star, ShieldCheck, Truck, Share2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
 import SEO from '@/components/SEO';
 import MobileHeader from '@/components/store/MobileHeader';
@@ -213,14 +212,15 @@ export default function ProductDetail() {
                   src={images[selectedImage]}
                   alt=""
                   aria-hidden="true"
-                  loading="lazy"
                   className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110"
                 />
-                {/* Main image — contained, no crop */}
+                {/* Main image — contained, no crop. This is the page's LCP
+                    element: it must load eagerly with high priority, never
+                    loading="lazy", or Core Web Vitals tank on every product page. */}
                 <img
                   src={images[selectedImage]}
                   alt={product.name}
-                  loading="lazy"
+                  fetchPriority="high"
                   onError={(e) => { e.target.src = '/placeholder.png'; }}
                   className="relative z-10 w-auto h-auto max-w-full max-h-full m-auto block"
                   style={{ position: 'absolute', inset: 0, margin: 'auto', objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}

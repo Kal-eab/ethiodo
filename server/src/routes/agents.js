@@ -55,7 +55,7 @@ names, review counts, and Birr amounts where available.`;
 async function buildReviewDigest() {
   const [reviews, products] = await Promise.all([
     prisma.review.findMany({ orderBy: { createdAt: 'desc' }, take: 200 }),
-    prisma.product.findMany(),
+    prisma.product.findMany({ take: 2000 }),
   ]);
   const productById = Object.fromEntries(products.map((p) => [p.id, p.data]));
   const lines = reviews.map((r) => {
@@ -79,26 +79,40 @@ router.post('/review-insights/conversations/:id/messages', requireAdmin, async (
   const { role, content } = req.body || {};
   if (!content) return res.status(400).json({ error: 'content is required' });
 
+  // Without a key the SDK throws deep inside the request. Fail fast with a clear,
+  // actionable status the frontend can surface as "AI is not configured".
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(501).json({ error: 'AI is not configured. Set ANTHROPIC_API_KEY on the server.' });
+  }
+
   const messages = [...conv.messages, { role: role || 'user', content }];
 
-  const digest = await buildReviewDigest();
-  const response = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 2048,
-    system: `${SYSTEM_PROMPT}\n\nCurrent review data (most recent 200):\n${digest}`,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-  });
+  let updated;
+  try {
+    const digest = await buildReviewDigest();
+    const response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 4096,
+      system: `${SYSTEM_PROMPT}\n\nCurrent review data (most recent 200):\n${digest}`,
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    });
 
-  const text = response.content
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('\n');
+    const text = response.content
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('\n');
 
-  const updatedMessages = [...messages, { role: 'assistant', content: text }];
-  const updated = await prisma.agentConversation.update({
-    where: { id: conv.id },
-    data: { messages: updatedMessages },
-  });
+    const updatedMessages = [...messages, { role: 'assistant', content: text }];
+    updated = await prisma.agentConversation.update({
+      where: { id: conv.id },
+      data: { messages: updatedMessages },
+    });
+  } catch (err) {
+    // Leave the conversation untouched (the user's message is not persisted) so
+    // a retry starts clean, and never leak the upstream/model error internals.
+    console.error('review-insights message failed:', err);
+    return res.status(502).json({ error: 'The AI failed to respond. Please try again.' });
+  }
 
   emitEntityEvent('AgentConversation', 'update', {
     id: updated.id,
