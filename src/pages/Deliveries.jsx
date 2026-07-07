@@ -4,13 +4,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { createPortal } from 'react-dom';
-import { Bike, Phone, MapPin, Upload, X, Loader2, CheckCircle2, Banknote } from 'lucide-react';
+import { Bike, Phone, Upload, X, Loader2, CheckCircle2, Banknote } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
 
 // ─── Mark Received modal — requires a photo as proof the courier physically
-// collected the package from the carrier ────────────────────────────────────
+// collected the item from the carrier ──────────────────────────────────────
 function MarkReceivedModal({ assignment, onClose, onDone }) {
   const [photoUrl, setPhotoUrl] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -28,7 +28,7 @@ function MarkReceivedModal({ assignment, onClose, onDone }) {
   };
 
   const handleSubmit = async () => {
-    if (!photoUrl) { toast.error('Please add a photo of the package'); return; }
+    if (!photoUrl) { toast.error('Please add a photo of the item in your hand'); return; }
     setSubmitting(true);
     try {
       await base44.entities.DeliveryAssignment.update(assignment.id, {
@@ -52,7 +52,7 @@ function MarkReceivedModal({ assignment, onClose, onDone }) {
           <h2 className="font-mono text-sm font-bold uppercase">Confirm Pickup</h2>
           <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
         </div>
-        <p className="text-sm text-muted-foreground">Take a photo of the package you collected from the carrier as proof.</p>
+        <p className="text-sm text-muted-foreground">Take a photo of the item in your hand as proof you collected it from the carrier.</p>
 
         {preview ? (
           <div className="relative">
@@ -92,33 +92,29 @@ function AssignmentCard({ assignment }) {
 
   return (
     <div className="bg-card border border-border overflow-hidden">
-      <div className="px-5 py-4 border-b border-border bg-secondary/20 flex items-center justify-between">
-        <p className="font-mono text-xs text-muted-foreground">ORDER #{assignment.order_id?.slice(-8).toUpperCase()}</p>
-        <p className="font-mono text-[11px] text-muted-foreground">
+      <div className="px-5 py-4 border-b border-border bg-secondary/20">
+        <p className="text-sm font-semibold">{assignment.item_name}</p>
+        <p className="font-mono text-[11px] text-muted-foreground mt-0.5">
           {assignment.created_date ? format(new Date(assignment.created_date), 'MMM d, HH:mm') : ''}
         </p>
       </div>
 
       <div className="p-5 space-y-4">
-        {/* Items to deliver */}
-        <div className="space-y-2">
-          {(assignment.items || []).map((item, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-secondary border border-border flex-shrink-0 overflow-hidden">
-                {item.product_image && <img src={item.product_image} alt="" className="w-full h-full object-cover" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{item.product_name}</p>
-                <p className="font-mono text-xs text-muted-foreground">×{item.quantity}</p>
-              </div>
+        {/* Item + ownership proof photos */}
+        <div className="grid grid-cols-2 gap-2">
+          {assignment.item_photo_url && (
+            <div>
+              <p className="font-mono text-[9px] text-muted-foreground uppercase mb-1">Item Photo</p>
+              <img src={assignment.item_photo_url} alt="Item" className="w-full h-28 object-cover border border-border" />
             </div>
-          ))}
+          )}
+          {assignment.ownership_proof_photo_url && (
+            <div>
+              <p className="font-mono text-[9px] text-muted-foreground uppercase mb-1">Ownership Proof</p>
+              <img src={assignment.ownership_proof_photo_url} alt="Ownership proof" className="w-full h-28 object-cover border border-yellow-400/40" />
+            </div>
+          )}
         </div>
-
-        {/* Reference photo from the carrier */}
-        {assignment.reference_photo_url && (
-          <img src={assignment.reference_photo_url} alt="Reference" className="w-full max-h-40 object-cover border border-border" />
-        )}
 
         {/* Carrier contact */}
         <div className="bg-secondary/40 p-3 space-y-1.5">
@@ -145,22 +141,6 @@ function AssignmentCard({ assignment }) {
         {assignment.notes && (
           <p className="text-xs text-muted-foreground italic">"{assignment.notes}"</p>
         )}
-
-        {/* Deliver to */}
-        <div className="border-t border-border pt-3 space-y-1">
-          <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">Deliver To</p>
-          <p className="text-sm font-semibold">{assignment.customer_name || '—'}</p>
-          {assignment.customer_phone && (
-            <a href={`tel:${assignment.customer_phone}`} className="flex items-center gap-1.5 text-muted-foreground text-sm font-mono">
-              <Phone className="w-3.5 h-3.5" /> {assignment.customer_phone}
-            </a>
-          )}
-          {assignment.delivery_address && (
-            <p className="flex items-start gap-1.5 text-muted-foreground text-xs">
-              <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> {assignment.delivery_address}
-            </p>
-          )}
-        </div>
 
         {assignment.status === 'assigned' ? (
           <button
@@ -197,6 +177,7 @@ function AssignmentCard({ assignment }) {
 }
 
 // ─── Main Deliveries page (for users with role === 'delivery') ───────────────
+// Inbound stock pickups only — nothing to do with customer orders/shipping.
 export default function Deliveries() {
   const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
@@ -229,7 +210,7 @@ export default function Deliveries() {
       <main className="pt-14 pb-4">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
           <h1 className="text-2xl font-bold mb-1">My Deliveries</h1>
-          <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-6">Pick up from carriers, deliver to customers</p>
+          <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-6">Pick up incoming stock from carriers</p>
 
           <div className="flex gap-1 mb-8 border-b border-border">
             {['assigned', 'received'].map(s => {

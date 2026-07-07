@@ -21,18 +21,12 @@ const STATUS_ROW_STYLE = {
   delivered: 'border-l-2 border-l-accent/60',
 };
 
-// ─── Ship modal: upload photo, optionally assign a courier, then mark as shipped ──
-function ShipModal({ order, deliveryPartners, onClose, onShipped }) {
+// ─── Ship modal: upload photo then mark as shipped ────────────────────────────
+function ShipModal({ order, onClose, onShipped }) {
   const [uploading, setUploading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [preview, setPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [deliveryUserId, setDeliveryUserId] = useState('');
-  const [carrierName, setCarrierName] = useState('');
-  const [carrierPhone, setCarrierPhone] = useState('');
-  const [cashToCarrier, setCashToCarrier] = useState('');
-  const [customsTax, setCustomsTax] = useState('');
-  const [notes, setNotes] = useState('');
 
   const handleFile = async (e) => {
     const file = e.target.files[0];
@@ -47,22 +41,14 @@ function ShipModal({ order, deliveryPartners, onClose, onShipped }) {
   const handleSubmit = async () => {
     if (!photoUrl) { toast.error('Please upload a photo first'); return; }
     setSubmitting(true);
-    const assignment = deliveryUserId ? {
-      delivery_user_id: deliveryUserId,
-      carrier_name: carrierName.trim(),
-      carrier_phone: carrierPhone.trim(),
-      cash_to_carrier: Number(cashToCarrier) || 0,
-      customs_tax: Number(customsTax) || 0,
-      notes: notes.trim(),
-    } : null;
-    await onShipped(order, photoUrl, assignment);
+    await onShipped(order, photoUrl);
     setSubmitting(false);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4 overflow-y-auto py-8" onClick={onClose}>
-      <div className="bg-card border border-border w-full max-w-sm p-6 space-y-4 my-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="font-mono text-sm font-bold uppercase">Mark as Shipped</h2>
           <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
@@ -84,61 +70,6 @@ function ShipModal({ order, deliveryPartners, onClose, onShipped }) {
             <span className="font-mono text-xs text-muted-foreground">{uploading ? 'Uploading…' : 'Click to upload photo'}</span>
           </label>
         )}
-
-        {/* Optional: assign a local courier instead of texting them on Telegram */}
-        <div className="space-y-3 pt-3 border-t border-border">
-          <p className="font-mono text-xs text-muted-foreground uppercase">Assign Delivery Partner (optional)</p>
-          <select
-            value={deliveryUserId}
-            onChange={e => setDeliveryUserId(e.target.value)}
-            className="w-full bg-secondary border border-border h-10 px-3 text-sm outline-none"
-          >
-            <option value="">— Don't assign —</option>
-            {deliveryPartners.map(p => (
-              <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
-            ))}
-          </select>
-
-          {deliveryUserId && (
-            <div className="space-y-2">
-              <input
-                value={carrierName}
-                onChange={e => setCarrierName(e.target.value)}
-                placeholder="Carrier name (who brought it from China)"
-                className="w-full bg-secondary border border-border h-10 px-3 text-sm outline-none placeholder:text-muted-foreground"
-              />
-              <input
-                value={carrierPhone}
-                onChange={e => setCarrierPhone(e.target.value)}
-                placeholder="Carrier phone"
-                className="w-full bg-secondary border border-border h-10 px-3 text-sm outline-none placeholder:text-muted-foreground"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="number"
-                  value={cashToCarrier}
-                  onChange={e => setCashToCarrier(e.target.value)}
-                  placeholder="Cash to carrier (Birr)"
-                  className="w-full bg-secondary border border-border h-10 px-3 text-sm outline-none placeholder:text-muted-foreground"
-                />
-                <input
-                  type="number"
-                  value={customsTax}
-                  onChange={e => setCustomsTax(e.target.value)}
-                  placeholder="Customs tax (Birr)"
-                  className="w-full bg-secondary border border-border h-10 px-3 text-sm outline-none placeholder:text-muted-foreground"
-                />
-              </div>
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                placeholder="Notes for the delivery partner (optional)"
-                rows={2}
-                className="w-full bg-secondary border border-border px-3 py-2 text-sm outline-none placeholder:text-muted-foreground resize-none"
-              />
-            </div>
-          )}
-        </div>
 
         <button
           onClick={handleSubmit}
@@ -184,12 +115,6 @@ export default function AdminOrders() {
     queryKey: ['products', 'admin'],
     queryFn: () => base44.entities.Product.filter({}, '-created_date', 500),
   });
-
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ['all-users-for-delivery'],
-    queryFn: () => base44.entities.User.list('-created_date', 500),
-  });
-  const deliveryPartners = useMemo(() => allUsers.filter(u => u.role === 'delivery'), [allUsers]);
 
   // Memoized — these can be up to 1000 entries each, and without useMemo they
   // were rebuilt on every keystroke of the search box.
@@ -300,33 +225,8 @@ export default function AdminOrders() {
     }
   };
 
-  const handleShipped = async (order, photoUrl, assignment) => {
+  const handleShipped = async (order, photoUrl) => {
     await handleStatusChange(order.id, 'shipped', photoUrl);
-
-    // Replaces the manual Telegram message to the delivery partner: attach the
-    // carrier's contact info, what's owed, and a reference photo right here.
-    if (assignment) {
-      const partner = deliveryPartners.find(p => p.id === assignment.delivery_user_id);
-      await base44.entities.DeliveryAssignment.create({
-        order_id: order.id,
-        delivery_user_id: assignment.delivery_user_id,
-        delivery_user_name: partner?.full_name || partner?.email || '',
-        delivery_user_email: partner?.email || '',
-        customer_name: order.customer_name || '',
-        customer_phone: order.phone || '',
-        delivery_address: order.shipping_address || '',
-        items: order.items || [],
-        carrier_name: assignment.carrier_name,
-        carrier_phone: assignment.carrier_phone,
-        cash_to_carrier: assignment.cash_to_carrier,
-        customs_tax: assignment.customs_tax,
-        reference_photo_url: photoUrl,
-        notes: assignment.notes,
-        status: 'assigned',
-      });
-      queryClient.invalidateQueries({ queryKey: ['all-delivery-assignments'] });
-      toast.success(`Assigned to ${partner?.full_name || partner?.email}`);
-    }
   };
 
   const STATUS_ORDER = { pending: 0, confirmed: 1, shipped: 2, delivered: 3 };
@@ -512,7 +412,6 @@ export default function AdminOrders() {
       {shipTarget && (
         <ShipModal
           order={shipTarget}
-          deliveryPartners={deliveryPartners}
           onClose={() => setShipTarget(null)}
           onShipped={handleShipped}
         />
