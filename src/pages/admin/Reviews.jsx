@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Check, X, Star, CheckCircle, Trash2, Pin, Package } from 'lucide-react';
+import { Check, X, Star, CheckCircle, Trash2, Pin, Package, FlaskConical } from 'lucide-react';
+import { isTestReview, TEST_BADGE_CLASS } from '@/lib/testMode';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -125,6 +126,11 @@ export default function AdminReviews() {
                       {review.verified_buyer && (
                         <span className="inline-flex items-center gap-1 font-mono text-[10px] text-accent border border-accent/30 px-1.5 py-0.5">
                           <CheckCircle className="w-3 h-3" /> Verified
+                        </span>
+                      )}
+                      {isTestReview(review) && (
+                        <span className={TEST_BADGE_CLASS} title="From a test order — excluded from the product's rating">
+                          <FlaskConical className="w-2.5 h-2.5" /> Test
                         </span>
                       )}
                       <span className={`font-mono text-[10px] uppercase ${statusColors[review.status]}`}>{review.status}</span>

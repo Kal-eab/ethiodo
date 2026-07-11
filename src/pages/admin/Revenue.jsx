@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format, getDate } from 'date-fns';
-import { DollarSign, Package, ChevronRight, ArrowLeft } from 'lucide-react';
+import { DollarSign, Package, ChevronRight, ArrowLeft, FlaskConical } from 'lucide-react';
+import { isTestOrder, TEST_BADGE_CLASS } from '@/lib/testMode';
 
 const fmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
 
@@ -49,6 +50,9 @@ function OrderRow({ order }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-mono text-[10px] text-muted-foreground">#{order.id?.slice(-8).toUpperCase()}</span>
+          {isTestOrder(order) && (
+            <span className={TEST_BADGE_CLASS}><FlaskConical className="w-2.5 h-2.5" /> Test</span>
+          )}
           <span className="text-sm font-medium truncate">{order.customer_name || order.customer_email}</span>
         </div>
         <p className="font-mono text-xs text-muted-foreground truncate">
@@ -71,13 +75,23 @@ function OrderRow({ order }) {
 export default function Revenue() {
   const [selectedMonth, setSelectedMonth] = useState(null); // monthKey
   const [selectedWeek, setSelectedWeek] = useState(null);   // weekLabel
+  const [includeTest, setIncludeTest] = useState(false);
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['admin-orders'],
     queryFn: () => base44.entities.Order.list('-created_date', 500),
   });
 
-  const revenueOrders = orders.filter(o => o.money_received);
+  // Test orders are excluded from revenue by default, so exercising a payment
+  // flow on a test product never shows up as money you earned.
+  const paidOrders = orders.filter(o => o.money_received);
+  const revenueOrders = useMemo(
+    () => (includeTest ? paidOrders : paidOrders.filter(o => !isTestOrder(o))),
+    [paidOrders, includeTest]
+  );
+  const excludedTestOrders = paidOrders.filter(isTestOrder);
+  const excludedTestTotal = excludedTestOrders.reduce((sum, o) => sum + (o.profit_recorded ?? o.total ?? 0), 0);
+
   const totalRevenue = revenueOrders.reduce((sum, o) => sum + (o.profit_recorded ?? o.total ?? 0), 0);
   const grouped = useMemo(() => groupOrders(revenueOrders), [revenueOrders]);
 
@@ -149,6 +163,26 @@ export default function Revenue() {
           </p>
         </div>
       </div>
+
+      {/* Test orders — excluded unless you ask for them */}
+      {excludedTestOrders.length > 0 && (
+        <label className="flex items-center gap-2 border border-orange-400/30 bg-orange-400/5 p-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={includeTest}
+            onChange={e => { setIncludeTest(e.target.checked); setSelectedMonth(null); setSelectedWeek(null); }}
+            className="w-4 h-4 accent-orange-400"
+          />
+          <FlaskConical className="w-3.5 h-3.5 text-orange-400" />
+          <span className="font-mono text-xs text-muted-foreground">
+            Show test orders in revenue —{' '}
+            <span className="text-orange-400 font-bold">
+              {excludedTestOrders.length} test order{excludedTestOrders.length === 1 ? '' : 's'} · {fmt(excludedTestTotal)} Birr
+            </span>{' '}
+            {includeTest ? 'included' : 'excluded'}
+          </span>
+        </label>
+      )}
 
       {isLoading ? (
         <div className="space-y-2">

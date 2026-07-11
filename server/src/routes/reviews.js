@@ -80,6 +80,9 @@ router.post('/', requireAuth, async (req, res) => {
           verified_buyer: true,
           status: 'pending',
           featured: false,
+          // A review left on a test order is test data: it never reaches the
+          // storefront and never moves the product's rating (see functions.js).
+          is_test_review: order.data.is_test_order === true,
         },
       },
     });

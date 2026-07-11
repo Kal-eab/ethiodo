@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Pencil, Trash2, Upload, X, Loader2, FileText, CheckCircle2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, X, Loader2, FileText, CheckCircle2, FlaskConical } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { getCategoryTreeDynamic, getCategoryLabel } from '@/lib/categories';
+import { isTestProduct, TEST_BADGE_CLASS } from '@/lib/testMode';
 
 const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
 const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
@@ -145,6 +146,8 @@ function ProductForm({ product, onClose, onSave }) {
     tags: product?.tags || '',
     images: product?.images || [],
     sizes: product?.sizes || [],
+    is_test_product: product?.is_test_product || false,
+    test_notes: product?.test_notes || '',
   });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -216,6 +219,13 @@ function ProductForm({ product, onClose, onSave }) {
       sizes: form.sizes,
       coming_soon: form.coming_soon,
       published: publish,
+      is_test_product: form.is_test_product,
+      test_notes: form.is_test_product ? form.test_notes : '',
+      // Stamped the first time the product is marked as test, so the admin can
+      // see how long a test product has been lying around.
+      test_created_at: form.is_test_product
+        ? (product?.test_created_at || new Date().toISOString())
+        : null,
     });
     setSaving(false);
     onClose();
@@ -360,6 +370,44 @@ function ProductForm({ product, onClose, onSave }) {
         </div>
       </div>
 
+      {/* ── Testing options ── */}
+      <div className="border border-orange-400/30 bg-orange-400/5 p-4 space-y-3">
+        <p className="font-mono text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
+          <FlaskConical className="w-3.5 h-3.5" /> Testing Options
+        </p>
+
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={form.is_test_product}
+            onChange={e => setForm({ ...form, is_test_product: e.target.checked })}
+            className="w-4 h-4 accent-orange-400"
+          />
+          <span className="text-sm font-medium">Mark as Test Product</span>
+        </label>
+
+        <ul className="font-mono text-[11px] text-muted-foreground space-y-0.5 pl-6 list-disc">
+          <li>Hidden from all customers — not listed, not searchable, 404 on a direct link</li>
+          <li>Only you can order it, so you can test a flow end to end</li>
+          <li>Its orders, reviews and ratings never reach your dashboard metrics</li>
+        </ul>
+
+        {form.is_test_product && (
+          <div>
+            <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+              Test Notes (optional)
+            </label>
+            <Textarea
+              value={form.test_notes}
+              onChange={e => setForm({ ...form, test_notes: e.target.value })}
+              className="bg-secondary border-border"
+              rows={2}
+              placeholder="What are you testing? e.g. 10% → 90% partial payment flow"
+            />
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-3 justify-end pt-2 flex-wrap">
         <Button type="button" variant="outline" onClick={onClose} className="font-mono border-border">Cancel</Button>
         <Button
@@ -417,6 +465,19 @@ export default function AdminProducts() {
     toast.success(newVal ? 'Product published!' : 'Moved to draft');
   };
 
+  const handleToggleTest = async (product) => {
+    const makeTest = !isTestProduct(product);
+    if (!makeTest && !window.confirm('Make this product live? It becomes visible to customers immediately.')) return;
+    await base44.entities.Product.update(product.id, {
+      is_test_product: makeTest,
+      test_created_at: makeTest ? (product.test_created_at || new Date().toISOString()) : null,
+      // Orders already placed against it keep their is_test_order flag, so
+      // going live never back-fills test data into your revenue.
+    });
+    queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    toast.success(makeTest ? 'Marked as test — hidden from customers' : 'Product is now live');
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this product?')) return;
     await base44.entities.Product.delete(id);
@@ -431,6 +492,9 @@ export default function AdminProducts() {
           <h1 className="text-2xl font-bold">Products</h1>
           <p className="font-mono text-xs text-muted-foreground mt-1">
             {products.length} total · <span className="text-primary">{products.filter(p => p.published).length} published</span> · <span className="text-muted-foreground">{products.filter(p => !p.published).length} drafts</span>
+            {products.filter(isTestProduct).length > 0 && (
+              <> · <span className="text-orange-400">{products.filter(isTestProduct).length} test</span></>
+            )}
           </p>
         </div>
         <Button
@@ -468,7 +532,19 @@ export default function AdminProducts() {
                           </div>
                         )}
                       </div>
-                      <span className="text-sm font-medium truncate max-w-[200px]">{product.name}</span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          {isTestProduct(product) && (
+                            <span className={TEST_BADGE_CLASS} title={product.test_notes || 'Test product — hidden from customers'}>
+                              <FlaskConical className="w-2.5 h-2.5" /> Test
+                            </span>
+                          )}
+                          <span className="text-sm font-medium truncate max-w-[200px]">{product.name}</span>
+                        </div>
+                        {isTestProduct(product) && product.test_notes && (
+                          <p className="font-mono text-[10px] text-muted-foreground truncate max-w-[220px]">{product.test_notes}</p>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="p-3 hidden sm:table-cell">
@@ -477,6 +553,15 @@ export default function AdminProducts() {
                   <td className="p-3 font-mono font-bold text-primary">${product.price?.toFixed(2)}</td>
                   <td className="p-3 font-mono text-sm hidden md:table-cell">{product.stock || 0}</td>
                   <td className="p-3 hidden sm:table-cell">
+                    {isTestProduct(product) ? (
+                      <button
+                        onClick={() => handleToggleTest(product)}
+                        className="flex items-center gap-1.5 px-2 py-1 font-mono text-[10px] uppercase border border-orange-400/40 bg-orange-400/10 text-orange-400 hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-colors"
+                        title="Make this product live and visible to customers"
+                      >
+                        <FlaskConical className="w-3 h-3" /> Make Live
+                      </button>
+                    ) : (
                     <button
                       onClick={() => handleTogglePublish(product)}
                       className={`flex items-center gap-1.5 px-2 py-1 font-mono text-[10px] uppercase border transition-colors ${
@@ -487,6 +572,7 @@ export default function AdminProducts() {
                     >
                       {product.published ? <><CheckCircle2 className="w-3 h-3" /> Published</> : <><FileText className="w-3 h-3" /> Draft</>}
                     </button>
+                    )}
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end gap-1">

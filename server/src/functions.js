@@ -185,7 +185,9 @@ async function recomputeProductRating(productId) {
   const reviews = await prisma.review.findMany({
     where: { data: { path: ['product_id'], equals: productId } },
   });
-  const approved = reviews.filter((r) => r.data.status === 'approved');
+  // Reviews left on a test order are excluded, so testing a flow end-to-end
+  // never moves a real product's star rating or review count.
+  const approved = reviews.filter((r) => r.data.status === 'approved' && r.data.is_test_review !== true);
   const reviewCount = approved.length;
   const averageRating = reviewCount
     ? Math.round((approved.reduce((sum, r) => sum + (r.data.rating || 0), 0) / reviewCount) * 10) / 10

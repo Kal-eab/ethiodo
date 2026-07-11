@@ -1,6 +1,6 @@
 const express = require('express');
 const { prisma } = require('../db');
-const { entityNames, canCreate, checkRecord, readWhereClause, sanitizeWrite } = require('../entityConfig');
+const { entityNames, canCreate, checkRecord, readWhereClause, sanitizeWrite, isAdmin, isVisible } = require('../entityConfig');
 const { emitEntityEvent } = require('../realtime');
 const { notifyNewProduct, recomputeProductRating } = require('../functions');
 
@@ -73,7 +73,9 @@ router.post('/:entity/query', async (req, res) => {
     orderBy: orderByFromSort(sort),
     take: clampLimit(limit),
   });
-  res.json(records.map(serialize));
+  // Test products / test-order reviews are stripped for everyone but an admin,
+  // so they never reach a listing, a search or a rating (see entityConfig.js).
+  res.json(records.filter((r) => isVisible(entity, r, req.user)).map(serialize));
 });
 
 router.get('/:entity/:id', async (req, res) => {
@@ -83,22 +85,59 @@ router.get('/:entity/:id', async (req, res) => {
   if (!checkRecord(entity, 'read', record, req.user)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
+  // A customer following a direct link to a test product gets the same answer
+  // as for a product that doesn't exist.
+  if (!isVisible(entity, record, req.user)) {
+    return res.status(404).json({ error: 'Not found' });
+  }
   res.json(serialize(record));
 });
 
-router.post('/:entity', async (req, res) => {
+// A test product may only ever be bought by an admin, and an order that
+// contains one is flagged `is_test_order` so it stays out of revenue, product
+// purchase counts and the dashboard's metrics. Flagging happens here rather
+// than on the client because the client is the untrusted party: the buyer
+// picks the product ids, so the server is what decides whether they're test.
+async function applyTestProductRules(entity, data, user) {
+  let productIds = [];
+  if (entity === 'Order') productIds = (data.items || []).map((i) => i.product_id).filter(Boolean);
+  else if (entity === 'CartItem' && data.product_id) productIds = [data.product_id];
+  if (productIds.length === 0) return data;
+
+  const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
+  if (!products.some((p) => p.data?.is_test_product === true)) return data;
+
+  if (!isAdmin(user)) {
+    const err = new Error('This product is not available for purchase');
+    err.status = 400;
+    throw err;
+  }
+  return entity === 'Order' ? { ...data, is_test_order: true } : data;
+}
+
+router.post('/:entity', async (req, res, next) => {
   const { entity, model } = req;
   if (!canCreate(entity, req.user)) return res.status(403).json({ error: 'Forbidden' });
-  const record = await model.create({
-    data: {
-      data: sanitizeWrite(entity, req.body || {}, req.user, 'create'),
-      createdById: req.user?.id || null,
-      createdByEmail: req.user?.email || null,
-    },
-  });
-  const serialized = serialize(record);
-  emitEntityEvent(entity, 'create', serialized);
-  res.status(201).json(serialized);
+  try {
+    const data = await applyTestProductRules(
+      entity,
+      sanitizeWrite(entity, req.body || {}, req.user, 'create'),
+      req.user
+    );
+    const record = await model.create({
+      data: {
+        data,
+        createdById: req.user?.id || null,
+        createdByEmail: req.user?.email || null,
+      },
+    });
+    const serialized = serialize(record);
+    emitEntityEvent(entity, 'create', serialized);
+    res.status(201).json(serialized);
+  } catch (err) {
+    // Express 4 doesn't forward async throws — hand it to the error handler.
+    next(err);
+  }
 });
 
 router.put('/:entity/:id', async (req, res) => {

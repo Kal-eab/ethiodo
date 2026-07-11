@@ -66,8 +66,11 @@ const entityNames = Object.keys(rules);
 // or create an Order that is already marked paid/delivered. Admins keep full
 // control; these are only stripped for non-admin writers.
 const ADMIN_ONLY_FIELDS = {
-  Review: ['status', 'verified_buyer', 'featured'],
+  Review: ['status', 'verified_buyer', 'featured', 'is_test_review'],
   Order: [
+    // Server-derived from the ordered products (see routes/entities.js) — a
+    // client must never be able to mark its own order as test (or un-test).
+    'is_test_order',
     'money_received',
     'money_received_date',
     'profit_recorded',
@@ -105,6 +108,27 @@ function sanitizeWrite(entity, data, user, action) {
 
 function isAdmin(user) {
   return !!user && user.role === 'admin';
+}
+
+// Test-only records exist so the admin can exercise a feature end-to-end (place
+// an order, pay it, review it) without the data landing in the storefront or in
+// the dashboard's metrics. They are invisible to everyone but an admin: a test
+// product is not listed, not searchable and 404s on a direct link, and a review
+// left on a test order never reaches the storefront or a product's rating.
+function isTestRecord(entity, record) {
+  if (entity === 'Product') return record?.data?.is_test_product === true;
+  if (entity === 'Review') return record?.data?.is_test_review === true;
+  return false;
+}
+
+// Applied on top of the RLS `read` rule. This is deliberately a post-filter in
+// application code rather than a WHERE clause: a Postgres JSON path comparison
+// on a key that doesn't exist yields NULL, so `NOT (data->'is_test_product' =
+// 'true')` would drop every product predating this feature instead of keeping
+// it. Filtering in JS treats a missing flag as "not a test", which is correct.
+function isVisible(entity, record, user) {
+  if (isAdmin(user)) return true;
+  return !isTestRecord(entity, record);
 }
 
 function canCreate(entity, user) {
@@ -149,4 +173,14 @@ function readWhereClause(entity, user) {
   return { id: '__none__' };
 }
 
-module.exports = { rules, entityNames, isAdmin, canCreate, checkRecord, readWhereClause, sanitizeWrite };
+module.exports = {
+  rules,
+  entityNames,
+  isAdmin,
+  canCreate,
+  checkRecord,
+  readWhereClause,
+  sanitizeWrite,
+  isTestRecord,
+  isVisible,
+};

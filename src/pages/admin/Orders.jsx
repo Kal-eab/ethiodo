@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Search, Clock, CheckCircle2, Package, Trash2, DollarSign, Truck, Upload, Loader2, X, Wallet, BellRing } from 'lucide-react';
+import { Search, Clock, CheckCircle2, Package, Trash2, DollarSign, Truck, Upload, Loader2, X, Wallet, BellRing, FlaskConical } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import OrderDetailDrawer from '@/components/admin/OrderDetailDrawer';
 import { FINAL_PAYMENT, finalAmount, finalAmountDue, isFinalPaymentOpen } from '@/lib/orderPayment';
+import { isTestOrder, TEST_BADGE_CLASS } from '@/lib/testMode';
 
 // The first four tabs filter on `order.status`; "Final Payment" is a cross-cut
 // queue of delivered orders whose remaining 90% is still open (see lib/orderPayment).
@@ -308,12 +309,16 @@ export default function AdminOrders() {
         updates.final_payment_amount = finalAmount(order.total);
         updates.final_payment_requested_date = updates.delivered_date;
       }
-      for (const item of order.items || []) {
-        const products = await base44.entities.Product.filter({ id: item.product_id });
-        if (products[0]) {
-          await base44.entities.Product.update(item.product_id, {
-            totalPurchases: (products[0].totalPurchases || 0) + (item.quantity || 1),
-          });
+      // A test order must not move a product's purchase count — that count
+      // feeds the popularity/trending scores that order the storefront.
+      if (!isTestOrder(order)) {
+        for (const item of order.items || []) {
+          const products = await base44.entities.Product.filter({ id: item.product_id });
+          if (products[0]) {
+            await base44.entities.Product.update(item.product_id, {
+              totalPurchases: (products[0].totalPurchases || 0) + (item.quantity || 1),
+            });
+          }
         }
       }
     }
@@ -451,6 +456,9 @@ export default function AdminOrders() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-mono text-xs text-muted-foreground">#{order.id?.slice(-8).toUpperCase()}</span>
+                  {isTestOrder(order) && (
+                    <span className={TEST_BADGE_CLASS}><FlaskConical className="w-2.5 h-2.5" /> Test</span>
+                  )}
                   <span className="text-sm font-semibold truncate">{order.customer_name || order.customer_email}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">

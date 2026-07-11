@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Package, ShoppingCart, DollarSign, Clock, Trash2, Loader2 } from 'lucide-react';
+import { Package, ShoppingCart, DollarSign, Clock, Trash2, Loader2, FlaskConical } from 'lucide-react';
 import CustomerAnalytics from '@/components/admin/CustomerAnalytics';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { isTestProduct, isTestOrder, realOrders, testOrders, TEST_BADGE_CLASS } from '@/lib/testMode';
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
@@ -68,9 +69,19 @@ export default function AdminDashboard() {
     queryFn: () => base44.entities.ContactRequest.list('-created_date', 50),
   });
 
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.profit_recorded ?? 0), 0);
-  const pendingOrders = orders.filter(o => o.status === 'pending').length;
+  // Every headline number is real-data only — test orders and test products are
+  // reported separately below so they can never quietly inflate the store's
+  // stats (see src/lib/testMode.js).
+  const liveOrders = realOrders(orders);
+  const testOnlyOrders = testOrders(orders);
+  const liveProducts = products.filter(p => !isTestProduct(p));
+  const testProducts = products.filter(isTestProduct);
+
+  const totalRevenue = liveOrders.reduce((sum, o) => sum + (o.profit_recorded ?? 0), 0);
+  const testRevenue = testOnlyOrders.reduce((sum, o) => sum + (o.profit_recorded ?? 0), 0);
+  const pendingOrders = liveOrders.filter(o => o.status === 'pending').length;
   const newRequests = requests.filter(r => r.status === 'new').length;
+  const hasTestData = testOnlyOrders.length > 0 || testProducts.length > 0;
 
   const recentOrders = orders.slice(0, 5);
 
@@ -98,13 +109,34 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      {/* Stats */}
+      {/* Stats — real data only */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Package} label="Products" value={products.length} />
-        <StatCard icon={ShoppingCart} label="Total Orders" value={orders.length} />
+        <StatCard icon={Package} label="Products" value={liveProducts.length} />
+        <StatCard icon={ShoppingCart} label="Total Orders" value={liveOrders.length} />
         <StatCard icon={DollarSign} label="Revenue" value={`$${totalRevenue.toFixed(2)}`} color="text-primary" />
         <StatCard icon={Clock} label="Pending" value={pendingOrders} color={pendingOrders > 0 ? 'text-yellow-400' : 'text-foreground'} />
       </div>
+
+      {/* Test data — excluded from every number above */}
+      {hasTestData && (
+        <div className="border border-orange-400/30 bg-orange-400/5 p-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <p className="font-mono text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
+              <FlaskConical className="w-3.5 h-3.5" /> Test Data (excluded)
+            </p>
+            <p className="font-mono text-xs text-muted-foreground">
+              Test orders: <span className="text-orange-400 font-bold">{testOnlyOrders.length}</span>
+            </p>
+            <p className="font-mono text-xs text-muted-foreground">
+              Test revenue: <span className="text-orange-400 font-bold">${testRevenue.toFixed(2)}</span>
+            </p>
+            <p className="font-mono text-xs text-muted-foreground">
+              Test products: <span className="text-orange-400 font-bold">{testProducts.length}</span>
+            </p>
+            <Link to="/admin/products" className="font-mono text-xs text-primary hover:underline ml-auto">MANAGE</Link>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Orders */}
@@ -120,7 +152,12 @@ export default function AdminDashboard() {
               recentOrders.map(order => (
                 <div key={order.id} className="p-4 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">{order.customer_name || 'Unknown'}</p>
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      {order.customer_name || 'Unknown'}
+                      {isTestOrder(order) && (
+                        <span className={TEST_BADGE_CLASS}><FlaskConical className="w-2.5 h-2.5" /> Test</span>
+                      )}
+                    </p>
                     <p className="font-mono text-xs text-muted-foreground">
                       {order.created_date ? format(new Date(order.created_date), 'MMM d, HH:mm') : '—'}
                     </p>
