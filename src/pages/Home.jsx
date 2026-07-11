@@ -16,8 +16,14 @@ import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
 import { track } from '@/lib/track';
 import { trackCategoryFilter } from '@/lib/analytics';
 import { getCategoryTreeDynamic, getMatchingCategoryValues, useCategoryTree } from '@/lib/categories';
+import { useAuth } from '@/lib/AuthContext';
+import RecommendedSection from '@/components/home/RecommendedSection';
+import TrendingSection from '@/components/home/TrendingSection';
+import NewAndRisingSection from '@/components/home/NewAndRisingSection';
+import BecauseYouViewedSection from '@/components/home/BecauseYouViewedSection';
 
 export default function Home() {
+  const { user } = useAuth();
   const [searchInput, setSearchInput] = useState('');
   const search = useDebounce(searchInput, 400);
   const [category, setCategory] = useState('all');
@@ -52,6 +58,36 @@ export default function Home() {
     queryFn: () => base44.entities.Favorite.list().catch(() => []),
     retry: false,
   });
+
+  // Behaviour profile drives the personalized scoring in RecommendedSection.
+  const { data: userProfile } = useQuery({
+    queryKey: ['userBehavior', user?.email],
+    // @ts-ignore
+    queryFn: () => base44.entities.UserBehavior.filter({ user_email: user?.email }, null, 1).then(rows => rows[0]),
+    enabled: !!user?.email,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: userOrders = [] } = useQuery({
+    queryKey: ['my-orders', user?.email],
+    // @ts-ignore
+    queryFn: () => base44.entities.Order.filter({ created_by: user?.email }, '-created_date', 100),
+    enabled: !!user?.email,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Already-bought products are excluded from recommendations.
+  const purchasedProductIds = useMemo(() => {
+    const ids = new Set();
+    for (const order of userOrders) {
+      for (const item of order.items || []) {
+        if (item.product_id) ids.add(item.product_id);
+      }
+    }
+    return Array.from(ids);
+  }, [userOrders]);
 
   /**
    * @param {React.MouseEvent} e
@@ -122,6 +158,37 @@ export default function Home() {
     for (const f of favorites) m.set(f.product_id, f);
     return m;
   }, [favorites]);
+
+  // The recommendation sections index favorites by product id and pass the value
+  // straight to ProductCard's favoriteId, which is fed to Favorite.delete() — so
+  // the value has to be the favorite's id, not the favorite record.
+  const favoritesById = useMemo(() => {
+    /** @type {Record<string, string>} */
+    const obj = {};
+    for (const f of favorites) obj[f.product_id] = f.id;
+    return obj;
+  }, [favorites]);
+
+  // TrendingSection renders exactly what it is handed, so rank and cut here
+  // rather than passing the whole catalog through it.
+  const trendingProducts = useMemo(
+    () => products
+      .filter(p => (p.trendingScore || 0) > 0)
+      .sort((a, b) => (b.trendingScore || 0) - (a.trendingScore || 0))
+      .slice(0, 10),
+    [products]
+  );
+
+  // Signed-in users get their server-side history; guests fall back to the
+  // session list that behaviorTracker keeps under `_rv`.
+  const viewedProductIds = useMemo(() => {
+    if (userProfile?.viewed_products) return userProfile.viewed_products;
+    try {
+      return JSON.parse(sessionStorage.getItem('_rv') || '[]');
+    } catch {
+      return [];
+    }
+  }, [userProfile]);
 
   useEffect(() => {
     if (search.length > 2) {
@@ -242,6 +309,21 @@ export default function Home() {
             )}
           </section>
         ) : (
+          <>
+            <RecommendedSection
+              products={products}
+              userProfile={userProfile}
+              favorites={favoritesById}
+              purchasedProductIds={purchasedProductIds}
+            />
+            <TrendingSection products={trendingProducts} favorites={favoritesById} />
+            <NewAndRisingSection products={products} favorites={favoritesById} />
+            <BecauseYouViewedSection
+              products={products}
+              viewedProductIds={viewedProductIds}
+              favorites={favoritesById}
+            />
+
           <section className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 py-1">
             <div className="flex items-center gap-2 mb-2">
             <h2 className="font-mono text-xs text-muted-foreground uppercase tracking-widest">All Products</h2>
@@ -267,6 +349,7 @@ export default function Home() {
               })}
             </div>
           </section>
+          </>
         )}
       </main>
       <Footer />
