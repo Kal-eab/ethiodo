@@ -1,7 +1,10 @@
 import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { ImageIcon, CheckCircle2, Package, Clock, Truck } from 'lucide-react';
+import { ImageIcon, CheckCircle2, Package, Clock, Truck, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
+import { FINAL_PAYMENT, FINAL_PAYMENT_LABELS, depositAmount, finalAmountDue } from '@/lib/orderPayment';
+
+const fmt = (n) => Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
 
 const STATUS_CONFIG = {
   pending:   { label: 'Pending',   color: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400/30', icon: Clock },
@@ -10,11 +13,12 @@ const STATUS_CONFIG = {
   delivered: { label: 'Delivered', color: 'text-accent',     bg: 'bg-accent/10',     border: 'border-accent/30',     icon: Package },
 };
 
-export default function OrderDetailDrawer({ order, onClose, onStatusChange }) {
+export default function OrderDetailDrawer({ order, onClose, onStatusChange, onReviewFinalPayment }) {
   if (!order) return null;
 
   const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   const Icon = cfg.icon;
+  const finalStage = order.final_payment_status;
 
   return (
     <Sheet open={!!order} onOpenChange={onClose}>
@@ -36,7 +40,57 @@ export default function OrderDetailDrawer({ order, onClose, onStatusChange }) {
             <TimelineRow label="Confirmed" date={order.confirmed_date} active={!!order.confirmed_date} />
             <TimelineRow label="Shipped" date={order.shipped_date} active={!!order.shipped_date} />
             <TimelineRow label="Delivered" date={order.delivered_date} active={!!order.delivered_date} />
+            {finalStage && (
+              <>
+                <TimelineRow label="90% asked" date={order.final_payment_requested_date} active={!!order.final_payment_requested_date} />
+                <TimelineRow label="90% sent" date={order.final_payment_submitted_date} active={!!order.final_payment_submitted_date} />
+                <TimelineRow label="Paid" date={order.final_payment_confirmed_date} active={!!order.final_payment_confirmed_date} />
+              </>
+            )}
           </div>
+
+          {/* Final (90%) payment stage */}
+          {finalStage && (
+            <div className="border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-mono text-xs uppercase text-primary flex items-center gap-2">
+                  <Wallet className="w-3 h-3" /> {FINAL_PAYMENT_LABELS[finalStage] || 'Final Payment'}
+                </p>
+                <span className="font-mono text-sm font-bold text-primary">{fmt(finalAmountDue(order))} Birr</span>
+              </div>
+              <p className="font-mono text-[11px] text-muted-foreground">
+                Deposit paid: {fmt(depositAmount(order.total))} Birr (10%) · Remaining: {fmt(finalAmountDue(order))} Birr (90%)
+              </p>
+
+              {order.final_payment_screenshots?.length > 0 && (
+                <div className="space-y-2">
+                  {order.final_payment_screenshots.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
+                      <img
+                        src={url}
+                        alt={`Final payment proof ${i + 1}`}
+                        className="w-full border border-border object-contain max-h-60 bg-secondary/30 hover:opacity-90 transition-opacity cursor-zoom-in"
+                      />
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {finalStage === FINAL_PAYMENT.AWAITING_CONFIRMATION && onReviewFinalPayment && (
+                <button
+                  onClick={() => onReviewFinalPayment(order)}
+                  className="w-full py-2.5 bg-primary text-primary-foreground font-mono text-xs uppercase font-bold hover:bg-primary/90 transition-colors"
+                >
+                  Review Final Payment
+                </button>
+              )}
+              {finalStage === FINAL_PAYMENT.AWAITING_PAYMENT && (
+                <p className="font-mono text-[11px] text-yellow-400">
+                  Waiting for the customer to send their payment screenshot.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Shipped photo */}
           {order.shipped_photo_url && (

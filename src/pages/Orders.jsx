@@ -2,13 +2,19 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Package, Star, CheckCircle, AlertCircle } from 'lucide-react';
+import { Package, Star, CheckCircle, AlertCircle, Wallet, Clock, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/store/PullToRefreshIndicator';
+import PaymentAccounts from '@/components/store/PaymentAccounts';
+import ScreenshotUploader from '@/components/store/ScreenshotUploader';
 import ReviewSubmitModal from '@/components/product/ReviewSubmitModal';
 import { playNotificationSound } from '@/lib/notificationSound';
+import { FINAL_PAYMENT, finalAmountDue } from '@/lib/orderPayment';
+
+const fmt = (n) => Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
 
 const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'reviewed'];
 
@@ -94,6 +100,114 @@ function OrderItemRow({ item, order, isDelivered, onReviewed }) {
   );
 }
 
+// ─── Final (90%) payment, requested once the order is delivered ──────────────
+function FinalPaymentPanel({ order, onRefresh }) {
+  const [screenshots, setScreenshots] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [reuploading, setReuploading] = useState(false);
+
+  const stage = order.final_payment_status;
+  const due = finalAmountDue(order);
+
+  const handleSubmit = async () => {
+    if (screenshots.length === 0) { toast.error('Please upload a screenshot of your payment'); return; }
+    setSubmitting(true);
+    try {
+      await base44.orders.submitFinalPayment(order.id, screenshots);
+      setScreenshots([]);
+      setReuploading(false);
+      playNotificationSound();
+      toast.success('Payment proof sent — waiting for confirmation');
+      onRefresh();
+    } catch (err) {
+      toast.error(err?.message || 'Failed to send payment proof');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (stage === FINAL_PAYMENT.PAID) {
+    return (
+      <div className="mx-5 mb-4 flex items-center gap-2 border border-primary/30 bg-primary/5 p-4">
+        <CheckCircle className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+        <p className="font-mono text-[11px] text-primary">
+          Payment complete — {fmt(due)} Birr received. Thank you!
+        </p>
+      </div>
+    );
+  }
+
+  // Proof is in, seller hasn't confirmed yet. The server keeps only the latest
+  // upload, so a re-send here simply replaces what the seller reviews.
+  if (stage === FINAL_PAYMENT.AWAITING_CONFIRMATION && !reuploading) {
+    return (
+      <div className="mx-5 mb-4 border border-blue-400/30 bg-blue-400/5 p-4 space-y-3">
+        <div className="flex items-start gap-2">
+          <Clock className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" />
+          <p className="font-mono text-[11px] text-blue-300/80 leading-relaxed">
+            Waiting for the seller to confirm your {fmt(due)} Birr payment.
+          </p>
+        </div>
+        {order.final_payment_screenshots?.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto">
+            {order.final_payment_screenshots.map(url => (
+              <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+                <img src={url} alt="Final payment proof" className="w-20 h-20 object-cover border border-border" />
+              </a>
+            ))}
+          </div>
+        )}
+        <button
+          onClick={() => setReuploading(true)}
+          className="font-mono text-[10px] text-muted-foreground underline hover:text-foreground"
+        >
+          Send a different screenshot
+        </button>
+      </div>
+    );
+  }
+
+  if (stage !== FINAL_PAYMENT.AWAITING_PAYMENT && !reuploading) return null;
+
+  return (
+    <div className="mx-5 mb-4 border border-primary/30 bg-primary/5 p-4 space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-mono text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+          <Wallet className="w-3.5 h-3.5" /> Final Payment Required
+        </p>
+        <span className="font-mono text-base font-black text-primary">{fmt(due)} Birr</span>
+      </div>
+
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        Your order has been delivered. Transfer the remaining <strong className="text-foreground">{fmt(due)} Birr</strong> (90%)
+        to the account below, then upload a screenshot of the transfer.
+      </p>
+
+      <PaymentAccounts />
+      <ScreenshotUploader screenshots={screenshots} onChange={setScreenshots} />
+
+      <div className="flex gap-2">
+        {reuploading && (
+          <button
+            onClick={() => { setReuploading(false); setScreenshots([]); }}
+            className="h-10 px-4 border border-border font-mono text-xs uppercase text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Cancel
+          </button>
+        )}
+        <button
+          onClick={handleSubmit}
+          disabled={submitting || screenshots.length === 0}
+          className="flex-1 h-10 bg-primary text-primary-foreground font-mono text-xs font-bold uppercase flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-primary/90 transition-colors"
+        >
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+          Send Screenshot
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Order card ───────────────────────────────────────────────────────────────
 function OrderCard({ order, onRefresh }) {
   const visibleItems = (order.items || []).filter(i => !i.removed);
@@ -132,6 +246,9 @@ function OrderCard({ order, onRefresh }) {
           </a>
         </div>
       )}
+      {order.status === 'delivered' && (
+        <FinalPaymentPanel order={order} onRefresh={onRefresh} />
+      )}
     </div>
   );
 }
@@ -145,6 +262,7 @@ export default function Orders() {
   // that touches unrelated fields (e.g. reviewed_item_ids, featured) doesn't
   // re-trigger a notification for a status that hasn't actually changed.
   const lastOrderStatusRef = useRef({});
+  const lastFinalPaymentRef = useRef({});
   const lastReviewStatusRef = useRef({});
 
   const { data: orders = [], isLoading } = useQuery({
@@ -160,7 +278,10 @@ export default function Orders() {
   });
 
   useEffect(() => {
-    orders.forEach(o => { lastOrderStatusRef.current[o.id] = o.status; });
+    orders.forEach(o => {
+      lastOrderStatusRef.current[o.id] = o.status;
+      lastFinalPaymentRef.current[o.id] = o.final_payment_status;
+    });
   }, [orders]);
 
   useEffect(() => {
@@ -182,22 +303,38 @@ export default function Orders() {
       const order = event.data;
       if (!order || order.customer_email !== user.email) return;
 
-      // Skip updates that don't actually change the status (e.g. an order
-      // update fired because a review on it was submitted/deleted).
+      // Skip updates that don't actually change the status or the payment stage
+      // (e.g. an order update fired because a review on it was submitted/deleted).
       const prevStatus = lastOrderStatusRef.current[order.id];
+      const prevFinal = lastFinalPaymentRef.current[order.id];
       lastOrderStatusRef.current[order.id] = order.status;
-      if (prevStatus === order.status) return;
-
-      const statusLabels = {
-        confirmed: 'Your order has been confirmed! ✅',
-        shipped: 'Your order is on its way! 🚚',
-        delivered: 'Your order has been delivered! 🎉',
-      };
-      const msg = statusLabels[order.status];
-      if (!msg) return;
+      lastFinalPaymentRef.current[order.id] = order.final_payment_status;
+      const statusChanged = prevStatus !== order.status;
+      const finalChanged = prevFinal !== order.final_payment_status;
+      if (!statusChanged && !finalChanged) return;
 
       // Refresh orders list
       queryClient.invalidateQueries({ queryKey: ['my-orders', user.email] });
+
+      let msg = null;
+      if (statusChanged) {
+        const statusLabels = {
+          confirmed: 'Your order has been confirmed! ✅',
+          shipped: 'Your order is on its way! 🚚',
+          delivered: order.final_payment_status === FINAL_PAYMENT.AWAITING_PAYMENT
+            ? `Delivered! 🎉 Please send the remaining ${fmt(finalAmountDue(order))} Birr to complete your purchase.`
+            : 'Your order has been delivered! 🎉',
+        };
+        msg = statusLabels[order.status] || null;
+      } else if (order.final_payment_status === FINAL_PAYMENT.PAID) {
+        msg = 'Your final payment was confirmed — order complete! ✅';
+      } else if (
+        order.final_payment_status === FINAL_PAYMENT.AWAITING_PAYMENT &&
+        prevFinal === FINAL_PAYMENT.AWAITING_CONFIRMATION
+      ) {
+        msg = 'The seller needs your payment screenshot again — please re-send it.';
+      }
+      if (!msg) return;
 
       // Play a subtle notification sound
       playNotificationSound();

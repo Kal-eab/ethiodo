@@ -101,6 +101,13 @@ export const base44 = {
     // that don't fit the generic entities CRUD/RLS model.
     submit: (payload) => request('/api/reviews', { method: 'POST', body: payload }),
   },
+  orders: {
+    // The buyer's only write to their own order (server/src/routes/orders.js):
+    // proof of the final 90% payment, accepted only once the order is delivered
+    // and the payment has been requested. Orders are admin-write-only otherwise.
+    submitFinalPayment: (orderId, screenshots) =>
+      request(`/api/orders/${orderId}/final-payment`, { method: 'POST', body: { screenshots } }),
+  },
   agents: {
     createConversation: ({ agent_name }) =>
       request(`/api/agents/${agent_name.replace(/_/g, '-')}/conversations`, { method: 'POST' }),

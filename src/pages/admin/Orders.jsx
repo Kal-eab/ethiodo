@@ -1,18 +1,28 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Search, Clock, CheckCircle2, Package, Trash2, DollarSign, Truck, Upload, Loader2, X } from 'lucide-react';
+import { Search, Clock, CheckCircle2, Package, Trash2, DollarSign, Truck, Upload, Loader2, X, Wallet, BellRing } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import OrderDetailDrawer from '@/components/admin/OrderDetailDrawer';
+import { FINAL_PAYMENT, finalAmount, finalAmountDue, isFinalPaymentOpen } from '@/lib/orderPayment';
+
+// The first four tabs filter on `order.status`; "Final Payment" is a cross-cut
+// queue of delivered orders whose remaining 90% is still open (see lib/orderPayment).
+const FINAL_PAYMENT_TAB = 'final_payment';
 
 const TABS = [
   { key: 'pending',   label: 'Pending',   icon: Clock,         color: 'text-yellow-400', border: 'border-yellow-400' },
   { key: 'confirmed', label: 'Confirmed', icon: CheckCircle2,  color: 'text-blue-400',   border: 'border-blue-400' },
   { key: 'shipped',   label: 'Shipped',   icon: Truck,         color: 'text-purple-400', border: 'border-purple-400' },
   { key: 'delivered', label: 'Delivered', icon: Package,       color: 'text-accent',     border: 'border-accent' },
+  { key: FINAL_PAYMENT_TAB, label: 'Final Payment', icon: Wallet, color: 'text-primary', border: 'border-primary' },
 ];
+
+const fmt = (n) => Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+const STATUS_ORDER = { pending: 0, confirmed: 1, shipped: 2, delivered: 3 };
 
 const STATUS_ROW_STYLE = {
   pending:   'border-l-2 border-l-yellow-400/60',
@@ -84,11 +94,88 @@ function ShipModal({ order, onClose, onShipped }) {
   );
 }
 
+// ─── Final payment review: the customer's 90% proof, accept or ask again ──────
+function FinalPaymentModal({ order, onClose, onConfirm, onRequestAgain }) {
+  const [busy, setBusy] = useState(false);
+  const proofs = order.final_payment_screenshots || [];
+  const due = finalAmountDue(order);
+
+  const run = async (action) => {
+    setBusy(true);
+    try {
+      await action(order);
+      onClose();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="font-mono text-sm font-bold uppercase">Final Payment Proof</h2>
+          <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
+        </div>
+
+        <div className="bg-secondary/50 border border-border p-3 space-y-1">
+          <p className="text-sm"><strong>Customer:</strong> {order.customer_name || order.customer_email}</p>
+          <p className="text-sm"><strong>Items:</strong> {(order.items || []).map(i => i.product_name).join(', ') || '—'}</p>
+          <p className="text-sm"><strong>Expected:</strong> <span className="font-mono text-primary font-bold">{fmt(due)} Birr</span> (90%)</p>
+          <p className="font-mono text-xs text-muted-foreground">
+            Sent {order.final_payment_submitted_date ? format(new Date(order.final_payment_submitted_date), 'MMM d, yyyy · HH:mm') : '—'}
+          </p>
+        </div>
+
+        {proofs.length > 0 ? (
+          <div className="space-y-2">
+            {proofs.map((url, i) => (
+              <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
+                <img
+                  src={url}
+                  alt={`Final payment proof ${i + 1}`}
+                  className="w-full border border-border object-contain max-h-72 bg-secondary/30 hover:opacity-90 transition-opacity cursor-zoom-in"
+                />
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p className="font-mono text-xs text-muted-foreground py-6 text-center">
+            The customer hasn't sent a screenshot yet.
+          </p>
+        )}
+
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => run(onConfirm)}
+            disabled={busy || proofs.length === 0}
+            className="w-full h-10 bg-primary text-primary-foreground font-mono text-xs uppercase font-bold flex items-center justify-center gap-2 hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
+            Received Money
+          </button>
+          <button
+            onClick={() => run(onRequestAgain)}
+            disabled={busy}
+            className="w-full h-10 border border-yellow-400/30 bg-yellow-400/10 text-yellow-400 font-mono text-xs uppercase flex items-center justify-center gap-2 hover:bg-yellow-400/20 disabled:opacity-50 transition-colors"
+          >
+            <BellRing className="w-4 h-4" /> Request Payment Again
+          </button>
+          <button onClick={onClose} className="w-full h-10 border border-border font-mono text-xs uppercase text-muted-foreground hover:text-foreground transition-colors">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminOrders() {
   const [activeTab, setActiveTab] = useState('pending');
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [shipTarget, setShipTarget] = useState(null);
+  const [finalPaymentTarget, setFinalPaymentTarget] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: orders = [], isLoading } = useQuery({
@@ -130,6 +217,21 @@ export default function AdminOrders() {
     toast.success('Order deleted');
   };
 
+  const sendCustomerMessage = async (order, content, imageUrl) => {
+    if (!order.customer_email) return;
+    await base44.entities.Message.create({
+      conversation_id: order.customer_email,
+      user_email: order.customer_email,
+      user_name: order.customer_name || order.customer_email,
+      content,
+      image_url: imageUrl || null,
+      sender: 'admin',
+      is_read: false,
+    });
+  };
+
+  // Confirms the customer's final 90% payment: the order is now fully paid, so
+  // this is also the point where the sale's profit is booked into revenue.
   const handleMoneyReceived = async (order) => {
     // Calculate profit from items (use product profit if set, otherwise full price)
     let profit = 0;
@@ -139,37 +241,51 @@ export default function AdminOrders() {
       const perUnit = (product?.profit != null) ? product.profit : (item.price || 0);
       profit += perUnit * (item.quantity || 1);
     }
+    const now = new Date().toISOString();
     await base44.entities.Order.update(order.id, {
       money_received: true,
-      money_received_date: new Date().toISOString(),
+      money_received_date: now,
       profit_recorded: profit,
+      final_payment_status: FINAL_PAYMENT.PAID,
+      final_payment_confirmed_date: now,
     });
+
+    await sendCustomerMessage(
+      order,
+      `✅ We've received your final payment of **${fmt(finalAmountDue(order))} Birr**. Order #${order.id?.slice(-8).toUpperCase()} is now fully paid — thank you!`
+    );
+
     queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
-    toast.success('Revenue recorded!');
+    if (selectedOrder?.id === order.id) setSelectedOrder(null);
+    toast.success('Payment confirmed — revenue recorded!');
+  };
+
+  // Sends the customer back to the upload step (e.g. the screenshot was
+  // unreadable or the amount didn't match).
+  const handleRequestPaymentAgain = async (order) => {
+    await base44.entities.Order.update(order.id, {
+      final_payment_status: FINAL_PAYMENT.AWAITING_PAYMENT,
+      final_payment_requested_date: new Date().toISOString(),
+    });
+    await sendCustomerMessage(
+      order,
+      `⚠️ We couldn't confirm your payment screenshot for order #${order.id?.slice(-8).toUpperCase()}. Please re-send proof of the **${fmt(finalAmountDue(order))} Birr** transfer from your Orders page.`
+    );
+    queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+    toast.success('Payment re-requested');
   };
 
   const sendStatusMessage = async (order, newStatus, shippedPhotoUrl) => {
-    const conversationId = order.customer_email;
-    if (!conversationId) return;
-
     const statusMessages = {
       confirmed: `✅ Great news! Your order #${order.id?.slice(-8).toUpperCase()} has been **confirmed**. We're preparing your items now.`,
       shipped:   `📦 Your order #${order.id?.slice(-8).toUpperCase()} has been **shipped**! Check the photo of your packaged items below. We'll notify you when it arrives.`,
-      delivered: `🎉 Your order #${order.id?.slice(-8).toUpperCase()} has been **delivered**! Thank you for shopping with us. Please leave a review in your Orders page.`,
+      delivered: `🎉 Your order #${order.id?.slice(-8).toUpperCase()} has been **delivered**! Please send the remaining **${fmt(finalAmount(order.total))} Birr** (90%) from your Orders page to complete the purchase, then leave us a review.`,
     };
 
     const content = statusMessages[newStatus];
     if (!content) return;
 
-    await base44.entities.Message.create({
-      conversation_id: conversationId,
-      user_email: order.customer_email,
-      user_name: order.customer_name || order.customer_email,
-      content,
-      image_url: newStatus === 'shipped' ? shippedPhotoUrl : null,
-      sender: 'admin',
-      is_read: false,
-    });
+    await sendCustomerMessage(order, content, newStatus === 'shipped' ? shippedPhotoUrl : null);
   };
 
   const handleStatusChange = async (orderId, newStatus, shippedPhotoUrl) => {
@@ -184,6 +300,14 @@ export default function AdminOrders() {
     }
     if (newStatus === 'delivered') {
       updates.delivered_date = new Date().toISOString();
+      // Delivery opens the second payment stage: the customer now owes the
+      // remaining 90% (see src/lib/orderPayment.js). Already-settled orders
+      // (e.g. re-marked delivered) keep their paid state.
+      if (order.final_payment_status !== FINAL_PAYMENT.PAID && !order.money_received) {
+        updates.final_payment_status = FINAL_PAYMENT.AWAITING_PAYMENT;
+        updates.final_payment_amount = finalAmount(order.total);
+        updates.final_payment_requested_date = updates.delivered_date;
+      }
       for (const item of order.items || []) {
         const products = await base44.entities.Product.filter({ id: item.product_id });
         if (products[0]) {
@@ -229,11 +353,10 @@ export default function AdminOrders() {
     await handleStatusChange(order.id, 'shipped', photoUrl);
   };
 
-  const STATUS_ORDER = { pending: 0, confirmed: 1, shipped: 2, delivered: 3 };
-
   const filtered = useMemo(() => orders
     .filter(o => {
-      if (o.status !== activeTab) return false;
+      const inTab = activeTab === FINAL_PAYMENT_TAB ? isFinalPaymentOpen(o) : o.status === activeTab;
+      if (!inTab) return false;
       if (!search.trim()) return true;
       const q = search.toLowerCase();
       return (
@@ -243,13 +366,15 @@ export default function AdminOrders() {
       );
     })
     .sort((a, b) => (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99)),
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   [orders, activeTab, search]);
 
   // One pass over orders instead of one .filter() per tab per render.
   const statusCounts = useMemo(() => {
     const counts = {};
-    for (const o of orders) counts[o.status] = (counts[o.status] || 0) + 1;
+    for (const o of orders) {
+      counts[o.status] = (counts[o.status] || 0) + 1;
+      if (isFinalPaymentOpen(o)) counts[FINAL_PAYMENT_TAB] = (counts[FINAL_PAYMENT_TAB] || 0) + 1;
+    }
     return counts;
   }, [orders]);
   const countByStatus = (status) => statusCounts[status] || 0;
@@ -311,7 +436,9 @@ export default function AdminOrders() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground font-mono text-sm">
-          No {activeTab} orders
+          {activeTab === FINAL_PAYMENT_TAB
+            ? 'All orders paid in full!'
+            : `No ${activeTab} orders`}
         </div>
       ) : (
         <div className="space-y-2">
@@ -376,7 +503,26 @@ export default function AdminOrders() {
                     <Package className="w-3.5 h-3.5" /> Delivered
                   </button>
                 )}
-                {order.status === 'delivered' && !order.money_received && (
+                {/* Customer sent the 90% proof — review it before booking revenue. */}
+                {order.final_payment_status === FINAL_PAYMENT.AWAITING_CONFIRMATION && (
+                  <button
+                    onClick={() => setFinalPaymentTarget(order)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/30 text-primary font-mono text-xs uppercase hover:bg-primary/20 transition-colors"
+                  >
+                    <Wallet className="w-3.5 h-3.5" /> View Proof — {fmt(finalAmountDue(order))} Birr
+                  </button>
+                )}
+                {order.final_payment_status === FINAL_PAYMENT.AWAITING_PAYMENT && (
+                  <button
+                    onClick={() => handleRequestPaymentAgain(order)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 font-mono text-xs uppercase hover:bg-yellow-400/20 transition-colors"
+                  >
+                    <BellRing className="w-3.5 h-3.5" /> Remind — {fmt(finalAmountDue(order))} Birr due
+                  </button>
+                )}
+                {/* Orders delivered before the two-stage flow existed have no
+                    payment stage — keep the original one-click revenue button. */}
+                {order.status === 'delivered' && !order.final_payment_status && !order.money_received && (
                   <button
                     onClick={() => handleMoneyReceived(order)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/30 text-primary font-mono text-xs uppercase hover:bg-primary/20 transition-colors"
@@ -386,7 +532,7 @@ export default function AdminOrders() {
                 )}
                 {order.status === 'delivered' && order.money_received && (
                   <span className="font-mono text-xs text-primary px-2 py-1 border border-primary/20 bg-primary/5">
-                    ✓ Recorded
+                    ✓ Paid in full
                   </span>
                 )}
                 {['pending', 'confirmed', 'shipped'].includes(order.status) && (
@@ -407,6 +553,7 @@ export default function AdminOrders() {
         order={selectedOrder}
         onClose={() => setSelectedOrder(null)}
         onStatusChange={handleStatusChange}
+        onReviewFinalPayment={setFinalPaymentTarget}
       />
 
       {shipTarget && (
@@ -414,6 +561,15 @@ export default function AdminOrders() {
           order={shipTarget}
           onClose={() => setShipTarget(null)}
           onShipped={handleShipped}
+        />
+      )}
+
+      {finalPaymentTarget && (
+        <FinalPaymentModal
+          order={finalPaymentTarget}
+          onClose={() => setFinalPaymentTarget(null)}
+          onConfirm={handleMoneyReceived}
+          onRequestAgain={handleRequestPaymentAgain}
         />
       )}
     </div>

@@ -75,6 +75,14 @@ const ADMIN_ONLY_FIELDS = {
     'shipped_date',
     'delivered_date',
     'reviewed_item_ids',
+    // The final-payment stage is server/admin-driven: the buyer's only write is
+    // uploading proof, via POST /api/orders/:id/final-payment (routes/orders.js).
+    'final_payment_status',
+    'final_payment_amount',
+    'final_payment_requested_date',
+    'final_payment_screenshots',
+    'final_payment_submitted_date',
+    'final_payment_confirmed_date',
   ],
 };
 

@@ -2,14 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { CheckCircle, ArrowLeft, CreditCard, MapPin, Pencil, X, Minus, Plus, Loader2, Upload, GripVertical, Copy, Check } from 'lucide-react';
+import { CheckCircle, ArrowLeft, MapPin, Pencil, X, Minus, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
 import MobileHeader from '@/components/store/MobileHeader';
+import PaymentAccounts from '@/components/store/PaymentAccounts';
+import ScreenshotUploader from '@/components/store/ScreenshotUploader';
 import { REGIONS, REGIONS_CITIES } from '@/lib/ethiopiaRegions';
+import { depositAmount } from '@/lib/orderPayment';
 import { track } from '@/lib/track';
 import { playNotificationSound } from '@/lib/notificationSound';
 
@@ -23,47 +26,6 @@ function getParams() {
 }
 
 const fmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
-
-const PAYMENT_ACCOUNTS = [
-  {
-    icon: CreditCard,
-    label: 'Bank Transfer (CBE)',
-    details: [
-      { key: 'Account Name', value: 'Kaleab Mamo', copyable: false },
-      { key: 'Account Number', value: '1000518281287', copyable: true },
-    ],
-  },
-];
-
-// ─── Copyable row ─────────────────────────────────────────────────────────────
-function CopyableRow({ label, value }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-  return (
-    <div className="flex items-center justify-between gap-2 text-sm">
-      <span className="text-muted-foreground font-mono text-xs">{label}</span>
-      <div className="flex items-center gap-2">
-        <span className="font-semibold select-all">{value}</span>
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1 px-2 py-1 rounded font-mono text-[10px] transition-all"
-          style={copied
-            ? { background: 'rgba(72,255,72,0.12)', color: 'hsl(157,100%,50%)', border: '1px solid rgba(72,255,72,0.3)' }
-            : { background: 'rgba(180,255,0,0.08)', color: 'hsl(72,100%,50%)', border: '1px solid rgba(180,255,0,0.25)' }
-          }
-        >
-          {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-          {copied ? 'Copied!' : 'Copy'}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // ─── Inline address editor ────────────────────────────────────────────────────
 function AddressEditor({ user, onSave, onCancel }) {
@@ -122,106 +84,6 @@ function AddressEditor({ user, onSave, onCancel }) {
       <Button onClick={handleSave} disabled={saving} className="w-full h-10 bg-primary text-primary-foreground font-mono text-sm hover:bg-primary/90">
         {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Save Address
       </Button>
-    </div>
-  );
-}
-
-// ─── Draggable screenshot uploader ───────────────────────────────────────────
-function ScreenshotUploader({ screenshots, onChange }) {
-  const [uploading, setUploading] = useState(false);
-  const dragItem = useRef(null);
-  const dragOver = useRef(null);
-
-  const handleFiles = async (files) => {
-    if (!files.length) return;
-    setUploading(true);
-    try {
-      const urls = [];
-      for (const file of Array.from(files)) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        urls.push(file_url);
-      }
-      onChange([...screenshots, ...urls]);
-    } catch (err) {
-      toast.error('Upload failed: ' + (err?.message || 'Unknown error'));
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removeScreenshot = (idx) => {
-    onChange(screenshots.filter((_, i) => i !== idx));
-  };
-
-  const handleDragStart = (idx) => { dragItem.current = idx; };
-  const handleDragEnter = (idx) => { dragOver.current = idx; };
-  const handleDragEnd = () => {
-    if (dragItem.current === null || dragOver.current === null) return;
-    const arr = [...screenshots];
-    const dragged = arr.splice(dragItem.current, 1)[0];
-    arr.splice(dragOver.current, 0, dragged);
-    dragItem.current = null;
-    dragOver.current = null;
-    onChange(arr);
-  };
-
-  return (
-    <div className="space-y-3">
-      {/* Uploaded screenshots — draggable row */}
-      {screenshots.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {screenshots.map((url, i) => (
-            <div
-              key={url}
-              draggable
-              onDragStart={() => handleDragStart(i)}
-              onDragEnter={() => handleDragEnter(i)}
-              onDragEnd={handleDragEnd}
-              onDragOver={e => e.preventDefault()}
-              className="relative flex-shrink-0 w-24 h-24 border overflow-hidden cursor-grab active:cursor-grabbing select-none"
-              style={{ borderColor: i === 0 ? 'hsl(72,100%,50%)' : undefined }}
-            >
-              <img src={url} alt="" className="w-full h-full object-cover pointer-events-none" />
-              {i === 0 && (
-                <div className="absolute bottom-0 left-0 right-0 bg-primary/80 text-primary-foreground font-mono text-[8px] text-center py-0.5">
-                  FIRST
-                </div>
-              )}
-              {/* Drag handle hint */}
-              <div className="absolute top-1 left-1 opacity-60">
-                <GripVertical className="w-3 h-3 text-white drop-shadow" />
-              </div>
-              <button
-                type="button"
-                onClick={() => removeScreenshot(i)}
-                className="absolute top-0 right-0 bg-destructive text-destructive-foreground p-0.5"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Upload button */}
-      <label className="flex items-center justify-center gap-2 h-12 border border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors bg-secondary/40">
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={e => handleFiles(e.target.files)}
-        />
-        {uploading ? (
-          <><Loader2 className="w-4 h-4 animate-spin text-primary" /><span className="font-mono text-xs text-muted-foreground">Uploading…</span></>
-        ) : (
-          <><Upload className="w-4 h-4 text-muted-foreground" /><span className="font-mono text-xs text-muted-foreground">Upload payment screenshot(s)</span></>
-        )}
-      </label>
-
-      {screenshots.length > 1 && (
-        <p className="font-mono text-[10px] text-muted-foreground">Drag images left/right to reorder — first image is shown first.</p>
-      )}
     </div>
   );
 }
@@ -490,34 +352,15 @@ export default function DirectPayment() {
           {/* ── Payment account ── */}
           <div className="mb-4 space-y-3">
             <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Pay to this account</p>
-            {PAYMENT_ACCOUNTS.map(acc => {
-              const Icon = acc.icon;
-              return (
-                <div key={acc.label} className="bg-card border border-border p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Icon className="w-4 h-4 text-primary" />
-                    <span className="font-semibold text-sm">{acc.label}</span>
-                  </div>
-                  <div className="space-y-2">
-                    {acc.details.map(d => (
-                      d.copyable
-                        ? <CopyableRow key={d.key} label={d.key} value={d.value} />
-                        : <div key={d.key} className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground font-mono text-xs">{d.key}</span>
-                            <span className="font-semibold">{d.value}</span>
-                          </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+            <PaymentAccounts />
           </div>
 
           {/* ── Instructions ── */}
           <div className="bg-primary/5 border border-primary/20 p-4 mb-4">
             <p className="font-mono text-xs font-bold text-primary uppercase mb-1">Instructions</p>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Transfer <strong className="text-foreground">{fmt(Math.round(total * 0.1))} Birr</strong> (10% deposit) to the account above, then upload a screenshot of your payment confirmation below.
+              Transfer <strong className="text-foreground">{fmt(depositAmount(total))} Birr</strong> (10% deposit) to the account above, then upload a screenshot of your payment confirmation below.
+              The remaining <strong className="text-foreground">{fmt(total - depositAmount(total))} Birr</strong> is paid after your order is delivered.
             </p>
           </div>
 

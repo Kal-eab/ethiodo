@@ -16,6 +16,7 @@ const { router: entitiesRouter } = require('./routes/entities');
 const functionsRouter = require('./routes/functions');
 const agentsRouter = require('./routes/agents');
 const reviewsRouter = require('./routes/reviews');
+const ordersRouter = require('./routes/orders');
 const { recalcPopularity, recalcTrending } = require('./functions');
 
 const app = express();
@@ -58,6 +59,7 @@ app.use('/api/functions', functionsRouter);
 app.use('/api/agents', agentsRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/reviews', reviewsRouter);
+app.use('/api/orders', ordersRouter);
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
