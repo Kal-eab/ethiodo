@@ -55,7 +55,7 @@ export default function InterestPicker({ user, onComplete }) {
       {/* Logo */}
       <div className="flex items-center gap-2 mb-8">
         <img
-          src="https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/9143c5b71_Gemini_Generated_Image_gon5mugon5mugon5.png"
+          src="/logo.png"
           alt="Ethiodo"
           className="h-10 w-10 rounded-full"
           style={{ boxShadow: '0 0 14px rgba(180,255,0,0.4)' }}

@@ -343,7 +343,7 @@ export default function Orders() {
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('Ethiodo Order Update', {
           body: msg,
-          icon: 'https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/9143c5b71_Gemini_Generated_Image_gon5mugon5mugon5.png',
+          icon: '/icon-192.png',
         });
       }
     });
@@ -366,7 +366,7 @@ export default function Orders() {
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('Ethiodo Review Update', {
           body: 'Your review has been accepted by the admin! 🎉',
-          icon: 'https://media.base44.com/images/public/69e1001a5f1c0bc3344169f5/9143c5b71_Gemini_Generated_Image_gon5mugon5mugon5.png',
+          icon: '/icon-192.png',
         });
       }
     });
