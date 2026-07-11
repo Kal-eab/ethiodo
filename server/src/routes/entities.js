@@ -56,7 +56,10 @@ function validateEntity(req, res, next) {
     return res.status(404).json({ error: `Unknown entity: ${entity}` });
   }
   req.entity = entity;
-  req.model = prisma[entity.charAt(0).toLowerCase() + entity.slice(1)];
+  // Kept alongside the model so a handler can reach the same model on a
+  // transaction client (`tx[modelKey]`), which is a different object.
+  req.modelKey = entity.charAt(0).toLowerCase() + entity.slice(1);
+  req.model = prisma[req.modelKey];
   next();
 }
 
@@ -171,34 +174,50 @@ router.put('/:entity/:id', async (req, res) => {
   res.json(serialized);
 });
 
-router.delete('/:entity/:id', async (req, res) => {
-  const { entity, model } = req;
+router.delete('/:entity/:id', async (req, res, next) => {
+  const { entity, model, modelKey } = req;
   const existing = await model.findUnique({ where: { id: req.params.id } });
   if (!existing) return res.status(404).json({ error: 'Not found' });
   if (!checkRecord(entity, 'delete', existing, req.user)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
-  await model.delete({ where: { id: req.params.id } });
-  emitEntityEvent(entity, 'delete', serialize(existing));
-
-  if (entity === 'Review' && existing.data.status === 'approved') {
-    recomputeProductRating(existing.data.product_id).catch((err) => console.error('recomputeProductRating failed:', err));
-  }
 
   // Deleting a post-delivery review must free up the order item again —
   // otherwise the buyer stays permanently stuck on "✓ Reviewed" with no
   // review to show for it (see routes/reviews.js for reviewed_item_ids).
-  if (entity === 'Review' && existing.data.order_id && existing.data.order_item_id) {
-    prisma.order.findUnique({ where: { id: existing.data.order_id } }).then((order) => {
-      if (!order) return;
-      const reviewedIds = (order.data.reviewed_item_ids || []).filter((id) => id !== existing.data.order_item_id);
-      return prisma.order.update({
+  const unlocksOrderItem =
+    entity === 'Review' && !!existing.data.order_id && !!existing.data.order_item_id;
+
+  // Both writes go in one transaction. They used to be a fire-and-forget
+  // promise chain whose failure was only logged: the review would be gone
+  // while its order item stayed locked, and the caller got a 204 saying all
+  // was well. Now either both land or neither does, and a failure is a 500.
+  let updatedOrder = null;
+  try {
+    updatedOrder = await prisma.$transaction(async (tx) => {
+      await tx[modelKey].delete({ where: { id: req.params.id } });
+      if (!unlocksOrderItem) return null;
+
+      const order = await tx.order.findUnique({ where: { id: existing.data.order_id } });
+      if (!order) return null;
+      const reviewedIds = (order.data.reviewed_item_ids || []).filter(
+        (id) => id !== existing.data.order_item_id
+      );
+      return tx.order.update({
         where: { id: order.id },
         data: { data: { ...order.data, reviewed_item_ids: reviewedIds } },
       });
-    }).then((updatedOrder) => {
-      if (updatedOrder) emitEntityEvent('Order', 'update', serialize(updatedOrder));
-    }).catch((err) => console.error('Failed to unlock order item after review delete:', err));
+    });
+  } catch (err) {
+    // Express 4 doesn't forward async throws — hand it to the error handler.
+    return next(err);
+  }
+
+  emitEntityEvent(entity, 'delete', serialize(existing));
+  if (updatedOrder) emitEntityEvent('Order', 'update', serialize(updatedOrder));
+
+  if (entity === 'Review' && existing.data.status === 'approved') {
+    recomputeProductRating(existing.data.product_id).catch((err) => console.error('recomputeProductRating failed:', err));
   }
 
   res.status(204).end();

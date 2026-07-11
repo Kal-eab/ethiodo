@@ -231,14 +231,24 @@ export default function AdminOrders() {
     });
   };
 
+  // Fetches every product on an order in one request, keyed by id. The callers
+  // below used to query per line item, so confirming a 10-item order meant ten
+  // sequential round-trips before anything was written.
+  const fetchOrderProducts = async (order) => {
+    const ids = [...new Set((order.items || []).map(i => i.product_id).filter(Boolean))];
+    if (ids.length === 0) return {};
+    const products = await base44.entities.Product.filter({ id: { in: ids } }, undefined, ids.length);
+    return Object.fromEntries(products.map(p => [p.id, p]));
+  };
+
   // Confirms the customer's final 90% payment: the order is now fully paid, so
   // this is also the point where the sale's profit is booked into revenue.
   const handleMoneyReceived = async (order) => {
     // Calculate profit from items (use product profit if set, otherwise full price)
+    const productById = await fetchOrderProducts(order);
     let profit = 0;
     for (const item of order.items || []) {
-      const products = await base44.entities.Product.filter({ id: item.product_id });
-      const product = products[0];
+      const product = productById[item.product_id];
       const perUnit = (product?.profit != null) ? product.profit : (item.price || 0);
       profit += perUnit * (item.quantity || 1);
     }
@@ -312,14 +322,24 @@ export default function AdminOrders() {
       // A test order must not move a product's purchase count — that count
       // feeds the popularity/trending scores that order the storefront.
       if (!isTestOrder(order)) {
+        const productById = await fetchOrderProducts(order);
+        // Sum the quantities per product before writing. The same product can
+        // sit on two line items, and one update per line would read the same
+        // starting count twice and lose the first increment.
+        const boughtQty = {};
         for (const item of order.items || []) {
-          const products = await base44.entities.Product.filter({ id: item.product_id });
-          if (products[0]) {
-            await base44.entities.Product.update(item.product_id, {
-              totalPurchases: (products[0].totalPurchases || 0) + (item.quantity || 1),
-            });
-          }
+          if (!item.product_id) continue;
+          boughtQty[item.product_id] = (boughtQty[item.product_id] || 0) + (item.quantity || 1);
         }
+        await Promise.all(
+          Object.entries(boughtQty).map(([productId, qty]) => {
+            const product = productById[productId];
+            if (!product) return null;
+            return base44.entities.Product.update(productId, {
+              totalPurchases: (product.totalPurchases || 0) + qty,
+            });
+          })
+        );
       }
     }
 
