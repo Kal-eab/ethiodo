@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Heart, Star, ShieldCheck, Truck, Share2 } from 'lucide-react';
@@ -14,6 +14,9 @@ import { track } from '@/lib/track';
 import LikeButton from '@/components/product/LikeButton';
 import ShareModal from '@/components/product/ShareModal';
 import { useAuth } from '@/lib/AuthContext';
+import VariantPickerSheet from '@/components/product/VariantPickerSheet';
+import { ChevronRight } from 'lucide-react';
+import { getOptionGroups, shortSelection, selectionImage } from '@/lib/productOptions';
 
 const fmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
 
@@ -22,12 +25,11 @@ export default function ProductDetail() {
   const productId = pathParts[pathParts.length - 1];
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedSize, setSelectedSize] = useState(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [sizeError, setSizeError] = useState('');
-  const sizeRef = useRef(null);
   const [showShare, setShowShare] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [confirmed, setConfirmed] = useState(null); // { selections, quantity }
   const { user } = useAuth();
 
   // Track referral click (existing ReferralLink by owner_user_id)
@@ -97,15 +99,17 @@ export default function ProductDetail() {
   const favMap = {};
   favorites.forEach(f => { favMap[f.product_id] = f.id; });
 
-  const handleBuyNow = async () => {
-    if (product?.sizes?.length > 0 && !selectedSize) {
-      setSizeError('Please select a size to continue.');
-      if (sizeRef.current) {
-        sizeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+  // BUY NOW: if the product has option groups, open the picker sheet;
+  // otherwise go straight to payment (unchanged behaviour).
+  const handleBuyNow = () => {
+    if (getOptionGroups(product).length > 0) {
+      setSheetOpen(true);
       return;
     }
-    setSizeError('');
+    proceedToPayment(null, quantity);
+  };
+
+  const proceedToPayment = async (selections, qty) => {
     track.beginCheckout(product);
     // Require login before buying
     const isAuth = await base44.auth.isAuthenticated();
@@ -113,8 +117,20 @@ export default function ProductDetail() {
       base44.auth.redirectToLogin(window.location.href);
       return;
     }
-    const sizeParam = selectedSize ? `&size=${encodeURIComponent(selectedSize)}` : '';
-    navigate(`/payment?product=${productId}&qty=${quantity}${sizeParam}`);
+    const optsParam = selections ? `&opts=${encodeURIComponent(JSON.stringify(selections))}` : '';
+    navigate(`/payment?product=${productId}&qty=${qty}${optsParam}`);
+  };
+
+  // Called when the customer confirms their variant selection in the sheet.
+  const handleConfirmVariant = (selections, qty) => {
+    setConfirmed({ selections, quantity: qty });
+    setSheetOpen(false);
+    // Sync the main gallery to the chosen variant photo when it's one of the
+    // product's images.
+    const img = selectionImage(product, selections);
+    const idx = product.images?.indexOf(img);
+    if (idx != null && idx > -1) setSelectedImage(idx);
+    proceedToPayment(selections, qty);
   };
 
   const toggleFav = async () => {
@@ -312,31 +328,19 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Size / Options selector */}
-              {product.sizes?.length > 0 && (
-                <div ref={sizeRef} className="space-y-2">
-                  <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-                    {product.category === 'phones' ? 'Color' : ['clothing', 'shoes'].includes(product.category) ? 'Size' : 'Option'}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {product.sizes.map(s => (
-                      <button
-                        key={s}
-                        onClick={() => { setSelectedSize(s); setSizeError(''); }}
-                        className={`px-4 py-2 font-mono text-sm border transition-all ${
-                          selectedSize === s
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-transparent text-muted-foreground border-border hover:border-foreground'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                  {sizeError && (
-                    <p className="font-mono text-xs text-destructive">{sizeError}</p>
-                  )}
-                </div>
+              {/* Options selector — opens the Pinduoduo-style picker sheet */}
+              {getOptionGroups(product).length > 0 && (
+                <button
+                  onClick={() => setSheetOpen(true)}
+                  className="w-full flex items-center justify-between gap-2 px-4 py-3 border border-border hover:border-foreground transition-colors text-left"
+                >
+                  <span className="font-mono text-sm">
+                    {confirmed
+                      ? <>Selected: <span className="text-primary">{shortSelection(confirmed.selections)}</span> · Qty {confirmed.quantity}</>
+                      : <span className="text-muted-foreground">Please select: {getOptionGroups(product).map(g => g.name).join(' · ')}</span>}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                </button>
               )}
 
               {/* Like + Share row */}
@@ -416,6 +420,14 @@ export default function ProductDetail() {
           userEmail={user?.email}
         />
       )}
+
+      {/* Variant picker bottom sheet */}
+      <VariantPickerSheet
+        product={product}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onConfirm={handleConfirmVariant}
+      />
 
       {/* ── MOBILE ONLY: Sticky bottom purchase bar ── */}
       <div

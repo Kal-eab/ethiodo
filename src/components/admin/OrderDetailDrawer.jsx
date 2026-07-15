@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ImageIcon, CheckCircle2, Package, Clock, Truck, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import { FINAL_PAYMENT, FINAL_PAYMENT_LABELS, depositAmount, finalAmountDue } from '@/lib/orderPayment';
+import { formatSelection } from '@/lib/productOptions';
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
 
@@ -145,7 +146,7 @@ export default function OrderDetailDrawer({ order, onClose, onStatusChange, onRe
                   <div className="flex-1 min-w-0">
                     <p className="text-sm truncate">{item.product_name}</p>
                     <p className="font-mono text-xs text-muted-foreground">
-                      ×{item.quantity}{item.size ? ` · ${item.size}` : ''}
+                      ×{item.quantity}{item.options ? ` · ${formatSelection(item.options)}` : item.size ? ` · ${item.size}` : ''}
                     </p>
                   </div>
                   <span className="font-mono text-sm">${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>

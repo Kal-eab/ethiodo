@@ -11,6 +11,7 @@ import MobileHeader from '@/components/store/MobileHeader';
 import { toast } from 'sonner';
 import { REGIONS, REGIONS_CITIES } from '@/lib/ethiopiaRegions';
 import ProductCard from '@/components/store/ProductCard';
+import { formatSelection } from '@/lib/productOptions';
 
 const PHONE_REGEX = /^\+251\s?[79]\d{8}$|^0[79]\d{8}$/;
 const fmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -112,7 +113,7 @@ function OrdersTab({ user }) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.product_name}</p>
                     <p className="font-mono text-xs text-muted-foreground">
-                      Qty: {item.quantity}{item.size ? ` · Size: ${item.size}` : ''}
+                      Qty: {item.quantity}{item.options ? ` · ${formatSelection(item.options)}` : item.size ? ` · Size: ${item.size}` : ''}
                     </p>
                   </div>
                   <p className="font-mono text-sm font-bold text-primary flex-shrink-0">{fmt(item.price * item.quantity)} Birr</p>

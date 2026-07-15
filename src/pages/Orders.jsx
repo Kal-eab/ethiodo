@@ -13,6 +13,7 @@ import ScreenshotUploader from '@/components/store/ScreenshotUploader';
 import ReviewSubmitModal from '@/components/product/ReviewSubmitModal';
 import { playNotificationSound } from '@/lib/notificationSound';
 import { FINAL_PAYMENT, finalAmountDue } from '@/lib/orderPayment';
+import { formatSelection } from '@/lib/productOptions';
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
 
@@ -67,6 +68,11 @@ function OrderItemRow({ item, order, isDelivered, onReviewed }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{item.product_name}</p>
+          {(item.options || item.size) && (
+            <p className="font-mono text-[11px] text-muted-foreground truncate">
+              {item.options ? formatSelection(item.options) : item.size}
+            </p>
+          )}
           <p className="font-mono text-xs text-muted-foreground">×{item.quantity} — ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</p>
         </div>
         {isDelivered && (

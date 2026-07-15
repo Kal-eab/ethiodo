@@ -15,13 +15,20 @@ import { REGIONS, REGIONS_CITIES } from '@/lib/ethiopiaRegions';
 import { depositAmount } from '@/lib/orderPayment';
 import { track } from '@/lib/track';
 import { playNotificationSound } from '@/lib/notificationSound';
+import { getOptionGroups, unitPrice, selectionImage, shortSelection } from '@/lib/productOptions';
 
 function getParams() {
   const p = new URLSearchParams(window.location.search);
+  let options = null;
+  const rawOpts = p.get('opts');
+  if (rawOpts) {
+    try { options = JSON.parse(rawOpts); } catch { options = null; }
+  }
   return {
     productId: p.get('product'),
     quantity: parseInt(p.get('qty') || '1', 10),
     size: p.get('size') || null,
+    options,
   };
 }
 
@@ -89,8 +96,9 @@ function AddressEditor({ user, onSave, onCancel }) {
 }
 
 export default function DirectPayment() {
-  const { productId, quantity: initialQty, size: initialSize } = getParams();
+  const { productId, quantity: initialQty, size: initialSize, options: initialOptions } = getParams();
   const [selectedSize] = useState(initialSize);
+  const [options] = useState(initialOptions);
   const navigate = useNavigate();
   const { user, isLoadingAuth } = useAuth();
   const [quantity, setQuantity] = useState(initialQty);
@@ -130,7 +138,11 @@ export default function DirectPayment() {
     enabled: !!productId,
   });
 
-  const total = product ? product.price * quantity : 0;
+  // Unit price includes any per-variant price_add; the 10% deposit derives
+  // from this total unchanged.
+  const unit = product ? unitPrice(product, options) : 0;
+  const total = unit * quantity;
+  const variantImage = product ? selectionImage(product, options) : '';
 
   const handleSubmit = async () => {
     if (screenshots.length === 0) { toast.error('Please upload a screenshot of your payment'); return; }
@@ -154,14 +166,22 @@ export default function DirectPayment() {
       if (match) matchedReferralId = match.id;
     } catch {} // ignore lookup failures — order proceeds without referral
 
+    // When there is exactly one option group, keep writing `size` (the chosen
+    // label) so old code/exports reading item.size still show something.
+    const groups = getOptionGroups(product);
+    const legacySize = options
+      ? (groups.length === 1 ? Object.values(options)[0] : undefined)
+      : (selectedSize || undefined);
+
     await base44.entities.Order.create({
       items: [{
         product_id: product.id,
         product_name: product.name,
-        product_image: product.images?.[0] || '',
-        price: product.price,
+        product_image: variantImage || product.images?.[0] || '',
+        price: unit,
         quantity,
-        size: selectedSize || undefined,
+        size: legacySize,
+        ...(options ? { options } : {}),
       }],
       total,
       status: 'pending',
@@ -174,9 +194,10 @@ export default function DirectPayment() {
       ...(matchedReferralId ? { matched_referral_id: matchedReferralId } : {}),
     });
 
+    const variantLabel = options ? ` — ${shortSelection(options)}` : '';
     await base44.entities.Notification.create({
       type: 'order',
-      content: `New order from ${user.full_name || user.email} — ${fmt(total)} Birr (${product.name})`,
+      content: `New order from ${user.full_name || user.email} — ${fmt(total)} Birr (${product.name}${variantLabel})`,
       link: '/admin/orders',
       is_read: false,
     });
@@ -241,6 +262,17 @@ export default function DirectPayment() {
 
   const hasAddress = shipping.region && shipping.city && shipping.phone;
 
+  // Show the chosen variant's photo first in the product card.
+  const displayImages = (() => {
+    const imgs = product.images ? [...product.images] : [];
+    if (variantImage) {
+      const i = imgs.indexOf(variantImage);
+      if (i > 0) { imgs.splice(i, 1); imgs.unshift(variantImage); }
+      else if (i === -1) imgs.unshift(variantImage);
+    }
+    return imgs;
+  })();
+
   return (
     <div className="min-h-screen bg-background">
       <MobileHeader title="Place Order" />
@@ -254,7 +286,7 @@ export default function DirectPayment() {
 
           {/* ── Product card ── */}
           <div className="bg-card border border-border mb-3 overflow-hidden">
-            {product.images?.length > 0 && (
+            {displayImages.length > 0 && (
             <div className="relative" style={{ aspectRatio: '4/5', backgroundColor: '#0a0a0a' }}>
             <div
             ref={sliderRef}
@@ -265,15 +297,15 @@ export default function DirectPayment() {
               setActiveImage(idx);
             }}
             >
-            {product.images.map((img, i) => (
+            {displayImages.map((img, i) => (
               <div key={i} className="flex-shrink-0 w-full h-full snap-center bg-black/40">
                 <img src={img} alt={product.name} className="w-full h-full object-contain" />
               </div>
             ))}
                 </div>
-                {product.images.length > 1 && (
+                {displayImages.length > 1 && (
                   <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-                    {product.images.map((_, i) => (
+                    {displayImages.map((_, i) => (
                       <button
                         key={i}
                         onClick={() => {
@@ -285,9 +317,9 @@ export default function DirectPayment() {
                     ))}
                   </div>
                 )}
-                {product.images.length > 1 && (
+                {displayImages.length > 1 && (
                   <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white font-mono text-[10px] px-2 py-0.5 rounded-full">
-                    {activeImage + 1}/{product.images.length}
+                    {activeImage + 1}/{displayImages.length}
                   </div>
                 )}
               </div>
@@ -298,13 +330,20 @@ export default function DirectPayment() {
                 <h2 className="font-bold text-base leading-tight">{product.name}</h2>
                 <p className="font-mono text-xl font-black text-primary flex-shrink-0">{fmt(total)} Birr</p>
               </div>
-              {selectedSize && (
+              {options ? (
+                Object.entries(options).map(([group, value]) => (
+                  <div key={group} className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+                    <span className="font-mono text-xs text-muted-foreground uppercase">{group}</span>
+                    <span className="font-mono font-bold text-sm px-3 py-1 border border-primary text-primary">{value}</span>
+                  </div>
+                ))
+              ) : selectedSize && (
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                   <span className="font-mono text-xs text-muted-foreground uppercase">{product?.category === 'phones' ? 'Color' : 'Size'}</span>
                   <span className="font-mono font-bold text-sm px-3 py-1 border border-primary text-primary">{selectedSize}</span>
                 </div>
               )}
-              <div className={`flex items-center justify-between pt-3 border-t border-border ${selectedSize ? '' : 'mt-3'}`}>
+              <div className={`flex items-center justify-between pt-3 border-t border-border ${(options || selectedSize) ? '' : 'mt-3'}`}>
                 <span className="font-mono text-xs text-muted-foreground uppercase">Quantity</span>
                 <div className="flex items-center gap-0 border border-border overflow-hidden">
                   <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors">

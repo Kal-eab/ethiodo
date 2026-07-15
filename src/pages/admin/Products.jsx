@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Plus, Pencil, Trash2, Upload, X, Loader2, FileText, CheckCircle2, FlaskConical } from 'lucide-react';
-import imageCompression from 'browser-image-compression';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,125 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { getCategoryTreeDynamic, getCategoryLabel } from '@/lib/categories';
 import { isTestProduct, TEST_BADGE_CLASS } from '@/lib/testMode';
-
-const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
-const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
-const PHONE_COLORS = ['Black', 'White', 'Red', 'Green', 'Purple', 'Blue', 'Gold', 'Silver'];
-const PREDEFINED_CATEGORIES = ['clothing', 'clothing_mens', 'clothing_womens', 'clothing_kids', 'shoes', 'shoes_mens', 'shoes_womens', 'shoes_kids', 'shoes_sport'];
-const PHONE_CATEGORIES = ['phones', 'electronics_phones'];
-
-function SizeSelector({ category, sizes, onChange }) {
-  const [inputValue, setInputValue] = useState('');
-  const inputRef = useRef(null);
-
-  const toggleItem = (s) => {
-    const next = sizes.includes(s) ? sizes.filter(x => x !== s) : [...sizes, s];
-    onChange(next);
-  };
-
-  const addCustomOption = () => {
-    const val = inputValue.trim();
-    if (!val || sizes.includes(val)) { setInputValue(''); return; }
-    onChange([...sizes, val]);
-    setInputValue('');
-    inputRef.current?.focus();
-  };
-
-  const removeOption = (s) => onChange(sizes.filter(x => x !== s));
-
-  // Clothing / Shoes — predefined size chips
-  if (PREDEFINED_CATEGORIES.includes(category)) {
-    const sizeList = category.startsWith('shoes') ? SHOE_SIZES : CLOTHING_SIZES;
-    return (
-      <div className="space-y-2">
-        <p className="font-mono text-[10px] text-muted-foreground">Click chips to toggle available sizes</p>
-        <div className="flex flex-wrap gap-2">
-          {sizeList.map(s => (
-            <button key={s} type="button" onClick={() => toggleItem(s)}
-              className={`px-4 py-2 font-mono text-sm font-bold border transition-all select-none ${
-                sizes.includes(s) ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-foreground'
-              }`}>
-              {s}
-            </button>
-          ))}
-        </div>
-        {sizes.length > 0 && <p className="font-mono text-[10px] text-primary">Selected: {sizes.join(', ')}</p>}
-      </div>
-    );
-  }
-
-  // Phones — preset color chips + custom input
-  if (PHONE_CATEGORIES.includes(category)) {
-    return (
-      <div className="space-y-3">
-        <p className="font-mono text-[10px] text-muted-foreground">Click to toggle available colors</p>
-        <div className="flex flex-wrap gap-2">
-          {PHONE_COLORS.map(c => (
-            <button key={c} type="button" onClick={() => toggleItem(c)}
-              className={`px-4 py-2 font-mono text-sm font-bold border transition-all select-none ${
-                sizes.includes(c) ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-foreground'
-              }`}>
-              {c}
-            </button>
-          ))}
-        </div>
-        {/* Custom color input */}
-        <div className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomOption(); } }}
-            placeholder='Add custom color, e.g. "Rose Gold", "Mint"'
-            className="bg-secondary border-border h-10 flex-1"
-          />
-          <button type="button" onClick={addCustomOption} disabled={!inputValue.trim()}
-            className="flex items-center gap-1 px-4 h-10 border border-primary text-primary font-mono text-xs hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none">
-            <Plus className="w-3.5 h-3.5" /> Add
-          </button>
-        </div>
-        {/* Show custom (non-preset) colors as removable tags */}
-        {sizes.filter(s => !PHONE_COLORS.includes(s)).length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {sizes.filter(s => !PHONE_COLORS.includes(s)).map(s => (
-              <span key={s} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary border border-primary/40 font-mono text-xs text-primary">
-                {s}
-                <button type="button" onClick={() => removeOption(s)} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
-              </span>
-            ))}
-          </div>
-        )}
-        {sizes.length > 0 && <p className="font-mono text-[10px] text-primary">Selected: {sizes.join(', ')}</p>}
-      </div>
-    );
-  }
-
-  // All other categories — free-text options
-  return (
-    <div className="space-y-2">
-      <p className="font-mono text-[10px] text-muted-foreground">Add selectable options customers can choose from</p>
-      {sizes.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {sizes.map(s => (
-            <span key={s} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary border border-border font-mono text-xs">
-              {s}
-              <button type="button" onClick={() => removeOption(s)} className="text-muted-foreground hover:text-destructive transition-colors"><X className="w-3 h-3" /></button>
-            </span>
-          ))}
-        </div>
-      )}
-      <div className="flex gap-2">
-        <Input ref={inputRef} value={inputValue} onChange={e => setInputValue(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomOption(); } }}
-          placeholder='e.g. "500ml", "Pack of 3"' className="bg-secondary border-border h-10 flex-1" />
-        <button type="button" onClick={addCustomOption} disabled={!inputValue.trim()}
-          className="flex items-center gap-1 px-4 h-10 border border-primary text-primary font-mono text-xs hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none">
-          <Plus className="w-3.5 h-3.5" /> Add
-        </button>
-      </div>
-    </div>
-  );
-}
+import OptionGroupsEditor from '@/components/admin/OptionGroupsEditor';
+import { getOptionGroups, uploadProductImage } from '@/lib/productOptions';
 
 function ProductForm({ product, onClose, onSave }) {
   const CATEGORY_TREE = getCategoryTreeDynamic();
@@ -146,6 +28,9 @@ function ProductForm({ product, onClose, onSave }) {
     tags: product?.tags || '',
     images: product?.images || [],
     sizes: product?.sizes || [],
+    // Legacy `sizes` get converted into a group automatically the first time
+    // this product is edited.
+    option_groups: getOptionGroups(product),
     is_test_product: product?.is_test_product || false,
     test_notes: product?.test_notes || '',
   });
@@ -164,12 +49,7 @@ function ProductForm({ product, onClose, onSave }) {
     try {
       const urls = [];
       for (const file of files) {
-        // Compress large images before upload to prevent failures
-        const compressed = file.size > 500 * 1024
-          ? await imageCompression(file, { maxSizeMB: 1, maxWidthOrHeight: 1200, useWebWorker: true })
-          : file;
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
-        urls.push(file_url);
+        urls.push(await uploadProductImage(file));
       }
       setForm(f => ({ ...f, images: [...f.images, ...urls] }));
     } catch (err) {
@@ -208,6 +88,22 @@ function ProductForm({ product, onClose, onSave }) {
   const handleSubmit = async (e, publish) => {
     e.preventDefault();
     setSizeError('');
+
+    // Drop groups the admin added but never filled, then validate the rest:
+    // each surviving group needs a name and at least one value.
+    const groups = (form.option_groups || []).filter(
+      g => g.name.trim() || (g.values && g.values.length > 0)
+    );
+    for (const g of groups) {
+      if (!g.name.trim()) { setSizeError('Please give every option group a name.'); return; }
+      if (!g.values || g.values.length === 0) {
+        setSizeError(`Group "${g.name}" needs at least one value.`); return;
+      }
+    }
+    // Mirror the first group's labels into the legacy `sizes` array so any
+    // code still reading `sizes` keeps working.
+    const mirroredSizes = groups[0]?.values.map(v => v.label) ?? [];
+
     setSaving(true);
     await onSave({
       ...form,
@@ -216,7 +112,8 @@ function ProductForm({ product, onClose, onSave }) {
       rating: parseFloat(form.rating) || 0,
       stock: parseInt(form.stock) || 0,
       tags: form.tags,
-      sizes: form.sizes,
+      option_groups: groups,
+      sizes: mirroredSizes,
       coming_soon: form.coming_soon,
       published: publish,
       is_test_product: form.is_test_product,
@@ -248,7 +145,7 @@ function ProductForm({ product, onClose, onSave }) {
         </div>
         <div>
           <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">Category</label>
-          <Select value={form.category} onValueChange={v => setForm({ ...form, category: v, sizes: [] })}>
+          <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
             <SelectTrigger className="bg-secondary border-border h-10">
               <SelectValue />
             </SelectTrigger>
@@ -274,15 +171,15 @@ function ProductForm({ product, onClose, onSave }) {
         </div>
       </div>
 
-      {/* Options — dynamic by category */}
+      {/* Product options / variants */}
       <div>
         <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-          {form.category === 'phones' ? 'Available Colors' : PREDEFINED_CATEGORIES.includes(form.category) ? 'Available Sizes' : 'Product Options'}
+          Product Options
         </label>
-        <SizeSelector
+        <OptionGroupsEditor
+          value={form.option_groups}
           category={form.category}
-          sizes={form.sizes}
-          onChange={sizes => { setSizeError(''); setForm(f => ({ ...f, sizes })); }}
+          onChange={groups => { setSizeError(''); setForm(f => ({ ...f, option_groups: groups })); }}
         />
         {sizeError && <p className="font-mono text-xs text-destructive mt-1">{sizeError}</p>}
       </div>
