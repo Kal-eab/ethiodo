@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { createPortal } from 'react-dom';
-import { Bike, Phone, Upload, X, Loader2, CheckCircle2, Banknote, MapPin, Package } from 'lucide-react';
+import { Bike, Phone, Upload, X, Loader2, CheckCircle2, Banknote, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
@@ -354,10 +354,11 @@ function OrderDeliveryCard({ assignment }) {
 export default function Deliveries() {
   const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
-  // Two kinds of work land here: customer-order drop-offs (kind === 'order') and
-  // inbound stock pickups from carriers (the original "from China" flow).
-  const [section, setSection] = useState('orders');
-  const [activeTab, setActiveTab] = useState('assigned');
+  // Three points of view:
+  //   to_deliver → customer orders assigned by admin from the Shipped phase
+  //   to_pickup  → inbound stock arriving from carriers (the "from China" flow)
+  //   completed  → both, once dropped off / picked up
+  const [activeTab, setActiveTab] = useState('to_deliver');
 
   useEffect(() => {
     if (!isLoadingAuth && user && user.role !== 'delivery' && user.role !== 'admin') navigate('/');
@@ -373,17 +374,26 @@ export default function Deliveries() {
   const orderDeliveries = assignments.filter(a => a.kind === 'order');
   const stockPickups = assignments.filter(a => a.kind !== 'order');
 
-  // Each section has its own two statuses; reset the tab when switching so we
-  // never land on a status the other section doesn't use.
-  const isOrders = section === 'orders';
-  const activeStatus = isOrders
-    ? (activeTab === 'received' ? 'delivered' : activeTab)   // orders use assigned/delivered
-    : (activeTab === 'delivered' ? 'received' : activeTab);  // stock uses assigned/received
+  const toDeliver = orderDeliveries.filter(a => a.status === 'assigned');
+  const toPickUp = stockPickups.filter(a => a.status === 'assigned');
+  // Both "done" states share one Completed tab, newest first.
+  const completed = [
+    ...orderDeliveries.filter(a => a.status === 'delivered'),
+    ...stockPickups.filter(a => a.status === 'received'),
+  ].sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
 
-  const sectionItems = isOrders ? orderDeliveries : stockPickups;
-  const doneStatus = isOrders ? 'delivered' : 'received';
-  const tabStatuses = ['assigned', doneStatus];
-  const tabAssignments = sectionItems.filter(a => a.status === activeStatus);
+  const TABS = [
+    { key: 'to_deliver', label: 'To Delivery', items: toDeliver, empty: 'NOTHING TO DELIVER' },
+    { key: 'to_pickup',  label: 'To Pick Up',  items: toPickUp,  empty: 'NOTHING TO PICK UP' },
+    { key: 'completed',  label: 'Completed',   items: completed, empty: 'NOTHING COMPLETED YET' },
+  ];
+  const current = TABS.find(t => t.key === activeTab) || TABS[0];
+
+  // Each card renders by kind, so the Completed tab can mix both flows.
+  const renderCard = (a) =>
+    a.kind === 'order'
+      ? <OrderDeliveryCard key={a.id} assignment={a} />
+      : <AssignmentCard key={a.id} assignment={a} />;
 
   if (!user) {
     return (
@@ -393,8 +403,6 @@ export default function Deliveries() {
     );
   }
 
-  const switchSection = (s) => { setSection(s); setActiveTab('assigned'); };
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -402,50 +410,22 @@ export default function Deliveries() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
           <h1 className="text-2xl font-bold mb-1">My Deliveries</h1>
           <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-6">
-            {isOrders ? 'Drop off customer orders' : 'Pick up incoming stock from carriers'}
+            Deliver customer orders &amp; pick up incoming stock
           </p>
 
-          {/* Section switch: customer orders vs inbound stock pickups */}
-          <div className="inline-flex mb-6 border border-border p-0.5 bg-secondary/40">
-            {[
-              { key: 'orders', label: 'Customer Orders', icon: Package, count: orderDeliveries.filter(a => a.status === 'assigned').length },
-              { key: 'stock', label: 'Stock Pickups', icon: Bike, count: stockPickups.filter(a => a.status === 'assigned').length },
-            ].map(s => {
-              const Icon = s.icon;
-              const active = section === s.key;
+          <div className="flex gap-1 mb-8 border-b border-border overflow-x-auto">
+            {TABS.map(t => {
+              const isActive = activeTab === t.key;
+              const count = t.items.length;
               return (
                 <button
-                  key={s.key}
-                  onClick={() => switchSection(s.key)}
-                  className={`flex items-center gap-2 px-4 py-2 font-mono text-xs uppercase tracking-wider transition-colors ${
-                    active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" /> {s.label}
-                  {s.count > 0 && (
-                    <span className={`text-[10px] px-1.5 py-0.5 font-bold ${active ? 'bg-black/20' : 'bg-muted'}`}>{s.count}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex gap-1 mb-8 border-b border-border">
-            {tabStatuses.map(s => {
-              const count = sectionItems.filter(a => a.status === s).length;
-              const isActive = activeStatus === s;
-              const label = s === 'assigned'
-                ? (isOrders ? 'To Deliver' : 'To Pick Up')
-                : (isOrders ? 'Delivered' : 'Completed');
-              return (
-                <button
-                  key={s}
-                  onClick={() => setActiveTab(s)}
+                  key={t.key}
+                  onClick={() => setActiveTab(t.key)}
                   className={`px-4 py-2.5 font-mono text-xs uppercase tracking-wider whitespace-nowrap border-b-2 transition-colors flex items-center gap-2 ${
                     isActive ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {label}
+                  {t.label}
                   {count > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.5 border font-bold ${isActive ? 'text-primary border-primary/30 bg-primary/5' : 'text-muted-foreground border-border'}`}>
                       {count}
@@ -460,22 +440,14 @@ export default function Deliveries() {
             <div className="space-y-4">
               {[1, 2].map(i => <div key={i} className="h-40 bg-secondary animate-pulse" />)}
             </div>
-          ) : tabAssignments.length === 0 ? (
+          ) : current.items.length === 0 ? (
             <div className="text-center py-24 space-y-3">
               <Bike className="w-12 h-12 text-muted-foreground mx-auto" />
-              <p className="font-mono text-muted-foreground text-sm">
-                {activeStatus === 'assigned'
-                  ? (isOrders ? 'NOTHING TO DELIVER' : 'NOTHING TO PICK UP')
-                  : (isOrders ? 'NO DELIVERED ORDERS' : 'NO COMPLETED DELIVERIES')}
-              </p>
+              <p className="font-mono text-muted-foreground text-sm">{current.empty}</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {tabAssignments.map(a =>
-                isOrders
-                  ? <OrderDeliveryCard key={a.id} assignment={a} />
-                  : <AssignmentCard key={a.id} assignment={a} />
-              )}
+              {current.items.map(renderCard)}
             </div>
           )}
         </div>
