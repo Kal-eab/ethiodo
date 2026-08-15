@@ -6,6 +6,16 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   logLevel: 'error', // Suppress warnings, only show errors
   plugins: [react()],
+  server: {
+    // The frontend calls the API with relative URLs (API_BASE_URL === '' when
+    // VITE_API_URL is unset), so the dev server must forward /api and the
+    // socket.io upgrade to the Express backend on :3001. Without this, requests
+    // hit Vite itself and fail with "Failed to fetch".
+    proxy: {
+      '/api': { target: 'http://localhost:3001', changeOrigin: true },
+      '/socket.io': { target: 'http://localhost:3001', ws: true, changeOrigin: true },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
