@@ -288,10 +288,13 @@ function AssignmentsTab({ deliveryPartners }) {
   const [showStart, setShowStart] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: assignments = [], isLoading } = useQuery({
+  const { data: rawAssignments = [], isLoading } = useQuery({
     queryKey: ['all-delivery-assignments', filter],
     queryFn: () => base44.entities.DeliveryAssignment.filter({ status: filter }, '-created_date', 200),
   });
+  // This tab is inbound stock pickups only; customer-order drop-offs
+  // (kind === 'order') are managed from the Orders page instead.
+  const assignments = rawAssignments.filter(a => a.kind !== 'order');
 
   return (
     <div className="space-y-6">

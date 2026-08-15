@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { createPortal } from 'react-dom';
-import { Bike, Phone, Upload, X, Loader2, CheckCircle2, Banknote } from 'lucide-react';
+import { Bike, Phone, Upload, X, Loader2, CheckCircle2, Banknote, MapPin, Package } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import Navbar from '@/components/store/Navbar';
@@ -176,11 +176,187 @@ function AssignmentCard({ assignment }) {
   );
 }
 
+// ─── Mark Delivered modal — proof the courier handed the order to the customer ─
+function MarkDeliveredModal({ assignment, onClose, onDone }) {
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    setPreview(URL.createObjectURL(file));
+    const { file_url } = await base44.integrations.Core.UploadFile({ file, folder: 'deliveries' });
+    setPhotoUrl(file_url);
+    setUploading(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!photoUrl) { toast.error('Please add a photo of the delivered order'); return; }
+    setSubmitting(true);
+    try {
+      await base44.entities.DeliveryAssignment.update(assignment.id, {
+        status: 'delivered',
+        delivered_photo_url: photoUrl,
+        delivered_at: new Date().toISOString(),
+      });
+      toast.success('Order marked as delivered!');
+      onDone();
+    } catch (err) {
+      toast.error(err.data?.error || err.message || 'Failed to update');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="font-mono text-sm font-bold uppercase">Confirm Delivery</h2>
+          <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
+        </div>
+        <p className="text-sm text-muted-foreground">Take a photo at drop-off as proof the customer received the order.</p>
+
+        {preview ? (
+          <div className="relative">
+            <img src={preview} alt="" className="w-full h-48 object-cover border border-border" />
+            <button onClick={() => { setPreview(null); setPhotoUrl(null); }}
+              className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-0.5 rounded">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <label className="flex flex-col items-center justify-center h-36 border border-dashed border-border bg-secondary/40 cursor-pointer hover:border-primary/50 transition-colors gap-2">
+            <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+            {uploading ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Upload className="w-5 h-5 text-muted-foreground" />}
+            <span className="font-mono text-xs text-muted-foreground">{uploading ? 'Uploading…' : 'Take / choose photo'}</span>
+          </label>
+        )}
+
+        <button
+          onClick={handleSubmit}
+          disabled={!photoUrl || submitting}
+          className="w-full h-11 bg-primary text-primary-foreground font-mono text-xs uppercase font-bold hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+        >
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+          Confirm Delivered
+        </button>
+      </div>
+    </div>
+  );
+
+  return createPortal(modalContent, document.body);
+}
+
+// ─── Single customer-order delivery card (last-mile drop-off to the buyer) ────
+function OrderDeliveryCard({ assignment }) {
+  const [showModal, setShowModal] = useState(false);
+  const queryClient = useQueryClient();
+  const items = assignment.items || [];
+
+  return (
+    <div className="bg-card border border-border overflow-hidden">
+      <div className="px-5 py-4 border-b border-border bg-secondary/20 flex items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold">Order #{assignment.order_ref || '—'}</p>
+          <p className="font-mono text-[11px] text-muted-foreground mt-0.5">
+            {assignment.created_date ? format(new Date(assignment.created_date), 'MMM d, HH:mm') : ''}
+          </p>
+        </div>
+        {assignment.order_total > 0 && (
+          <span className="font-mono text-xs text-primary font-bold whitespace-nowrap">{assignment.order_total} Birr</span>
+        )}
+      </div>
+
+      <div className="p-5 space-y-4">
+        {/* Deliver-to: address + phone */}
+        <div className="bg-secondary/40 p-3 space-y-1.5">
+          <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">Deliver To</p>
+          <p className="text-sm font-semibold">{assignment.customer_name || '—'}</p>
+          {assignment.shipping_address && (
+            <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> {assignment.shipping_address}
+            </p>
+          )}
+          {assignment.customer_phone && (
+            <a href={`tel:${assignment.customer_phone}`} className="flex items-center gap-1.5 text-primary text-sm font-mono">
+              <Phone className="w-3.5 h-3.5" /> {assignment.customer_phone}
+            </a>
+          )}
+        </div>
+
+        {/* Items */}
+        {items.length > 0 && (
+          <div className="space-y-2">
+            <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">Items</p>
+            {items.map((it, i) => (
+              <div key={i} className="flex items-center gap-2">
+                {it.product_image && (
+                  <img src={it.product_image} alt="" className="w-9 h-9 object-cover border border-border flex-shrink-0" />
+                )}
+                <p className="text-sm truncate">{it.product_name}{it.quantity > 1 ? ` ×${it.quantity}` : ''}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Packaged-product photo from shipping */}
+        {assignment.shipped_photo_url && (
+          <div>
+            <p className="font-mono text-[9px] text-muted-foreground uppercase mb-1">Package Photo</p>
+            <img src={assignment.shipped_photo_url} alt="Package" className="w-full h-28 object-cover border border-border" />
+          </div>
+        )}
+
+        {assignment.notes && (
+          <p className="text-xs text-muted-foreground italic">"{assignment.notes}"</p>
+        )}
+
+        {assignment.status !== 'delivered' ? (
+          <button
+            onClick={() => setShowModal(true)}
+            className="w-full h-10 bg-primary text-primary-foreground font-mono text-xs uppercase font-bold hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors"
+          >
+            <CheckCircle2 className="w-4 h-4" /> Mark Delivered
+          </button>
+        ) : (
+          <div className="flex items-center gap-2 border border-primary/30 bg-primary/5 p-2.5">
+            <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+            <p className="font-mono text-xs text-primary">
+              Delivered {assignment.delivered_at ? format(new Date(assignment.delivered_at), 'MMM d, HH:mm') : ''}
+            </p>
+            {assignment.delivered_photo_url && (
+              <img src={assignment.delivered_photo_url} alt="" className="w-8 h-8 object-cover border border-border ml-auto" />
+            )}
+          </div>
+        )}
+      </div>
+
+      {showModal && (
+        <MarkDeliveredModal
+          assignment={assignment}
+          onClose={() => setShowModal(false)}
+          onDone={() => {
+            setShowModal(false);
+            queryClient.invalidateQueries({ queryKey: ['my-deliveries'] });
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Main Deliveries page (for users with role === 'delivery') ───────────────
 // Inbound stock pickups only — nothing to do with customer orders/shipping.
 export default function Deliveries() {
   const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
+  // Two kinds of work land here: customer-order drop-offs (kind === 'order') and
+  // inbound stock pickups from carriers (the original "from China" flow).
+  const [section, setSection] = useState('orders');
   const [activeTab, setActiveTab] = useState('assigned');
 
   useEffect(() => {
@@ -194,7 +370,20 @@ export default function Deliveries() {
     enabled: !!user?.id,
   });
 
-  const tabAssignments = assignments.filter(a => a.status === activeTab);
+  const orderDeliveries = assignments.filter(a => a.kind === 'order');
+  const stockPickups = assignments.filter(a => a.kind !== 'order');
+
+  // Each section has its own two statuses; reset the tab when switching so we
+  // never land on a status the other section doesn't use.
+  const isOrders = section === 'orders';
+  const activeStatus = isOrders
+    ? (activeTab === 'received' ? 'delivered' : activeTab)   // orders use assigned/delivered
+    : (activeTab === 'delivered' ? 'received' : activeTab);  // stock uses assigned/received
+
+  const sectionItems = isOrders ? orderDeliveries : stockPickups;
+  const doneStatus = isOrders ? 'delivered' : 'received';
+  const tabStatuses = ['assigned', doneStatus];
+  const tabAssignments = sectionItems.filter(a => a.status === activeStatus);
 
   if (!user) {
     return (
@@ -204,28 +393,61 @@ export default function Deliveries() {
     );
   }
 
+  const switchSection = (s) => { setSection(s); setActiveTab('assigned'); };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="pt-14 pb-4">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
           <h1 className="text-2xl font-bold mb-1">My Deliveries</h1>
-          <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-6">Pick up incoming stock from carriers</p>
+          <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-6">
+            {isOrders ? 'Drop off customer orders' : 'Pick up incoming stock from carriers'}
+          </p>
+
+          {/* Section switch: customer orders vs inbound stock pickups */}
+          <div className="inline-flex mb-6 border border-border p-0.5 bg-secondary/40">
+            {[
+              { key: 'orders', label: 'Customer Orders', icon: Package, count: orderDeliveries.filter(a => a.status === 'assigned').length },
+              { key: 'stock', label: 'Stock Pickups', icon: Bike, count: stockPickups.filter(a => a.status === 'assigned').length },
+            ].map(s => {
+              const Icon = s.icon;
+              const active = section === s.key;
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => switchSection(s.key)}
+                  className={`flex items-center gap-2 px-4 py-2 font-mono text-xs uppercase tracking-wider transition-colors ${
+                    active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" /> {s.label}
+                  {s.count > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.5 font-bold ${active ? 'bg-black/20' : 'bg-muted'}`}>{s.count}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
           <div className="flex gap-1 mb-8 border-b border-border">
-            {['assigned', 'received'].map(s => {
-              const count = assignments.filter(a => a.status === s).length;
+            {tabStatuses.map(s => {
+              const count = sectionItems.filter(a => a.status === s).length;
+              const isActive = activeStatus === s;
+              const label = s === 'assigned'
+                ? (isOrders ? 'To Deliver' : 'To Pick Up')
+                : (isOrders ? 'Delivered' : 'Completed');
               return (
                 <button
                   key={s}
                   onClick={() => setActiveTab(s)}
                   className={`px-4 py-2.5 font-mono text-xs uppercase tracking-wider whitespace-nowrap border-b-2 transition-colors flex items-center gap-2 ${
-                    activeTab === s ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                    isActive ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {s === 'assigned' ? 'To Pick Up' : 'Completed'}
+                  {label}
                   {count > 0 && (
-                    <span className={`text-[10px] px-1.5 py-0.5 border font-bold ${activeTab === s ? 'text-primary border-primary/30 bg-primary/5' : 'text-muted-foreground border-border'}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 border font-bold ${isActive ? 'text-primary border-primary/30 bg-primary/5' : 'text-muted-foreground border-border'}`}>
                       {count}
                     </span>
                   )}
@@ -242,12 +464,18 @@ export default function Deliveries() {
             <div className="text-center py-24 space-y-3">
               <Bike className="w-12 h-12 text-muted-foreground mx-auto" />
               <p className="font-mono text-muted-foreground text-sm">
-                {activeTab === 'assigned' ? 'NOTHING TO PICK UP' : 'NO COMPLETED DELIVERIES'}
+                {activeStatus === 'assigned'
+                  ? (isOrders ? 'NOTHING TO DELIVER' : 'NOTHING TO PICK UP')
+                  : (isOrders ? 'NO DELIVERED ORDERS' : 'NO COMPLETED DELIVERIES')}
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {tabAssignments.map(a => <AssignmentCard key={a.id} assignment={a} />)}
+              {tabAssignments.map(a =>
+                isOrders
+                  ? <OrderDeliveryCard key={a.id} assignment={a} />
+                  : <AssignmentCard key={a.id} assignment={a} />
+              )}
             </div>
           )}
         </div>

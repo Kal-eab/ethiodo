@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Search, Clock, CheckCircle2, Package, Trash2, DollarSign, Truck, Upload, Loader2, X, Wallet, BellRing, FlaskConical } from 'lucide-react';
+import { Search, Clock, CheckCircle2, Package, Trash2, DollarSign, Truck, Upload, Loader2, X, Wallet, BellRing, FlaskConical, Bike, MapPin, Phone, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -95,6 +95,97 @@ function ShipModal({ order, onClose, onShipped }) {
   );
 }
 
+// ─── Assign a shipped order to a local delivery partner for last-mile drop-off.
+// Separate from the inbound "from China" stock pickups (see admin/Deliveries):
+// this hands a *customer order* to a courier, who then sees the address, items
+// and phone on their My Deliveries page and marks it delivered with proof. ─────
+function AssignDeliveryModal({ order, partners, existing, onClose, onAssign }) {
+  const [partnerId, setPartnerId] = useState(existing?.delivery_user_id || '');
+  const [notes, setNotes] = useState(existing?.notes || '');
+  const [submitting, setSubmitting] = useState(false);
+
+  const canSubmit = partnerId && !submitting;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    try {
+      const partner = partners.find(p => p.id === partnerId);
+      await onAssign(order, partner, notes.trim(), existing);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4 overflow-y-auto py-8" onClick={onClose}>
+      <div className="bg-card border border-border w-full max-w-md p-6 space-y-4 my-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="font-mono text-sm font-bold uppercase">
+            {existing ? 'Reassign Delivery' : 'Assign Delivery'}
+          </h2>
+          <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          Hand order <span className="font-mono text-foreground">#{order.id?.slice(-8).toUpperCase()}</span> to a
+          delivery partner. They'll get the customer's address, phone and items, and mark it delivered once dropped off.
+        </p>
+
+        {/* Order recap */}
+        <div className="bg-secondary/50 border border-border p-3 space-y-1 text-sm">
+          <p><strong>Customer:</strong> {order.customer_name || order.customer_email || '—'}</p>
+          {order.phone && <p className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-muted-foreground" /> {order.phone}</p>}
+          {order.shipping_address && <p className="flex items-start gap-1.5"><MapPin className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" /> {order.shipping_address}</p>}
+          <p className="font-mono text-xs text-muted-foreground pt-1">
+            {(order.items || []).length} item(s) · {fmt(order.total)} Birr
+          </p>
+        </div>
+
+        <div>
+          <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">Delivery Partner *</label>
+          <select
+            value={partnerId}
+            onChange={e => setPartnerId(e.target.value)}
+            className="w-full bg-secondary border border-border h-10 px-3 text-sm outline-none"
+          >
+            <option value="">Select delivery partner…</option>
+            {partners.map(p => (
+              <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
+            ))}
+          </select>
+          {partners.length === 0 && (
+            <p className="font-mono text-[10px] text-destructive mt-1">
+              No delivery partners yet — promote one under Deliveries → Partners first.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="font-mono text-xs text-muted-foreground uppercase block mb-1.5">Note for courier (optional)</label>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="e.g. Call before arriving, gate code 1234…"
+            rows={2}
+            className="w-full bg-secondary border border-border px-3 py-2 text-sm outline-none placeholder:text-muted-foreground resize-none"
+          />
+        </div>
+
+        <button
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          className="w-full h-11 bg-primary text-primary-foreground font-mono text-xs uppercase font-bold hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+        >
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bike className="w-4 h-4" />}
+          {existing ? 'Reassign' : 'Assign to Partner'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Final payment review: the customer's 90% proof, accept or ask again ──────
 function FinalPaymentModal({ order, onClose, onConfirm, onRequestAgain }) {
   const [busy, setBusy] = useState(false);
@@ -177,6 +268,7 @@ export default function AdminOrders() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [shipTarget, setShipTarget] = useState(null);
   const [finalPaymentTarget, setFinalPaymentTarget] = useState(null);
+  const [assignTarget, setAssignTarget] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: orders = [], isLoading } = useQuery({
@@ -203,6 +295,24 @@ export default function AdminOrders() {
     queryKey: ['products', 'admin'],
     queryFn: () => base44.entities.Product.filter({}, '-created_date', 500),
   });
+
+  // Delivery partners available to carry a shipped order to the customer.
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['all-users-for-delivery'],
+    queryFn: () => base44.entities.User.list('-created_date', 500),
+  });
+  const deliveryPartners = useMemo(() => allUsers.filter(u => u.role === 'delivery'), [allUsers]);
+
+  // Last-mile order assignments (kind === 'order'), keyed by order id so each
+  // shipped row knows whether it's already handed to a courier and where it's at.
+  const { data: orderDeliveries = [] } = useQuery({
+    queryKey: ['order-delivery-assignments'],
+    queryFn: () => base44.entities.DeliveryAssignment.filter({ kind: 'order' }, '-created_date', 500),
+  });
+  const assignmentByOrderId = useMemo(
+    () => Object.fromEntries(orderDeliveries.map(a => [a.order_id, a])),
+    [orderDeliveries],
+  );
 
   // Memoized — these can be up to 1000 entries each, and without useMemo they
   // were rebuilt on every keystroke of the search box.
@@ -358,6 +468,41 @@ export default function AdminOrders() {
     await handleStatusChange(order.id, 'shipped', photoUrl);
   };
 
+  // Create (or reassign) the last-mile delivery for a shipped order. Stores a
+  // self-contained snapshot of the customer contact + items on the assignment so
+  // the courier's page needs no access to the Order entity (which is admin-only).
+  const handleAssignDelivery = async (order, partner, notes, existing) => {
+    if (!partner) return;
+    const itemSummary = (order.items || [])
+      .map(i => `${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`)
+      .join(', ');
+    const payload = {
+      kind: 'order',
+      order_id: order.id,
+      order_ref: order.id?.slice(-8).toUpperCase(),
+      delivery_user_id: partner.id,
+      delivery_user_name: partner.full_name || partner.email || '',
+      delivery_user_email: partner.email || '',
+      customer_name: order.customer_name || order.customer_email || '',
+      customer_phone: order.phone || '',
+      shipping_address: order.shipping_address || '',
+      item_name: itemSummary || `Order #${order.id?.slice(-8).toUpperCase()}`,
+      items: order.items || [],
+      order_total: order.total || 0,
+      shipped_photo_url: order.shipped_photo_url || null,
+      notes: notes || '',
+    };
+
+    if (existing) {
+      await base44.entities.DeliveryAssignment.update(existing.id, payload);
+    } else {
+      await base44.entities.DeliveryAssignment.create({ ...payload, status: 'assigned' });
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['order-delivery-assignments'] });
+    toast.success(`Order assigned to ${partner.full_name || partner.email}`);
+  };
+
   const filtered = useMemo(() => orders
     .filter(o => {
       const inTab = activeTab === FINAL_PAYMENT_TAB ? isFinalPaymentOpen(o) : o.status === activeTab;
@@ -503,14 +648,41 @@ export default function AdminOrders() {
                     <Truck className="w-3.5 h-3.5" /> Ship
                   </button>
                 )}
-                {order.status === 'shipped' && (
-                  <button
-                    onClick={() => handleStatusChange(order.id, 'delivered')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/30 text-accent font-mono text-xs uppercase hover:bg-accent/20 transition-colors"
-                  >
-                    <Package className="w-3.5 h-3.5" /> Delivered
-                  </button>
-                )}
+                {order.status === 'shipped' && (() => {
+                  const assignment = assignmentByOrderId[order.id];
+                  const courierDone = assignment?.status === 'delivered';
+                  return (
+                    <>
+                      {!assignment ? (
+                        <button
+                          onClick={() => setAssignTarget({ order, existing: null })}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-400/10 border border-blue-400/30 text-blue-400 font-mono text-xs uppercase hover:bg-blue-400/20 transition-colors"
+                        >
+                          <Bike className="w-3.5 h-3.5" /> Assign
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setAssignTarget({ order, existing: assignment })}
+                          title="Tap to reassign"
+                          className={`flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs uppercase transition-colors border ${
+                            courierDone
+                              ? 'bg-accent/10 border-accent/30 text-accent hover:bg-accent/20'
+                              : 'bg-purple-400/10 border-purple-400/30 text-purple-400 hover:bg-purple-400/20'
+                          }`}
+                        >
+                          {courierDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
+                          {courierDone ? 'Courier delivered' : 'Out for delivery'} · {assignment.delivery_user_name?.split(' ')[0] || 'Partner'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleStatusChange(order.id, 'delivered')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/30 text-accent font-mono text-xs uppercase hover:bg-accent/20 transition-colors"
+                      >
+                        <Package className="w-3.5 h-3.5" /> Delivered
+                      </button>
+                    </>
+                  );
+                })()}
                 {/* Customer sent the 90% proof — review it before booking revenue. */}
                 {order.final_payment_status === FINAL_PAYMENT.AWAITING_CONFIRMATION && (
                   <button
@@ -578,6 +750,16 @@ export default function AdminOrders() {
           onClose={() => setFinalPaymentTarget(null)}
           onConfirm={handleMoneyReceived}
           onRequestAgain={handleRequestPaymentAgain}
+        />
+      )}
+
+      {assignTarget && (
+        <AssignDeliveryModal
+          order={assignTarget.order}
+          existing={assignTarget.existing}
+          partners={deliveryPartners}
+          onClose={() => setAssignTarget(null)}
+          onAssign={handleAssignDelivery}
         />
       )}
     </div>
