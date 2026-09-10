@@ -17,6 +17,7 @@ dist-ssr
 *.local
 
 # Editor directories and files
+.claude/settings.local.json
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -33,3 +34,8 @@ dist-ssr
 # Files exceeding GitHub 100MB limit — keep locally, not in git
 Products photo/shoes/IMG_4213.MOV
 base44/.app.jsonc
+
+# Database backups — contain customer PII (emails, password hashes, addresses)
+ethiodo-data-backup.json
+*-backup.json
+*.dump
