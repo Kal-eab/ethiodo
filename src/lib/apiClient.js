@@ -2,7 +2,13 @@
 // Replaces the Base44-hosted SDK transport.
 import { io } from 'socket.io-client';
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// VITE_API_URL may be a full URL (https://api.example.com) or, when supplied by
+// Render's blueprint `fromService`, a bare host (api.onrender.com). Prepend
+// https:// in the bare-host case so cross-origin fetch/socket calls work. Empty
+// in local dev, where requests go through the Vite proxy (same origin).
+const RAW_API_URL = import.meta.env.VITE_API_URL || '';
+export const API_BASE_URL =
+  RAW_API_URL && !/^https?:\/\//.test(RAW_API_URL) ? `https://${RAW_API_URL}` : RAW_API_URL;
 const TOKEN_KEY = 'ethiodo_token';
 
 export function getToken() {

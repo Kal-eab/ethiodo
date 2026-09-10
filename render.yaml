@@ -53,8 +53,14 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
+      # Auto-resolve to whatever host Render assigns the ethiodo-api service, so
+      # the frontend always targets the right API even if the name gets a suffix
+      # (e.g. after moving accounts). apiClient prepends https:// to this host.
       - key: VITE_API_URL
-        value: https://ethiodo-api.onrender.com
+        fromService:
+          type: web
+          name: ethiodo-api
+          property: host
     routes:
       - type: rewrite
         source: /*
