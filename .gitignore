@@ -1,6 +1,8 @@
 #env
 .env
 .env.*
+# ...except the non-secret production API URL, which the frontend build needs.
+!.env.production
 
 # Logs
 /logs
