@@ -1,0 +1,5 @@
+# Cloudflare Pages SPA fallback. React Router owns every path, so any request
+# that doesn't match a real file in dist/ must serve index.html with a 200
+# (not a redirect) or deep links like /admin/orders 404 on hard refresh.
+# Pages serves real static assets before consulting this rule.
+/*    /index.html   200
