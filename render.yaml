@@ -52,12 +52,14 @@ services:
     runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: dist
-    # VITE_API_URL is deliberately NOT set here. The blueprint's
-    # `fromService: property: host` resolved to the bare service name
-    # ("ethiodo-api-uco8") rather than a fully-qualified host, so the bundle
-    # shipped pointing at https://ethiodo-api-uco8 — a domain that does not
-    # resolve, breaking every API call including login. The build now takes the
-    # URL from the committed .env.production instead.
+    # Set the API URL explicitly as a full https:// host. An earlier attempt used
+    # `fromService: property: host`, which resolved to the bare service name
+    # ("ethiodo-api-uco8") with no domain and broke every API call including
+    # login. A literal value is the reliable form — Vite bakes it into the bundle
+    # at build time. (.env.production carries the same value as a fallback.)
+    envVars:
+      - key: VITE_API_URL
+        value: https://ethiodo-api-uco8.onrender.com
     routes:
       - type: rewrite
         source: /*
