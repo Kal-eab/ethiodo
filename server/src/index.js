@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
 
 const { attachUser } = require('./auth');
+const { bootstrapAdmin } = require('./bootstrapAdmin');
 const { initRealtime } = require('./realtime');
 const { router: uploadRouter } = require('./routes/upload');
 const authRouter = require('./routes/auth');
@@ -97,4 +98,9 @@ cron.schedule('0 * * * *', runExclusive(recalcPopularity, 'recalcPopularity'));
 cron.schedule('*/15 * * * *', runExclusive(recalcTrending, 'recalcTrending'));
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => console.log(`API listening on :${PORT}`));
+server.listen(PORT, () => {
+  console.log(`API listening on :${PORT}`);
+  // Fire-and-forget: seeding the owner account must never delay or block
+  // serving traffic, and bootstrapAdmin swallows its own errors.
+  bootstrapAdmin();
+});

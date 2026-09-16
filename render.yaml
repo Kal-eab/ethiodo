@@ -19,6 +19,16 @@ services:
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
+      # Owner account, seeded on boot by src/bootstrapAdmin.js. The first admin
+      # can't be made through the UI (promoting is itself admin-only), and
+      # scripts/make-admin.js needs a direct database connection, which Render's
+      # Postgres refuses from outside its network. The API is inside it.
+      # ADMIN_PASSWORD is a real credential, so it is set in the dashboard and
+      # never committed. Both can be removed once the account exists.
+      - key: ADMIN_EMAIL
+        value: genkaleab@gmail.com
+      - key: ADMIN_PASSWORD
+        sync: false
       - key: CORS_ORIGIN
         value: https://ethiodo.com,https://www.ethiodo.com,https://ethiodo.pages.dev,https://ethiodo-frontend.onrender.com
       - key: ANTHROPIC_API_KEY

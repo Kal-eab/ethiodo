@@ -23,7 +23,10 @@ const prisma = new PrismaClient({ datasources: { db: { url } } });
     console.log(`✅ ${user.email} is now an admin.`);
   } catch (e) {
     if (e.code === 'P2025') console.error(`No user found with email "${email}". Register that account on the site first.`);
-    else console.error('Failed:', e.message.split('\n')[0]);
+    // Prisma messages begin with a newline, so printing only the first line
+    // renders an empty "Failed:" and hides the real cause (bad credentials,
+    // unreachable host, expired database). Print the code and full message.
+    else console.error('Failed:', e.code ? `[${e.code}]` : '', (e.message || String(e)).trim());
     process.exit(1);
   } finally { await prisma.$disconnect(); }
 })();
