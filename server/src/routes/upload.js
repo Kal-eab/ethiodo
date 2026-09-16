@@ -35,7 +35,7 @@ function sniffImageType(buf) {
 // Stores files in an S3-compatible bucket (Cloudflare R2 / AWS S3 / Backblaze
 // B2) instead of local disk, since Render's free/standard web services have
 // an ephemeral filesystem that gets wiped on every deploy or restart.
-router.post('/', requireAuth, upload.single('file'), async (req, res) => {
+router.post('/', requireAuth, upload.single('file'), async (req, res, next) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   // Validate by content, not by the client's claimed name/type.
@@ -44,22 +44,62 @@ router.post('/', requireAuth, upload.single('file'), async (req, res) => {
     return res.status(400).json({ error: 'Unsupported file type. Upload a JPEG, PNG, WebP, GIF or AVIF image.' });
   }
 
+  // A missing R2_* var otherwise surfaces as an opaque SDK failure ("Bucket
+  // name must not be undefined", a hostname of "https://undefined.r2...").
+  // Name the actual problem instead.
+  const missing = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET_NAME', 'R2_PUBLIC_URL']
+    .filter((k) => !process.env[k]);
+  if (missing.length) {
+    console.error(`[upload] storage is not configured — missing: ${missing.join(', ')}`);
+    return res.status(500).json({ error: 'File storage is not configured on the server.' });
+  }
+
   const folder = (req.body.folder || '').replace(/[^a-zA-Z0-9/_-]/g, '').replace(/^\/+|\/+$/g, '');
   const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${kind.ext}`;
   const key = folder ? `${folder}/${filename}` : filename;
 
-  await s3.send(new PutObjectCommand({
-    Bucket: BUCKET,
-    Key: key,
-    Body: req.file.buffer,
-    ContentType: kind.mime,
-    // Defence in depth: even if a browser is tricked into treating the object
-    // as HTML, nosniff + attachment stops it executing inline.
-    ContentDisposition: 'inline',
-    CacheControl: 'public, max-age=31536000, immutable',
-  }));
+  // Express 4 does not forward a rejected promise from an async handler to the
+  // error middleware, so an unhandled R2 failure would leave the request with
+  // no response at all — the browser just hangs on a spinner that never ends.
+  // Catch it, log the real cause (the client only ever sees a generic 5xx),
+  // and hand it to next() so a response is actually sent.
+  try {
+    await s3.send(new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+      Body: req.file.buffer,
+      ContentType: kind.mime,
+      // Defence in depth: even if a browser is tricked into treating the object
+      // as HTML, nosniff + attachment stops it executing inline.
+      ContentDisposition: 'inline',
+      CacheControl: 'public, max-age=31536000, immutable',
+    }));
+  } catch (err) {
+    console.error(
+      `[upload] R2 PutObject failed for key "${key}" in bucket "${BUCKET}":`,
+      err.name,
+      err.message,
+      err.$metadata ? `(http ${err.$metadata.httpStatusCode})` : ''
+    );
+    return next(err);
+  }
 
   res.status(201).json({ file_url: `${PUBLIC_URL}/${key}` });
+});
+
+// Multer reports its own failures (most often a file over the 15MB limit) as
+// errors on this router. Without this they fall through to the generic handler
+// and become an unhelpful 500 "Internal server error".
+router.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? 'Image is too large. The maximum size is 15MB.'
+        : `Upload failed: ${err.message}`;
+    console.error('[upload] multer error:', err.code, err.message);
+    return res.status(413).json({ error: message });
+  }
+  return next(err);
 });
 
 module.exports = { router };
