@@ -264,3 +264,179 @@
     display: none;
   }
 }
+
+/* ── Product showcase: 3D showroom (src/components/home/ProductShowcase.jsx) ─ */
+
+/* Stage and lighting. Colours come from theme tokens so the light theme works. */
+.showcase-scene {
+  position: absolute;
+  inset: 0;
+  perspective: 1200px;
+  perspective-origin: 50% 42%;
+}
+.showcase-atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.showcase-spotlight {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(60vw, 900px);
+  height: min(70vh, 700px);
+  margin: calc(min(70vh, 700px) / -2) 0 0 calc(min(60vw, 900px) / -2);
+  background: radial-gradient(closest-side, hsl(var(--primary) / 0.11), hsl(var(--primary) / 0.03) 55%, transparent 100%);
+  will-change: transform;
+}
+.showcase-floor {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 38%;
+  background:
+    linear-gradient(to bottom, transparent, hsl(var(--foreground) / 0.025) 45%, transparent),
+    radial-gradient(ellipse 55% 60% at 50% 0%, hsl(var(--primary) / 0.05), transparent 70%);
+}
+.showcase-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 85% at 50% 48%, transparent 55%, hsl(var(--background) / 0.85) 100%);
+}
+
+/* Slot: positioned and moved through depth by JS. */
+.showcase-slot {
+  --card-w: clamp(230px, min(21vw, calc((100svh - var(--navbar-height, 104px) - 44px - 250px) * 0.8)), 330px);
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: var(--card-w);
+  transform-style: preserve-3d;
+  transform: translate(-50%, -50%);
+}
+.showcase-stage[data-live] .showcase-slot {
+  will-change: transform, opacity;
+}
+
+/* Card: hover tilt/lift. Kept separate from the slot so the two never fight. */
+.showcase-card {
+  transform-style: preserve-3d;
+  transform:
+    rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
+    translate3d(0, var(--lift, 0px), var(--hz, 0px)) scale(var(--hs, 1));
+  transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.showcase-card[data-tilting] {
+  transition: transform 0.18s ease-out;
+}
+.showcase-card:hover {
+  --lift: -6px;
+  --hz: 28px;
+  --hs: 1.02;
+}
+
+.showcase-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1.25rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  transform-style: preserve-3d;
+}
+/* Shadow and glow are pre-rendered and only faded, never animated as shadows. */
+.showcase-shadow,
+.showcase-glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: opacity 0.35s;
+}
+.showcase-shadow {
+  box-shadow: 0 40px 70px -30px rgb(0 0 0 / 0.9);
+  opacity: calc(0.35 + var(--near, 0) * 0.4);
+  transform: translateZ(-1px);
+}
+.showcase-glow {
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.32),
+    0 0 46px -10px hsl(var(--primary) / 0.3);
+  opacity: calc(var(--near, 0) * 0.85);
+}
+.showcase-card:hover .showcase-shadow,
+.showcase-card:hover .showcase-glow {
+  opacity: 1;
+}
+
+/* Layers at different depths; the image also drifts against scroll and cursor. */
+.showcase-media {
+  position: relative;
+  margin: 0.75rem 0.75rem 0;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  background: hsl(var(--background));
+  transform: translate3d(calc(var(--px, 0) * 5px), calc(var(--py, 0) * 5px), 30px);
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.showcase-card:hover .showcase-media {
+  transform: translate3d(calc(var(--px, 0) * 7px), calc(var(--py, 0) * 7px), 44px);
+}
+.showcase-image {
+  /* Absolutely filled: a percentage height doesn't resolve against an
+     aspect-ratio box inside the flex card, which left photos top-aligned
+     with an empty band beneath. */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: translate3d(calc(var(--d, 0) * -12px + var(--px, 0) * -6px), calc(var(--py, 0) * -6px), 0) scale(1.06);
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.showcase-float {
+  transform: translateZ(46px);
+}
+.showcase-info {
+  transform: translateZ(14px);
+}
+
+/* Touch variant: native horizontal scrolling with snapping; JS only adds depth. */
+.showcase-touch .showcase-slot {
+  --card-w: min(72vw, 300px);
+  position: relative;
+  left: auto;
+  top: auto;
+  flex: 0 0 auto;
+  transform: none;
+  scroll-snap-align: center;
+  will-change: transform;
+}
+.showcase-touch .showcase-media {
+  transform: translate3d(calc(var(--d, 0) * -4px), 0, 14px);
+}
+.showcase-touch .showcase-float {
+  transform: translateZ(20px);
+}
+.showcase-touch .showcase-info {
+  transform: translateZ(6px);
+}
+.showcase-touch .showcase-card:hover {
+  --lift: 0px;
+  --hz: 0px;
+  --hs: 1;
+}
+.showcase-scroller {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  padding: 1.25rem calc((100vw - min(72vw, 300px)) / 2) 1.75rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.showcase-scroller::-webkit-scrollbar {
+  display: none;
+}
