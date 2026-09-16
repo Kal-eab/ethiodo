@@ -2,24 +2,45 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Star, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
+import { useQueryClient } from '@tanstack/react-query';
 import { useReveal, useTilt } from '@/lib/motion';
-import { useFavoriteToggle } from '@/lib/useFavoriteToggle';
 
 // Memoized — rendered in grids of up to 200; without memo every keystroke in
 // the Home search box re-renders every card even though its props are unchanged.
 const ProductCard = React.memo(
   /** @param {{ product: any, isFavorite?: boolean, favoriteId?: any, badge?: { label: string, color: string } | null }} props */
   function ProductCard({ product, isFavorite, favoriteId, badge = null }) {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const image = product.images?.[0] || '/placeholder.png';
   const revealRef = useReveal();
   const tilt = useTilt();
-  const toggleFavorite = useFavoriteToggle(product, isFavorite, favoriteId);
 
   const handleBuy = (e) => {
     e.preventDefault();
     e.stopPropagation();
     navigate(`/product/${product.id}`);
+  };
+
+  const toggleFavorite = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Optimistic update
+    if (isFavorite && favoriteId) {
+      // @ts-ignore
+      queryClient.setQueryData(['favorites'], (old = []) => old.filter(f => f.id !== favoriteId));
+      await base44.entities.Favorite.delete(favoriteId);
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      // @ts-ignore
+      queryClient.setQueryData(['favorites'], (old = []) => [
+        ...old,
+        { id: tempId, product_id: product.id },
+      ]);
+      await base44.entities.Favorite.create({ product_id: product.id });
+    }
+    queryClient.invalidateQueries({ queryKey: ['favorites'] });
   };
 
   return (

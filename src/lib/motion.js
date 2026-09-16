@@ -6,25 +6,10 @@
 // animates in is only ever added from JavaScript, so if JS fails or
 // IntersectionObserver is missing, content simply shows up without animation
 // instead of staying invisible. Reduced-motion users get no motion at all.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 export function prefersReducedMotion() {
   return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-}
-
-/** Live boolean for a CSS media query; updates when it starts or stops matching. */
-export function useMediaQuery(query) {
-  const get = () => typeof window !== 'undefined' && !!window.matchMedia?.(query).matches;
-  const [matches, setMatches] = useState(get);
-  useEffect(() => {
-    const mql = window.matchMedia?.(query);
-    if (!mql) return undefined;
-    const onChange = () => setMatches(mql.matches);
-    onChange();
-    mql.addEventListener('change', onChange);
-    return () => mql.removeEventListener('change', onChange);
-  }, [query]);
-  return matches;
 }
 
 // ── Reveal on scroll ─────────────────────────────────────────────────────────
@@ -105,10 +90,6 @@ export function useTilt({ max = MAX_TILT_DEG } = {}) {
       el.style.setProperty('--rx', `${((0.5 - y) * 2 * max).toFixed(2)}deg`);
       el.style.setProperty('--gx', `${(x * 100).toFixed(1)}%`);
       el.style.setProperty('--gy', `${(y * 100).toFixed(1)}%`);
-      // Pointer offset from center (-1 … 1), for inner layers such as a product
-      // image that should drift further than the card for a parallax feel.
-      el.style.setProperty('--px', ((x - 0.5) * 2).toFixed(3));
-      el.style.setProperty('--py', ((y - 0.5) * 2).toFixed(3));
     });
   }, [max]);
 
@@ -119,8 +100,6 @@ export function useTilt({ max = MAX_TILT_DEG } = {}) {
     delete el.dataset.tilting;
     el.style.setProperty('--rx', '0deg');
     el.style.setProperty('--ry', '0deg');
-    el.style.setProperty('--px', '0');
-    el.style.setProperty('--py', '0');
   }, []);
 
   return { ref, onPointerMove, onPointerLeave };
