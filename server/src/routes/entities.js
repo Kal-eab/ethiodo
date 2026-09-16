@@ -3,6 +3,7 @@ const { prisma } = require('../db');
 const { entityNames, canCreate, checkRecord, readWhereClause, sanitizeWrite, isAdmin, isVisible } = require('../entityConfig');
 const { emitEntityEvent } = require('../realtime');
 const { notifyNewProduct, recomputeProductRating } = require('../functions');
+const { repriceOrder } = require('../orderPricing');
 
 const router = express.Router();
 
@@ -98,28 +99,39 @@ router.get('/:entity/:id', async (req, res) => {
 // purchase counts and the dashboard's metrics. Flagging happens here rather
 // than on the client because the client is the untrusted party: the buyer
 // picks the product ids, so the server is what decides whether they're test.
-async function applyTestProductRules(entity, data, user) {
+async function applyServerOrderRules(entity, data, user) {
   let productIds = [];
   if (entity === 'Order') productIds = (data.items || []).map((i) => i.product_id).filter(Boolean);
   else if (entity === 'CartItem' && data.product_id) productIds = [data.product_id];
   if (productIds.length === 0) return data;
 
   const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
-  if (!products.some((p) => p.data?.is_test_product === true)) return data;
+  const hasTest = products.some((p) => p.data?.is_test_product === true);
 
-  if (!isAdmin(user)) {
+  // A test product may only be bought by an admin (end-to-end testing) — for
+  // everyone else it behaves as if it doesn't exist.
+  if (hasTest && !isAdmin(user)) {
     const err = new Error('This product is not available for purchase');
     err.status = 400;
     throw err;
   }
-  return entity === 'Order' ? { ...data, is_test_order: true } : data;
+
+  if (entity !== 'Order') return data;
+
+  // Server-authoritative pricing: recompute every item price and the order
+  // total from the real Product records, so a manipulated client price/total
+  // can never be persisted (see server/src/orderPricing.js). An order that
+  // contains a test product is flagged so it stays out of revenue/metrics.
+  const productsById = Object.fromEntries(products.map((p) => [p.id, p]));
+  const priced = repriceOrder(data, productsById);
+  return hasTest ? { ...priced, is_test_order: true } : priced;
 }
 
 router.post('/:entity', async (req, res, next) => {
   const { entity, model } = req;
   if (!canCreate(entity, req.user)) return res.status(403).json({ error: 'Forbidden' });
   try {
-    const data = await applyTestProductRules(
+    const data = await applyServerOrderRules(
       entity,
       sanitizeWrite(entity, req.body || {}, req.user, 'create'),
       req.user
