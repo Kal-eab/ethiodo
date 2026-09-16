@@ -31,6 +31,18 @@ function sniffImageType(buf) {
   return null;
 }
 
+// What the storage provider's error codes actually mean, in terms of the
+// setting that needs changing. Without this an admin only ever sees
+// "Internal server error" and has nothing to act on.
+const STORAGE_ERRORS = {
+  InvalidAccessKeyId: 'Storage rejected the credentials: R2_ACCESS_KEY_ID is not valid for this account.',
+  SignatureDoesNotMatch: 'Storage rejected the credentials: R2_SECRET_ACCESS_KEY is wrong.',
+  NoSuchBucket: 'Storage bucket not found — check R2_BUCKET_NAME.',
+  AccessDenied: 'Storage credentials lack write permission — the R2 API token needs Object Read & Write.',
+  PermanentRedirect: 'Storage endpoint is wrong — check R2_ACCOUNT_ID.',
+  CredentialsProviderError: 'Storage credentials are missing or unreadable on the server.',
+};
+
 // Mirrors base44.integrations.Core.UploadFile({ file }) -> { file_url }.
 // Stores files in an S3-compatible bucket (Cloudflare R2 / AWS S3 / Backblaze
 // B2) instead of local disk, since Render's free/standard web services have
@@ -81,7 +93,12 @@ router.post('/', requireAuth, upload.single('file'), async (req, res, next) => {
       err.message,
       err.$metadata ? `(http ${err.$metadata.httpStatusCode})` : ''
     );
-    return next(err);
+    // The generic handler collapses every 5xx to "Internal server error",
+    // which makes a storage misconfiguration impossible to act on from the
+    // admin UI. These are the storage provider's own public error codes and
+    // describe server configuration, not user data, so it is safe to say
+    // which one happened — and it turns a dead end into a fix.
+    return res.status(502).json({ error: STORAGE_ERRORS[err.name] || `Storage rejected the upload (${err.name}).`, code: err.name });
   }
 
   res.status(201).json({ file_url: `${PUBLIC_URL}/${key}` });
