@@ -4,6 +4,7 @@ import { Heart, Star, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
+import { useReveal, useTilt } from '@/lib/motion';
 
 // Memoized — rendered in grids of up to 200; without memo every keystroke in
 // the Home search box re-renders every card even though its props are unchanged.
@@ -13,6 +14,8 @@ const ProductCard = React.memo(
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const image = product.images?.[0] || '/placeholder.png';
+  const revealRef = useReveal();
+  const tilt = useTilt();
 
   const handleBuy = (e) => {
     e.preventDefault();
@@ -41,8 +44,15 @@ const ProductCard = React.memo(
   };
 
   return (
-    <Link to={`/product/${product.id}`} className="group block">
-      <div className="bg-card border border-border rounded-xl overflow-hidden transition-all duration-300 hover:border-white/15 hover:-translate-y-1 hover:shadow-[0_16px_40px_-20px_rgba(0,0,0,0.9)]">
+    <Link ref={revealRef} to={`/product/${product.id}`} className="group block">
+      {/* Tilt lives on this inner box and the reveal on the outer link, so the
+          two transforms never overwrite each other. */}
+      <div
+        ref={tilt.ref}
+        onPointerMove={tilt.onPointerMove}
+        onPointerLeave={tilt.onPointerLeave}
+        className="tilt-card bg-card border border-border rounded-xl overflow-hidden hover:border-white/15 hover:shadow-[0_16px_40px_-20px_rgba(0,0,0,0.9)]"
+      >
         {/* Image — rectangular 4:3 */}
         <div className="relative aspect-[4/3] overflow-hidden bg-background">
           <img

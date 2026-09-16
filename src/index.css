@@ -189,3 +189,78 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(0 0% 30%);
 }
+/* ── Storefront 3D motion (driven by src/lib/motion.js) ──────────────────── */
+
+/* Reveal on scroll. data-reveal is only ever set from JS, so without JS these
+   elements are simply visible. */
+[data-reveal] {
+  opacity: 0;
+  transform: perspective(900px) translate3d(0, 48px, 0) rotateX(16deg) scale(0.96);
+  transform-origin: 50% 100%;
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--reveal-delay, 0ms),
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+[data-reveal][data-revealed] {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+/* Pointer tilt with a glare that follows the cursor. --lift keeps the existing
+   hover rise, which a plain translate utility can't combine with the tilt. */
+.tilt-card {
+  position: relative;
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translate3d(0, var(--lift, 0px), 0);
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.3s, box-shadow 0.3s;
+}
+.tilt-card[data-tilting] {
+  transition: transform 0.12s ease-out, border-color 0.3s, box-shadow 0.3s;
+}
+.group:hover .tilt-card,
+.tilt-card.group:hover {
+  --lift: -4px;
+}
+.tilt-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgb(255 255 255 / 0.13), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.tilt-card[data-tilting]::after {
+  opacity: 1;
+}
+
+/* Hero depth on scroll: the product card tips back and recedes while the copy
+   drifts at a different rate, so the two read as separate layers. */
+.hero-scroll-card {
+  transform-origin: 50% 0%;
+  transform:
+    perspective(1200px)
+    rotateX(calc(var(--scroll-p, 0) * 18deg))
+    scale(calc(1 - var(--scroll-p, 0) * 0.1))
+    translate3d(0, calc(var(--scroll-p, 0) * -40px), 0);
+}
+.hero-scroll-copy {
+  transform: translate3d(0, calc(var(--scroll-p, 0) * 90px), 0);
+  opacity: calc(1 - var(--scroll-p, 0) * 1.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  .tilt-card,
+  .hero-scroll-card,
+  .hero-scroll-copy {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .tilt-card::after {
+    display: none;
+  }
+}

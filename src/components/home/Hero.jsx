@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { useReveal, useScrollProgress, useTilt } from '@/lib/motion';
 
 const AUTOPLAY_MS = 5000;
 const SWIPE_THRESHOLD_PX = 40;
@@ -28,15 +29,15 @@ function ProductProof({ product }) {
   const sold = product.totalPurchases || 0;
   if (!reviews && !sold) return null;
   return (
-    <div className="mt-1.5 flex items-center gap-3 font-mono text-[11px] text-muted-foreground">
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
       {reviews > 0 && (
-        <span className="inline-flex items-center gap-1">
+        <span className="inline-flex items-center gap-1 whitespace-nowrap">
           <Star className="w-3.5 h-3.5 fill-primary text-primary" />
           <span className="text-foreground font-semibold">{Number(product.averageRating || 0).toFixed(1)}</span>
           <span>({reviews} {reviews === 1 ? 'review' : 'reviews'})</span>
         </span>
       )}
-      {sold > 0 && <span>{sold} sold</span>}
+      {sold > 0 && <span className="whitespace-nowrap">{sold} sold</span>}
     </div>
   );
 }
@@ -49,6 +50,8 @@ function FeaturedCarousel({ products }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef(null);
+  const revealRef = useReveal();
+  const tilt = useTilt({ max: 5 });
   const count = products.length;
 
   // The list can shrink between renders (e.g. a product is unpublished); never
@@ -83,6 +86,7 @@ function FeaturedCarousel({ products }) {
 
   return (
     <div
+      ref={revealRef}
       className="relative"
       role="region"
       aria-roledescription="carousel"
@@ -99,7 +103,12 @@ function FeaturedCarousel({ products }) {
         className="group block"
         aria-label={`${product.name}, ${formatBirr(product.price)} — view product`}
       >
-        <div className="rounded-xl border border-border bg-background p-4 transition-all duration-300 hover:border-white/15 hover:-translate-y-1">
+        <div
+          ref={tilt.ref}
+          onPointerMove={tilt.onPointerMove}
+          onPointerLeave={tilt.onPointerLeave}
+          className="tilt-card rounded-xl border border-border bg-background p-4 hover:border-white/15"
+        >
           <div className="aspect-square rounded-lg overflow-hidden bg-background flex items-center justify-center">
             <img
               key={product.id}
@@ -155,9 +164,12 @@ export default function Hero({ featuredProducts = [], productCount = 0 }) {
     const el = document.getElementById('all-products');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+  // Drives the scroll-depth effect (.hero-scroll-copy / .hero-scroll-card).
+  const scrollRef = useScrollProgress();
+  const copyRevealRef = useReveal();
 
   return (
-    <section className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 pt-2 pb-6">
+    <section ref={scrollRef} className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 pt-2 pb-6">
       <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
         {/* subtle brand glow, kept low so the look stays calm */}
         <div
@@ -165,8 +177,10 @@ export default function Hero({ featuredProducts = [], productCount = 0 }) {
           style={{ background: 'radial-gradient(80% 90% at 92% 0%, hsl(var(--primary) / 0.07), transparent 60%)' }}
         />
         <div className="relative grid lg:grid-cols-[1.05fr_.95fr] gap-7 lg:gap-10 p-5 sm:p-8 lg:p-12 items-center">
-          {/* Left — message + actions */}
-          <div>
+          {/* Left — message + actions. Scroll depth and the load-in reveal sit on
+              separate wrappers because both are transforms. */}
+          <div className="hero-scroll-copy">
+          <div ref={copyRevealRef}>
             <span className="inline-flex items-center gap-2 font-mono text-[11px] tracking-wider text-muted-foreground">
               <span className="w-1.5 h-1.5 rounded-full bg-accent" />
               Free delivery in Addis · Pay 10% to reserve
@@ -199,9 +213,12 @@ export default function Hero({ featuredProducts = [], productCount = 0 }) {
               <ValueProp label="Rest paid" value="On delivery" />
             </div>
           </div>
+          </div>
 
           {/* Right — carousel of the best-rated, best-selling real products */}
-          <FeaturedCarousel products={featuredProducts} />
+          <div className="hero-scroll-card min-w-0">
+            <FeaturedCarousel products={featuredProducts} />
+          </div>
         </div>
       </div>
     </section>
