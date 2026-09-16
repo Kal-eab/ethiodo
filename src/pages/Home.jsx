@@ -180,6 +180,34 @@ export default function Home() {
     [products]
   );
 
+  // Hero carousel: the store's best products — well rated, reviewed by several
+  // buyers, and actually selling. A raw average would let one 5-star review
+  // outrank a product with forty 4.7s, so the rating is pulled toward a neutral
+  // 3.5 until enough reviews back it up. Review volume and sales then add on a
+  // log scale so a runaway best-seller doesn't drown out everything else.
+  // Products with no reviews or sales still fill the remaining slots (newest
+  // first, as `products` is already ordered) so the hero is never empty on a
+  // young catalog. Anything without a photo is skipped — it's a picture slot —
+  // and so is anything buyers have rated poorly: strong sales must not put a
+  // 2-star product on the front page.
+  const heroProducts = useMemo(() => {
+    const PRIOR_RATING = 3.5;
+    const PRIOR_WEIGHT = 3;
+    const MIN_RATING = 3;
+    const score = (p) => {
+      const n = p.reviewCount || 0;
+      const rated = n > 0 ? (PRIOR_RATING * PRIOR_WEIGHT + (p.averageRating || 0) * n) / (PRIOR_WEIGHT + n) : 0;
+      return rated * 3 + Math.log1p(n) * 1.5 + Math.log1p(p.totalPurchases || 0) * 2;
+    };
+    return products
+      .filter(p => p.images?.[0] && !p.is_test_product)
+      .filter(p => !(p.reviewCount > 0) || (p.averageRating || 0) >= MIN_RATING)
+      .map(p => ({ p, s: score(p) }))
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 8)
+      .map(({ p }) => p);
+  }, [products]);
+
   // Signed-in users get their server-side history; guests fall back to the
   // session list that behaviorTracker keeps under `_rv`.
   const viewedProductIds = useMemo(() => {
@@ -311,7 +339,7 @@ export default function Home() {
           </section>
         ) : (
           <>
-            <Hero featuredProduct={trendingProducts[0] || products[0]} productCount={products.length} />
+            <Hero featuredProducts={heroProducts} productCount={products.length} />
             <RecommendedSection
               products={products}
               userProfile={userProfile}
