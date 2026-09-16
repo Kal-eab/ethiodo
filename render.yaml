@@ -20,7 +20,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        value: https://ethiodo.com,https://www.ethiodo.com,https://ethiodo-frontend.onrender.com
+        value: https://ethiodo.com,https://www.ethiodo.com,https://ethiodo.pages.dev,https://ethiodo-frontend.onrender.com
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: ANTHROPIC_MODEL
@@ -52,15 +52,12 @@ services:
     runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: dist
-    envVars:
-      # Auto-resolve to whatever host Render assigns the ethiodo-api service, so
-      # the frontend always targets the right API even if the name gets a suffix
-      # (e.g. after moving accounts). apiClient prepends https:// to this host.
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: ethiodo-api
-          property: host
+    # VITE_API_URL is deliberately NOT set here. The blueprint's
+    # `fromService: property: host` resolved to the bare service name
+    # ("ethiodo-api-uco8") rather than a fully-qualified host, so the bundle
+    # shipped pointing at https://ethiodo-api-uco8 — a domain that does not
+    # resolve, breaking every API call including login. The build now takes the
+    # URL from the committed .env.production instead.
     routes:
       - type: rewrite
         source: /*
