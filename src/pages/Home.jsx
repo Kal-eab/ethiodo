@@ -21,6 +21,7 @@ import RecommendedSection from '@/components/home/RecommendedSection';
 import TrendingSection from '@/components/home/TrendingSection';
 import NewAndRisingSection from '@/components/home/NewAndRisingSection';
 import BecauseYouViewedSection from '@/components/home/BecauseYouViewedSection';
+import Hero from '@/components/home/Hero';
 
 export default function Home() {
   const { user } = useAuth();
@@ -310,6 +311,7 @@ export default function Home() {
           </section>
         ) : (
           <>
+            <Hero featuredProduct={trendingProducts[0] || products[0]} productCount={products.length} />
             <RecommendedSection
               products={products}
               userProfile={userProfile}
@@ -324,7 +326,7 @@ export default function Home() {
               favorites={favoritesById}
             />
 
-          <section className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 py-1">
+          <section id="all-products" className="max-w-[140rem] mx-auto px-3 sm:px-6 lg:px-8 py-1 scroll-mt-32">
             <div className="flex items-center gap-2 mb-2">
             <h2 className="font-mono text-xs text-muted-foreground uppercase tracking-widest">All Products</h2>
           </div>
