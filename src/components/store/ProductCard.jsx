@@ -42,71 +42,67 @@ const ProductCard = React.memo(
 
   return (
     <Link to={`/product/${product.id}`} className="group block">
-      <div className="bg-card border border-border/60 rounded-xl overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-[0_4px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(180,255,0,0.06)] hover:-translate-y-1">
+      <div className="bg-card border border-border rounded-xl overflow-hidden transition-all duration-300 hover:border-white/15 hover:-translate-y-1 hover:shadow-[0_16px_40px_-20px_rgba(0,0,0,0.9)]">
         {/* Image — rectangular 4:3 */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-black/40">
+        <div className="relative aspect-[4/3] overflow-hidden bg-background">
           <img
             src={image}
             alt={product.name}
             loading="lazy"
-            onError={(e) => { 
+            onError={(e) => {
               const target = /** @type {HTMLImageElement} */ (e.currentTarget);
-              target.src = '/placeholder.png'; 
+              target.src = '/placeholder.png';
             }}
-            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.04]"
           />
-          {/* Gradient overlay with cart button */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
-            <div className="absolute bottom-0 left-0 right-0 p-2">
-              <Button
-                size="sm"
-                className="w-full bg-primary text-primary-foreground font-mono text-[10px] h-8 hover:bg-primary/90 rounded-lg"
-                onClick={handleBuy}
-              >
-                <ShoppingBag className="w-3.5 h-3.5 mr-1" />
-                BUY NOW
-              </Button>
-            </div>
+          {/* Quick action — calm glass pill, slides up on hover (desktop) */}
+          <div className="absolute inset-x-2 bottom-2 opacity-0 translate-y-2 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all duration-200">
+            <Button
+              size="sm"
+              className="w-full h-9 rounded-lg bg-background/85 backdrop-blur-md border border-white/15 text-primary font-mono text-[11px] font-semibold hover:bg-background/95"
+              onClick={handleBuy}
+            >
+              <ShoppingBag className="w-3.5 h-3.5 mr-1.5" />
+              BUY NOW
+            </Button>
           </div>
           {/* Favorite */}
           <button
             onClick={toggleFavorite}
-            className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-background/60 backdrop-blur-sm rounded-full border border-border/40 transition-colors hover:bg-background/90"
+            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-background/55 backdrop-blur-sm rounded-full border border-border transition-colors hover:border-white/25"
           >
-            <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-primary text-primary' : 'text-white'}`} />
+            <Heart className={`w-3.5 h-3.5 transition-transform ${isFavorite ? 'fill-primary text-primary scale-110' : 'text-white/70'}`} />
           </button>
-          {/* Category badge or custom badge */}
-          <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-background/60 backdrop-blur-sm text-[9px] font-mono uppercase tracking-wider text-muted-foreground rounded">
+          {/* Category badge */}
+          <span className="absolute top-2 left-2 px-2 py-0.5 bg-background/55 backdrop-blur-sm text-[9px] font-mono uppercase tracking-wider text-muted-foreground rounded">
             {product.category}
           </span>
         </div>
 
         {/* Info */}
-        <div className="p-2.5 space-y-1">
+        <div className="p-3 flex flex-col gap-1.5">
           {badge && (
-            <span className={`inline-block font-mono text-[9px] px-1.5 py-0.5 border rounded-sm ${badge.color}`}>
+            <span className={`inline-block self-start font-mono text-[9px] px-1.5 py-0.5 border rounded ${badge.color}`}>
               {badge.label}
             </span>
           )}
-          <h3 className="font-medium text-sm truncate leading-tight">{product.name}</h3>
-          <div className="flex items-center justify-between gap-1 flex-wrap">
-            <span className="font-mono font-bold text-primary text-sm">
+          <h3 className="font-medium text-sm leading-snug line-clamp-2 min-h-[2.5em]">{product.name}</h3>
+          {(product.reviewCount > 0 || product.rating > 0) && (
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <Star className="w-3 h-3 fill-primary text-primary" />
+              <span className="font-mono text-[11px]">
+                {(product.reviewCount > 0 ? product.averageRating : product.rating)?.toFixed(1)}
+                {product.reviewCount > 0 && ` (${product.reviewCount})`}
+              </span>
+            </div>
+          )}
+          <div className="mt-auto pt-1 flex items-baseline justify-between gap-2">
+            <span className="font-mono font-semibold text-primary text-[15px]">
               {Number(product.price).toLocaleString('en-US', { maximumFractionDigits: 2 })} Birr
             </span>
-            <div className="flex items-center gap-1.5">
-              {product.stock > 0 && product.stock <= 5 && (
-                <span className="font-mono text-[9px] text-orange-400">Only {product.stock} left</span>
-              )}
-              {(product.reviewCount > 0 || product.rating > 0) && (
-                <div className="flex items-center gap-0.5 text-muted-foreground">
-                  <Star className="w-2.5 h-2.5 fill-primary text-primary" />
-                  <span className="font-mono text-[10px]">
-                    {(product.reviewCount > 0 ? product.averageRating : product.rating)?.toFixed(1)}
-                    {product.reviewCount > 0 && ` (${product.reviewCount})`}
-                  </span>
-                </div>
-              )}
-            </div>
+            {product.stock > 0 && product.stock <= 5 && (
+              <span className="font-mono text-[9px] text-orange-400 whitespace-nowrap">Only {product.stock} left</span>
+            )}
           </div>
         </div>
       </div>
