@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MessageCircle, Send, Loader2 } from 'lucide-react';
+import { Phone, MessageCircle, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,9 +30,9 @@ export default function ContactPage() {
   };
 
   const contacts = [
-    { icon: Mail, label: 'Email', value: 'support@ethiodo.com', href: 'mailto:support@ethiodo.com' },
-    { icon: Phone, label: 'Phone', value: '+1 (555) 000-0000', href: 'tel:+15550000000' },
-    { icon: MessageCircle, label: 'WhatsApp', value: 'Chat on WhatsApp', href: 'https://wa.me/15550000000' },
+    { icon: Send, label: 'Telegram', value: '@Ethiodoet', href: 'https://t.me/Ethiodoet' },
+    { icon: Phone, label: 'Phone', value: '+251 98 969 0801', href: 'tel:+251989690801' },
+    { icon: MessageCircle, label: 'WhatsApp', value: '+251 97 723 5447', href: 'https://wa.me/251977235447' },
   ];
 
   return (

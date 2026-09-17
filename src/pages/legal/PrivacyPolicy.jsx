@@ -32,11 +32,11 @@ export default function PrivacyPolicy() {
             </section>
             <section>
               <h2 className="text-foreground text-xl font-semibold mb-3">5. Your Rights</h2>
-              <p>You have the right to access, correct, or delete your personal data at any time. Contact us at support@ethiodo.com to make a request.</p>
+              <p>You have the right to access, correct, or delete your personal data at any time. Contact us on Telegram at <a href="https://t.me/Ethiodoet" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">@Ethiodoet</a> to make a request.</p>
             </section>
             <section>
               <h2 className="text-foreground text-xl font-semibold mb-3">6. Contact</h2>
-              <p>For privacy-related inquiries, contact us at <a href="mailto:support@ethiodo.com" className="text-primary hover:underline">support@ethiodo.com</a>.</p>
+              <p>For privacy-related inquiries, contact us on Telegram at <a href="https://t.me/Ethiodoet" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">t.me/Ethiodoet</a>.</p>
             </section>
           </div>
         </div>
